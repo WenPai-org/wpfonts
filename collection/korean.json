@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/font-collection.json",
+  "font_families": [
+    {
+      "font_family_settings": {
+        "fontFamily": "system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Nanum Gothic', sans-serif",
+        "slug": "system-ui-kr",
+        "name": "시스템 기본"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Batang', 'AppleMyungjo', 'Noto Serif CJK KR', serif",
+        "slug": "myungjo-style",
+        "name": "명조체"
+      },
+      "categories": ["serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'HYGungSo-Bold', 'Hankc', cursive",
+        "slug": "handwriting-kr",
+        "name": "필기체"
+      },
+      "categories": ["handwriting"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'D2Coding', 'Nanum Gothic Coding', monospace",
+        "slug": "monospace-kr",
+        "name": "고정폭 글꼴"
+      },
+      "categories": ["monospace"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Jeju Gothic', 'KoPub Dotum', sans-serif",
+        "slug": "regional-kr",
+        "name": "지역 특화"
+      },
+      "categories": ["sans-serif"]
+    }
+  ]
+}

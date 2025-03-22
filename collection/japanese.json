@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/font-collection.json",
+  "font_families": [
+    {
+      "font_family_settings": {
+        "fontFamily": "system-ui, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
+        "slug": "system-ui-jp",
+        "name": "システムデフォルト"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Yu Mincho', 'Hiragino Mincho ProN', 'MS PMincho', 'Noto Serif CJK JP', serif",
+        "slug": "mincho-style",
+        "name": "明朝体"
+      },
+      "categories": ["serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'HGSSoeiKakupoptai', 'HGPSoeiKakupoptai', cursive",
+        "slug": "calligraphic-jp",
+        "name": "楷書体"
+      },
+      "categories": ["handwriting"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'MS Gothic', 'Osaka-Mono', 'Noto Sans Mono CJK JP', monospace",
+        "slug": "monospace-jp",
+        "name": "等幅フォント"
+      },
+      "categories": ["monospace"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Arial Unicode MS', 'M PLUS Rounded 1c', sans-serif",
+        "slug": "rounded-jp",
+        "name": "丸ゴシック"
+      },
+      "categories": ["sans-serif"]
+    }
+  ]
+}
