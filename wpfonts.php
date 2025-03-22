@@ -10,6 +10,14 @@ License: GPLv2 or later
 Text Domain: wpfonts
 */
 
+
+// Load text domain
+function wp_fonts_text_domain() {
+    load_plugin_textdomain('wp-fonts', false, dirname(plugin_basename(__FILE__)) . '/languages');
+}
+add_action('init', 'wp_fonts_text_domain');
+
+// Register Font Collection
 if ( function_exists( 'wp_register_font_collection' ) ) {
     function wenpai_register_wp_fonts() {
         $categories = array(
