@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: WP Fonts
+Plugin Name: WPFonts
 Plugin URI: https://wenpai.org/plugins/wpfonts
 Description: Add optimized system font stacks for Chinese, English, Japanese, and Korean to your WordPress Font Library.
 Version: 1.1.0
