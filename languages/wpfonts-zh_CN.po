@@ -3,23 +3,24 @@ msgstr ""
 "Project-Id-Version: WP Fonts\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-03-22 05:59+0000\n"
-"PO-Revision-Date: 2025-03-22 06:05+0000\n"
+"PO-Revision-Date: 2025-03-22 18:20+0800\n"
 "Last-Translator: \n"
 "Language-Team: 简体中文\n"
 "Language: zh_CN\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Loco https://localise.biz/\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.5\n"
 "X-Loco-Version: 2.6.11; wp-6.7.2\n"
-"X-Domain: wpfonts"
+"X-Domain: wpfonts\n"
 
 #. Description of the plugin
 msgid ""
 "Add optimized system font stacks for Chinese, English, Japanese, and Korean "
 "to your WordPress Font Library."
-msgstr "将针对中文、英文、日文和韩文优化的系统字体堆栈添加到您的 WordPress 字体库。"
+msgstr ""
+"将针对中文、英文、日文和韩文优化的系统字体堆栈添加到您的 WordPress 字体库。"
 
 #: wpfonts.php:35
 msgid "Chinese"
@@ -27,8 +28,8 @@ msgstr "中文"
 
 #: wpfonts.php:36
 msgid ""
-"Cross-platform Chinese system font stacks. Automatically adapt to "
-"Windows/macOS/Linux fonts."
+"Cross-platform Chinese system font stacks. Automatically adapt to Windows/"
+"macOS/Linux fonts."
 msgstr "跨平台中文系统字体堆栈。自动适配 Windows/macOS/Linux 字体。"
 
 #: wpfonts.php:43
@@ -65,7 +66,7 @@ msgstr "韩文"
 
 #: wpfonts.php:26
 msgid "Monospace"
-msgstr "Monospace"
+msgstr "等距"
 
 #: wpfonts.php:18
 msgid "Sans Serif"
