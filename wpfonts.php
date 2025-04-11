@@ -3,7 +3,7 @@
  * Plugin Name: WPFonts
  * Plugin URI: https://wenpai.org/plugins/wpfonts
  * Description: Add optimized system font stacks for Chinese, English, Japanese, and Korean to your WordPress Font Library.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: WPFonts.com
  * Author URI: https://wpfonts.com
  * Network: true
@@ -12,6 +12,15 @@
  * Text Domain: wpfonts
  * Domain Path: /languages
  */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+define('WPFONTS_VERSION', '1.2.0');
+define('WPFONTS_DIR_URL', plugin_dir_url(__FILE__));
+define('WPFONTS_DIR_PATH', plugin_dir_path(__FILE__));
+define('WPFONTS_BASENAME', plugin_basename(__FILE__));
 
 // Load text domain
 function wp_fonts_load_textdomain() {
@@ -75,3 +84,13 @@ if (function_exists('wp_register_font_collection')) {
     }
     add_action('init', 'wp_fonts_register_collections');
 }
+
+
+require_once plugin_dir_path(__FILE__) . 'lib/plugin-update-checker/plugin-update-checker.php';
+use YahnisElsts\PluginUpdateChecker\v5p3\PucFactory;
+
+$WpFontsUpdateChecker = PucFactory::buildUpdateChecker(
+    'https://updates.weixiaoduo.com/wpfonts.json',
+    __FILE__,
+    'wpfonts'
+);
