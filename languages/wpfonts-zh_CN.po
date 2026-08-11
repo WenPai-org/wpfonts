@@ -1,3 +1,4 @@
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: WP Fonts\n"
@@ -11,16 +12,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+"X-Domain: wpfonts\n"
 "X-Generator: Poedit 3.5\n"
 "X-Loco-Version: 2.6.11; wp-6.7.2\n"
-"X-Domain: wpfonts\n"
 
 #. Description of the plugin
 msgid ""
 "Add optimized system font stacks for Chinese, English, Japanese, and Korean "
 "to your WordPress Font Library."
-msgstr ""
-"将针对中文、英文、日文和韩文优化的系统字体堆栈添加到您的 WordPress 字体库。"
+msgstr "将针对中文、英文、日文和韩文优化的系统字体堆栈添加到您的 WordPress 字体库。"
 
 #: wpfonts.php:35
 msgid "Chinese"
@@ -28,8 +28,8 @@ msgstr "中文"
 
 #: wpfonts.php:36
 msgid ""
-"Cross-platform Chinese system font stacks. Automatically adapt to Windows/"
-"macOS/Linux fonts."
+"Cross-platform Chinese system font stacks. Automatically adapt to "
+"Windows/macOS/Linux fonts."
 msgstr "跨平台中文系统字体堆栈。自动适配 Windows/macOS/Linux 字体。"
 
 #: wpfonts.php:43
@@ -90,3 +90,87 @@ msgstr "文派字库"
 #. Author of the plugin
 msgid "WPFonts.com"
 msgstr "文派字库"
+
+msgid ""
+"An active license is required to update the plugin. Please provide a valid "
+"license key in Plugins > Installed Plugins."
+msgstr "更新插件需要有效许可证。请在“插件 > 已安装插件”中提供有效的许可证密钥。"
+
+msgid ""
+"An active license is required to update the theme. Please provide a valid "
+"license key in Appearence > Theme License."
+msgstr "更新主题需要有效许可证。请在“外观 > 主题许可证”中提供有效的许可证密钥。"
+
+msgid "An unexpected error has occured."
+msgstr "发生了意外错误。"
+
+msgid ""
+"An unexpected error has occured. Please try again. If the problem persists, "
+"please contact support."
+msgstr "发生了意外错误。请重试；如果问题仍然存在，请联系支持人员。"
+
+msgid "Current license key:"
+msgstr "当前许可证密钥："
+
+msgid "Deactivation is possible after:"
+msgstr "可停用时间："
+
+msgid "Hangul-optimized font stacks for Korean content."
+msgstr "针对韩文内容优化的字体栈。"
+
+msgid "Japanese system font stacks with optimized kana rendering."
+msgstr "针对假名渲染优化的日文系统字体栈。"
+
+msgid "License key:"
+msgstr "许可证密钥："
+
+msgid ""
+"Stacks of modern system fonts, no font files needed. The look will vary on "
+"each system."
+msgstr "现代系统字体栈，无需字体文件；显示效果会因系统而异。"
+
+msgid "The license expired and needs to be renewed to be updated."
+msgstr "许可证已过期，需要续订后才能更新。"
+
+msgid "The license expired on %s and needs to be renewed to be updated."
+msgstr "许可证已于 %s 过期，需要续订后才能更新。"
+
+msgid ""
+"The license has not been activated and its status is still pending. Please "
+"try again or use another license key."
+msgstr "许可证尚未激活，状态仍为待处理。请重试或使用其他许可证密钥。"
+
+msgid ""
+"The license has reached the maximum number of activations and cannot be "
+"activated for this domain."
+msgstr "许可证已达到最大激活次数，无法用于此域名。"
+
+msgid "The license is already in use for this domain."
+msgstr "此域名已在使用该许可证。"
+
+msgid "The license is already inactive for this domain."
+msgstr "此域名的许可证已处于停用状态。"
+
+msgid ""
+"The license is blocked and cannot be updated anymore. Please use another "
+"license key."
+msgstr "许可证已被阻止，无法再更新。请使用其他许可证密钥。"
+
+msgid "The license may not be deactivated yet."
+msgstr "许可证目前可能还不能停用。"
+
+msgid ""
+"The provided license key does not appear to be valid. Please use another "
+"license key."
+msgstr "提供的许可证密钥似乎无效。请使用其他密钥。"
+
+msgid "The provided license key is invalid. Please use another license key."
+msgstr "提供的许可证密钥无效。请使用其他密钥。"
+
+msgid "Theme License -"
+msgstr "主题许可证 -"
+
+msgid ""
+"Unexpected Error! The query to retrieve the license data returned a "
+"malformed response."
+msgstr "意外错误！查询许可证数据时返回了格式错误的响应。"
