@@ -1,16 +1,17 @@
 <?php
 /*
  * Plugin Name: WPFonts
- * Plugin URI: https://wenpai.org/plugins/wpfonts
+ * Plugin URI: https://wpcy.com/wpfonts
  * Description: Add optimized system font stacks for Chinese, English, Japanese, and Korean to your WordPress Font Library.
  * Version: 1.2.0
  * Author: WPFonts.com
- * Author URI: https://wpfonts.com
+ * Author URI: https://wpcy.com/
  * Network: true
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: wpfonts
  * Domain Path: /languages
+ * Update URI: https://updates.wenpai.net
  */
 
 if (!defined('ABSPATH')) {
