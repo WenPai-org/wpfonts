@@ -250,8 +250,8 @@ class WPFonts_Link {
 		$found = array();
 		self::collect_wenfeng_tokens( $html, $found, 12 );
 		self::collect_wenfeng_tokens( $globals, $found, 12 );
-		$base                  = $settings;
-		$base['project_slug']  = '';
+		$base                 = $settings;
+		$base['project_slug'] = '';
 		foreach ( $found as $family ) {
 			if ( isset( $skip[ $family ] ) ) {
 				continue;
