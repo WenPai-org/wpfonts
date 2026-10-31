@@ -22,7 +22,7 @@ WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 - 填写了项目名，就用 `https://服务器/p/项目名/index.css`。
 - 没有项目名时，使用 `https://服务器/api/css?family=字体名&subset=字符范围`。公开字体地址没有字体名时会返回 JSON 而不是 CSS，所以没填字体名、也没填项目名时，前台不加载这条链接。
 - 文风 API Key 只在服务器上用于请求 `https://app.windfonts.com/api/key/status`。不进入网页，也不进入样式地址。
-- 上传字体请使用 [文风控制台](https://app.windfonts.com)。插件不上传、不切分字体。
+- 插件不切字。已切好的包在「字体包」页安装到本站。
 - 块主题全局样式、把字体名写入 `theme.json`，本版不做。
 
 ## 运行要求

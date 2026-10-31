@@ -80,6 +80,19 @@ class WPFonts_Admin {
 				)
 			);
 		}
+		wp_enqueue_style(
+			'wpfonts-admin',
+			WPFONTS_DIR_URL . 'assets/css/wpfonts-admin.css',
+			array( 'wenpai-admin-ui' ),
+			WPFONTS_VERSION
+		);
+		wp_enqueue_script(
+			'wpfonts-admin',
+			WPFONTS_DIR_URL . 'assets/js/wpfonts-admin.js',
+			array(),
+			WPFONTS_VERSION,
+			true
+		);
 	}
 
 	/**
@@ -526,13 +539,19 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function render_state_banner( $state ) {
+		$local = ( 'active' === WPFonts_Packages::presence() );
+		if ( 'empty' === $state && $local ) {
+			self::notice( 'ok', __( '本站字体包使用中。前台会加载本站这份字体样式。文风 CDN 仍可按需开启。', 'wpfonts' ) );
+			return;
+		}
 		if ( 'empty' === $state ) {
 			echo '<div class="next"><span class="tile">';
 			self::icon( 'info' );
 			echo '</span><div><strong>' . esc_html__( '网页字体尚未开启', 'wpfonts' ) . '</strong>';
-			echo '<div class="d">' . esc_html__( '当前使用系统字体，前台不会请求远程字体。需要文风字体时，请开启 CDN 并填写文风 API Key。', 'wpfonts' ) . '</div></div>';
+			echo '<div class="d">' . esc_html__( '当前使用系统字体。需要网页字体时，可开启文风 CDN，或到字体包安装已切好的包。', 'wpfonts' ) . '</div></div>';
 			echo '<div class="next-actions">';
 			echo '<a class="btn btn-primary" href="' . esc_url( self::page_url( array( 'tab' => 'settings' ) ) ) . '">' . esc_html__( '去设置', 'wpfonts' ) . '</a>';
+			echo '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'packages' ) ) ) . '">' . esc_html__( '字体包', 'wpfonts' ) . '</a>';
 			echo '</div></div>';
 			return;
 		}
@@ -550,6 +569,9 @@ class WPFonts_Admin {
 		} elseif ( 'ok' === $state ) {
 			$level = 'ok';
 			$text  = __( 'CDN 已开启，文风 API Key 可用。前台会加载文风服务器上的样式，网页中不会出现 Key。', 'wpfonts' );
+			if ( $local ) {
+				$text .= __( '本站字体包也在使用。', 'wpfonts' );
+			}
 		}
 		self::notice( $level, $text );
 	}
@@ -668,7 +690,7 @@ class WPFonts_Admin {
 			echo '<option value="' . esc_attr( $id ) . '"' . selected( $settings['subset'], $id, false ) . '>' . esc_html( $label ) . '</option>';
 		}
 		echo '</select>';
-		echo '<p class="hint">' . esc_html__( '建议使用 zh-common。插件不在这里切分字体，名称以控制台已发布的为准。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '建议使用 zh-common。插件不在这里切分字体。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 	}
 
@@ -747,7 +769,7 @@ class WPFonts_Admin {
 		echo '<label class="field-label" for="wpfonts-slug">' . esc_html__( '项目名', 'wpfonts' ) . '</label>';
 		echo '<div class="field-ctl">';
 		echo '<input type="text" id="wpfonts-slug" name="wpfonts_settings[project_slug]" value="' . esc_attr( $settings['project_slug'] ) . '" placeholder="studio" autocomplete="off" spellcheck="false">';
-		echo '<p class="hint">' . esc_html__( '可以留空。填写后使用该区域的 /p/项目名/index.css。可使用的网站在控制台设置。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '可以留空。填写后使用该区域的 /p/项目名/index.css。可用网站在文风项目里设置。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 	}
 
@@ -988,8 +1010,7 @@ class WPFonts_Admin {
 		$packages = WPFonts_Packages::all();
 		echo '<div class="wenpai-stack">';
 		if ( 'installed' === $note ) {
-			self::notice( 'ok', __( '已安装。', 'wpfonts' ) );
-			self::notice( 'ok', __( '前台会加载本站这份字体样式。', 'wpfonts' ) );
+			self::notice( 'ok', __( '已安装。前台会加载本站这份字体样式。', 'wpfonts' ) );
 		} elseif ( 'enabled' === $note ) {
 			self::notice( 'ok', __( '前台会加载本站这份字体样式。', 'wpfonts' ) );
 		} elseif ( 'failed' === $note ) {
@@ -1024,8 +1045,10 @@ class WPFonts_Admin {
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_install_package' );
 		echo '<input type="hidden" name="action" value="wpfonts_install_package">';
-		echo '<p><label class="screen-reader-text" for="wpfonts-package-file">' . esc_html__( '安装字体包', 'wpfonts' ) . '</label>';
-		echo '<input type="file" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip" required></p>';
+		echo '<p class="wenpai-actions"><label class="btn btn-secondary" for="wpfonts-package-file">' . esc_html__( '选择 zip 文件', 'wpfonts' );
+		echo '<input type="file" class="screen-reader-text" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip" required>';
+		echo '</label></p>';
+		echo '<p class="meta" id="wpfonts-package-name" data-empty="' . esc_attr__( '未选择文件', 'wpfonts' ) . '">' . esc_html__( '未选择文件', 'wpfonts' ) . '</p>';
 		echo '<p><button type="submit" class="btn btn-primary">' . esc_html__( '安装字体包', 'wpfonts' ) . '</button></p>';
 		echo '</form>';
 	}
@@ -1053,12 +1076,13 @@ class WPFonts_Admin {
 		echo '<button type="submit" class="btn btn-secondary">' . esc_html( $on ? __( '停用', 'wpfonts' ) : __( '启用', 'wpfonts' ) ) . '</button>';
 		echo '</form>';
 		echo '</div></div>';
+		$confirm = esc_js( __( '删除后本站不再提供这份字体。确定删除？', 'wpfonts' ) );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_package_delete' );
 		echo '<input type="hidden" name="action" value="wpfonts_package_delete">';
 		echo '<input type="hidden" name="id" value="' . esc_attr( $package['id'] ) . '">';
-		echo '<div class="wenpai-gate"><label><input type="checkbox" name="wpfonts_delete_confirm" value="1"> ' . esc_html__( '删除后本站不再提供这份字体。确定删除？', 'wpfonts' ) . '</label></div>';
-		echo '<p><button type="submit" class="btn btn-danger">' . esc_html__( '删除', 'wpfonts' ) . '</button></p>';
+		// $confirm is escaped with esc_js() for the confirm() string.
+		echo '<p><button type="submit" class="btn btn-danger" onclick="return confirm(\'' . $confirm . '\');">' . esc_html__( '删除', 'wpfonts' ) . '</button></p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '</form>';
 	}
 
@@ -1125,9 +1149,7 @@ class WPFonts_Admin {
 		}
 		check_admin_referer( 'wpfonts_package_delete' );
 		$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
-		if ( isset( $_POST['wpfonts_delete_confirm'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['wpfonts_delete_confirm'] ) ) ) {
-			WPFonts_Packages::delete( $id );
-		}
+		WPFonts_Packages::delete( $id );
 		wp_safe_redirect( self::page_url( array( 'tab' => 'packages' ) ) );
 		exit;
 	}

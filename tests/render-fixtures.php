@@ -55,6 +55,20 @@ function esc_attr( $text ) {
 }
 
 /**
+ * Fixture stand-in for WordPress esc_js().
+ *
+ * @param string $text Text.
+ * @return string
+ */
+function esc_js( $text ) {
+	return str_replace(
+		array( '\\', "'", '"', "\n", "\r" ),
+		array( '\\\\', "\\'", '\\"', '\\n', '\\r' ),
+		(string) $text
+	);
+}
+
+/**
  * @param string $url URL.
  * @return string
  */
@@ -278,9 +292,9 @@ function wpfonts_fixture_document( $title, $body ) {
 	$js  = '../../lib/wenpai-admin-ui/js/wenpai-admin.js';
 	return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'
 		. esc_html( $title )
-		. '</title><link rel="stylesheet" href="' . $css . 'wenpai-tokens.css"><link rel="stylesheet" href="' . $css . 'wenpai-admin.css"><link rel="stylesheet" href="' . $css . 'wenpai-admin-wp.css"></head><body class="wenpai-ui-page wpfonts-admin"><div id="wpcontent"><div id="wpbody"><div id="wpbody-content">'
+		. '</title><link rel="stylesheet" href="' . $css . 'wenpai-tokens.css"><link rel="stylesheet" href="' . $css . 'wenpai-admin.css"><link rel="stylesheet" href="' . $css . 'wenpai-admin-wp.css"><link rel="stylesheet" href="../../assets/css/wpfonts-admin.css"></head><body class="wenpai-ui-page wpfonts-admin"><div id="wpcontent"><div id="wpbody"><div id="wpbody-content">'
 		. $body
-		. '</div></div></div><script src="' . $js . '"></script></body></html>';
+		. '</div></div></div><script src="' . $js . '"></script><script src="../../assets/js/wpfonts-admin.js"></script></body></html>';
 }
 
 /**
