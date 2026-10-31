@@ -3,6 +3,8 @@
  * Remove WPFonts options only.
  *
  * Global Styles and uploaded fonts belong to WordPress and are left in place.
+ * The slug list that remembers which families this plugin wrote is removed;
+ * the families themselves stay in the user styles post.
  *
  * @package WPFonts
  */
@@ -14,6 +16,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 delete_option( 'wpfonts_settings' );
 delete_option( 'wpfonts_api_key' );
 delete_option( 'wpfonts_packages' );
+delete_option( 'wpfonts_gs_slugs' );
 
 /**
  * Drop the catalog snapshot and its cron event. Installed font packages stay.

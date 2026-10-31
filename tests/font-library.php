@@ -220,7 +220,7 @@ $assert( array() === $deleted, 'deleted or disabled package still produced a fam
 
 $args = WPFonts_Library::packages_collection_args( $built );
 $assert( '文风字体包' === $args['name'], 'package collection name drifted' );
-$assert( '本站已安装的文风字体包。关闭或删除后不再出现。' === $args['description'], 'package collection description drifted' );
+$assert( '本站已启用的文风字体包。关闭或删除后，全站样式里也不再出现。' === $args['description'], 'package collection description drifted' );
 
 $cloud_settings = array(
 	'cdn_enabled'  => 1,
@@ -327,7 +327,7 @@ $assert( false !== strpos( $editor_src, 'edit_posts' ), 'editor panel is not lim
 $assert( false !== strpos( $editor_src, '设置里还没有确认能打开的文风字体。' ), 'editor cloud empty copy drifted' );
 $assert( false !== strpos( $editor_src, 'confirmed_cloud_families' ), 'editor still applies raw catalog tokens' );
 $assert( false === strpos( $editor_js, 'wenfeng-' ), 'editor script builds a CSS stack from the catalog token' );
-$assert( false !== strpos( $editor_src, '选一个字体，用在当前区块。全站安装请用字体库。' ), 'editor intro drifted' );
+$assert( false !== strpos( $editor_src, '选一个字体，用在当前区块。已启用的字体会出现在全站样式里。' ), 'editor intro drifted' );
 
 $hooked = false;
 foreach ( $GLOBALS['wpfonts_actions'] as $action ) {
