@@ -601,9 +601,13 @@ class WPFonts_Admin {
 			__( '文风字体包', 'wpfonts' ),
 			__( '安装文风已切好的包，文件放在本站。插件不切字，也不把原始字体传到文风去切。', 'wpfonts' )
 		);
+		self::help_card(
+			__( '字体目录', 'wpfonts' ),
+			__( '目录保存在本站。大约每月自动更新一次，也可在设置里立刻更新。选中后写入字体名；更新失败不会盖掉已有目录。', 'wpfonts' )
+		);
 		echo '<section class="card">';
 		echo '<h2 class="card-title">' . esc_html__( '本版不做', 'wpfonts' ) . '</h2>';
-		echo '<p>' . esc_html__( '插件不切字。块主题全局样式与 theme.json 写入，本版不做。', 'wpfonts' ) . '</p>';
+		echo '<p>' . esc_html__( '插件不切字。全站样式由字体库安装写入，本插件不改主题文件，卸载时也不删除全站样式。', 'wpfonts' ) . '</p>';
 		echo '</section>';
 		echo '</div>';
 	}
@@ -811,7 +815,7 @@ class WPFonts_Admin {
 	/**
 	 * Catalog status lines. The new strings are the Foundry copy for this screen.
 	 *
-	 * @return array{loading:string,fail:string,empty:string,loaded:string,updating:string,updated:string,stale:string,note:string,refresh:string}
+	 * @return array{loading:string,fail:string,empty:string,loaded:string,updating:string,updated:string,stale:string,note:string,refresh:string,missing:string}
 	 */
 	private static function catalog_messages() {
 		return array(
@@ -824,6 +828,7 @@ class WPFonts_Admin {
 			'stale'    => __( '暂时更新不了，仍显示上次保存的目录。稍后再试。', 'wpfonts' ),
 			'note'     => __( '目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。', 'wpfonts' ),
 			'refresh'  => __( '更新字体目录', 'wpfonts' ),
+			'missing'  => __( '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。', 'wpfonts' ),
 		);
 	}
 
@@ -913,7 +918,7 @@ class WPFonts_Admin {
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
 		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '">';
 		if ( $failed ) {
-			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['fail'] ) . '</p>';
+			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['missing'] ) . '</p>';
 		} elseif ( array() === $fonts ) {
 			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['empty'] ) . '</p>';
 		} else {

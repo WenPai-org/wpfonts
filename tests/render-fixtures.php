@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.3' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.4' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -514,6 +514,15 @@ $screens = array(
 			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
 		),
 		'catalog' => wpfonts_sample_catalog(),
+	),
+	'help'            => array(
+		'title'   => '帮助',
+		'tab'     => 'help',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+		),
 	),
 	'settings-catalog-fail' => array(
 		'title'   => '设置 · 目录读不到',

@@ -22,6 +22,7 @@ delete_option( 'wpfonts_packages' );
  */
 function wpfonts_uninstall_catalog() {
 	wp_clear_scheduled_hook( 'wpfonts_catalog_refresh' );
+	wp_clear_scheduled_hook( 'wpfonts_catalog_bootstrap' );
 	$uploads = wp_upload_dir();
 	if ( ! empty( $uploads['error'] ) ) {
 		return;

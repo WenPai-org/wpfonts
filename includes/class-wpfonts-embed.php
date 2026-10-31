@@ -32,10 +32,24 @@ class WPFonts_Embed {
 		if ( is_admin() ) {
 			return;
 		}
-		$url = WPFonts_Link::embed_url( WPFonts_Settings::get() );
-		if ( '' !== $url ) {
+		$settings = WPFonts_Settings::get();
+		$html     = '';
+		if ( function_exists( 'is_singular' ) && is_singular() ) {
+			$post = get_post();
+			if ( $post instanceof WP_Post ) {
+				$html = (string) $post->post_content;
+			}
+		}
+		$globals = array();
+		if ( function_exists( 'wp_get_global_settings' ) ) {
+			$globals = wp_get_global_settings( array( 'typography', 'fontFamilies' ) );
+		}
+		$urls  = WPFonts_Link::front_stylesheets( $settings, $html, $globals );
+		$total = count( $urls );
+		for ( $index = 0; $index < $total; $index++ ) {
+			$handle = ( 0 === $index ) ? 'wpfonts-cdn' : 'wpfonts-cdn-' . $index;
 			// null avoids appending ?ver=, which would change the CDN request.
-			wp_enqueue_style( 'wpfonts-cdn', $url, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
+			wp_enqueue_style( $handle, $urls[ $index ], array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
 		}
 		WPFonts_Packages::enqueue_styles();
 	}

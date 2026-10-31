@@ -1,0 +1,323 @@
+<?php
+/**
+ * Font Library collection shape. No WordPress, no network, no theme.json writes.
+ *
+ * @package WPFonts
+ */
+
+if ( defined( 'ABSPATH' ) ) {
+	fwrite( STDERR, "Run this file with PHP directly, not inside WordPress.\n" );
+	exit( 1 );
+}
+
+define( 'ABSPATH', __DIR__ . '/' );
+
+$catalog_dir = sys_get_temp_dir() . '/wpfonts-library-' . getmypid();
+if ( ! is_dir( $catalog_dir ) && ! mkdir( $catalog_dir, 0777, true ) && ! is_dir( $catalog_dir ) ) {
+	fwrite( STDERR, "Could not create library temp dir.\n" );
+	exit( 1 );
+}
+define( 'WPFONTS_CATALOG_PATH', $catalog_dir . '/catalog.json' );
+
+$upload_dir = $catalog_dir . '/uploads';
+if ( ! is_dir( $upload_dir ) && ! mkdir( $upload_dir, 0777, true ) && ! is_dir( $upload_dir ) ) {
+	fwrite( STDERR, "Could not create upload temp dir.\n" );
+	exit( 1 );
+}
+
+/**
+ * @param string $hook Hook.
+ * @param mixed  $callback Callback.
+ * @param int    $priority Priority.
+ * @param int    $accepted_args Accepted args.
+ * @return void
+ */
+function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
+	$GLOBALS['wpfonts_actions'][] = array( $hook, $callback, $priority, $accepted_args );
+}
+
+/**
+ * @param string $text Text.
+ * @param string $domain Domain.
+ * @return string
+ */
+function __( $text, $domain = 'default' ) {
+	unset( $domain );
+	return $text;
+}
+
+/**
+ * @param mixed $thing Thing.
+ * @return bool
+ */
+function is_wp_error( $thing ) {
+	unset( $thing );
+	return false;
+}
+
+/**
+ * @param string $name Option name.
+ * @param mixed  $default Default.
+ * @return mixed
+ */
+function get_option( $name, $default = false ) {
+	if ( isset( $GLOBALS['wpfonts_options'][ $name ] ) ) {
+		return $GLOBALS['wpfonts_options'][ $name ];
+	}
+	return $default;
+}
+
+/**
+ * @return array
+ */
+function wp_upload_dir() {
+	return array(
+		'basedir' => $GLOBALS['wpfonts_upload_dir'],
+		'baseurl' => 'https://example.test/wp-content/uploads',
+		'error'   => false,
+	);
+}
+
+/**
+ * @param string $path Path.
+ * @return string
+ */
+function wp_normalize_path( $path ) {
+	return str_replace( '\\', '/', (string) $path );
+}
+
+/**
+ * @param mixed $data Data.
+ * @param int   $options Options.
+ * @param int   $depth Depth.
+ * @return string|false
+ */
+function wp_json_encode( $data, $options = 0, $depth = 512 ) {
+	return json_encode( $data, $options, $depth );
+}
+
+$GLOBALS['wpfonts_actions'] = array();
+
+/**
+ * In-memory stand-in for the font library registry.
+ */
+class WP_Font_Library {
+
+	/**
+	 * @var self|null
+	 */
+	private static $instance;
+
+	/**
+	 * @var array<string,array>
+	 */
+	public $slugs = array();
+
+	/**
+	 * @return self
+	 */
+	public static function get_instance() {
+		if ( ! self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+	/**
+	 * @param string $slug Slug.
+	 * @return string|null
+	 */
+	public function get_font_collection( $slug ) {
+		return isset( $this->slugs[ $slug ] ) ? $slug : null;
+	}
+}
+
+/**
+ * @param string $slug Slug.
+ * @param array  $args Args.
+ * @return bool
+ */
+function wp_register_font_collection( $slug, $args ) {
+	WP_Font_Library::get_instance()->slugs[ $slug ] = $args;
+	$GLOBALS['wpfonts_registered'][]                 = array( $slug, $args );
+	return true;
+}
+
+/**
+ * @param string $slug Slug.
+ * @return bool
+ */
+function wp_unregister_font_collection( $slug ) {
+	unset( WP_Font_Library::get_instance()->slugs[ $slug ] );
+	$GLOBALS['wpfonts_unregistered'][] = $slug;
+	return true;
+}
+
+require dirname( __DIR__ ) . '/includes/class-wpfonts-link.php';
+require dirname( __DIR__ ) . '/includes/class-wpfonts-packages.php';
+require dirname( __DIR__ ) . '/includes/class-wpfonts-catalog.php';
+require dirname( __DIR__ ) . '/includes/class-wpfonts-library.php';
+
+$failures = array();
+
+$assert = static function ( $condition, $message ) use ( &$failures ) {
+	if ( ! $condition ) {
+		$failures[] = $message;
+	}
+};
+
+$css = '@font-face{font-family:"IBM Plex Sans SC";font-style:normal;font-weight:400;font-display:swap;unicode-range:U+4E00-9FFF, U+3000-303F;src:url("https://example.test/wp-content/uploads/wpfonts/packages/demo/1.woff2") format("woff2");}'
+	. '@font-face{font-family:"IBM Plex Sans SC";font-weight:700;src:url(https://evil.example/secret.woff) format("woff");}'
+	. '@font-face{font-family:"IBM Plex Sans SC";src:url("../secret.woff2");}';
+
+$faces = WPFonts_Library::faces_from_css( $css, 'IBM Plex Sans SC' );
+$assert( 1 === count( $faces ), 'expected one woff2 face, got ' . count( $faces ) );
+$assert( 'https://example.test/wp-content/uploads/wpfonts/packages/demo/1.woff2' === $faces[0]['src'], 'face src drifted' );
+$assert( 'IBM Plex Sans SC' === $faces[0]['fontFamily'], 'face family drifted' );
+$assert( '400' === $faces[0]['fontWeight'], 'face weight drifted' );
+$assert( 'swap' === $faces[0]['fontDisplay'], 'face display drifted' );
+$assert( 'U+4E00-9FFF, U+3000-303F' === $faces[0]['unicodeRange'], 'unicode range drifted' );
+$assert( '' === WPFonts_Library::css_stack( 'Bad{family}' ), 'unsafe family became a stack' );
+$assert( '"IBM Plex Sans SC", sans-serif' === WPFonts_Library::css_stack( 'IBM Plex Sans SC' ), 'stack quoting drifted' );
+
+$packages = array(
+	array(
+		'id'      => 'demo',
+		'name'    => '演示包',
+		'family'  => 'IBM Plex Sans SC',
+		'enabled' => 1,
+	),
+	array(
+		'id'      => 'paused',
+		'name'    => '停用包',
+		'family'  => 'Paused Face',
+		'enabled' => 0,
+	),
+);
+$built = WPFonts_Library::package_families(
+	$packages,
+	array(
+		'demo' => $css,
+	)
+);
+$assert( 1 === count( $built ), 'disabled package was registered' );
+$assert( 'wpfonts-pkg-demo' === $built[0]['font_family_settings']['slug'], 'package slug drifted' );
+$assert( '演示包' === $built[0]['font_family_settings']['name'], 'package name drifted' );
+$assert( isset( $built[0]['font_family_settings']['fontFace'][0]['src'] ), 'enabled package lost its woff2' );
+$assert( false === strpos( wp_json_encode( $built ), 'evil.example' ), 'non-woff2 url was kept' );
+$assert( false === strpos( wp_json_encode( $built ), 'secret.woff2' ), 'relative url was kept' );
+
+$deleted = WPFonts_Library::package_families(
+	array(
+		$packages[1],
+	),
+	array(
+		'paused' => $css,
+	)
+);
+$assert( array() === $deleted, 'deleted or disabled package still produced a family' );
+
+$args = WPFonts_Library::packages_collection_args( $built );
+$assert( '文风字体包' === $args['name'], 'package collection name drifted' );
+$assert( '本站已安装的文风字体包。关闭或删除后不再出现。' === $args['description'], 'package collection description drifted' );
+
+$cloud = WPFonts_Library::cloud_families(
+	array(
+		array(
+			'name'       => '寒蝉无机体',
+			'fontFamily' => 'wenfeng-hcwjt',
+		),
+		array(
+			'name'       => '再次',
+			'fontFamily' => 'wenfeng-hcwjt',
+		),
+		array(
+			'name'       => '丢弃',
+			'fontFamily' => 'not-wenfeng',
+		),
+	)
+);
+$assert( 1 === count( $cloud ), 'cloud collection did not dedupe' );
+$assert( 'wenfeng-hcwjt' === $cloud[0]['font_family_settings']['slug'], 'cloud slug drifted' );
+$assert( '"wenfeng-hcwjt", sans-serif' === $cloud[0]['font_family_settings']['fontFamily'], 'cloud stack drifted' );
+$assert( ! isset( $cloud[0]['font_family_settings']['fontFace'] ), 'cloud family attached a font file' );
+$cloud_args = WPFonts_Library::cloud_collection_args( $cloud );
+$assert( '文风云' === $cloud_args['name'], 'cloud collection name drifted' );
+
+$encoded = wp_json_encode( array( $args, $cloud_args ) );
+$assert( false === strpos( (string) $encoded, 'theme.json' ), 'collection args mention theme.json' );
+
+$package_dir = $upload_dir . '/wpfonts/packages/demo';
+if ( ! is_dir( $package_dir ) && ! mkdir( $package_dir, 0777, true ) && ! is_dir( $package_dir ) ) {
+	fwrite( STDERR, "Could not create package dir.\n" );
+	exit( 1 );
+}
+file_put_contents( $package_dir . '/local.css', $css );
+file_put_contents(
+	WPFONTS_CATALOG_PATH,
+	wp_json_encode(
+		array(
+			'updated_at' => 10,
+			'fonts'      => array(
+				array(
+					'name'       => '寒蝉无机体',
+					'fontFamily' => 'wenfeng-hcwjt',
+				),
+			),
+		)
+	)
+);
+
+$GLOBALS['wpfonts_upload_dir']  = $upload_dir;
+$GLOBALS['wpfonts_options']     = array(
+	'wpfonts_packages' => $packages,
+);
+$GLOBALS['wpfonts_registered']   = array();
+$GLOBALS['wpfonts_unregistered'] = array();
+WPFonts_Library::register();
+$slugs = array();
+foreach ( $GLOBALS['wpfonts_registered'] as $call ) {
+	$slugs[] = $call[0];
+}
+$assert( in_array( WPFonts_Library::PACKAGES_SLUG, $slugs, true ), 'enabled package collection was not registered' );
+$assert( in_array( WPFonts_Library::CLOUD_SLUG, $slugs, true ), 'catalog collection was not registered' );
+$assert( isset( WP_Font_Library::get_instance()->slugs[ WPFonts_Library::PACKAGES_SLUG ] ), 'package collection missing from the registry' );
+
+$GLOBALS['wpfonts_options']['wpfonts_packages'] = array();
+unlink( WPFONTS_CATALOG_PATH );
+$GLOBALS['wpfonts_registered']   = array();
+$GLOBALS['wpfonts_unregistered'] = array();
+WPFonts_Library::register();
+$assert( array() === $GLOBALS['wpfonts_registered'], 'empty lists were still registered' );
+$assert( in_array( WPFonts_Library::PACKAGES_SLUG, $GLOBALS['wpfonts_unregistered'], true ), 'disabled packages were not deregistered' );
+$assert( in_array( WPFonts_Library::CLOUD_SLUG, $GLOBALS['wpfonts_unregistered'], true ), 'missing catalog was not deregistered' );
+$assert( ! isset( WP_Font_Library::get_instance()->slugs[ WPFonts_Library::PACKAGES_SLUG ] ), 'deleted package stayed in the registry' );
+
+$library_src = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-library.php' );
+$editor_src  = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-editor.php' );
+$editor_js   = file_get_contents( dirname( __DIR__ ) . '/assets/js/wpfonts-editor.js' );
+$assert( false === strpos( $library_src, 'wp_global_styles' ), 'library writes global styles' );
+$assert( false === strpos( $library_src, 'WP_Theme_JSON' ), 'library touches WP_Theme_JSON' );
+$assert( false === strpos( $editor_src, 'admin_bar_menu' ), 'editor adds an admin bar item' );
+$assert( false === strpos( $editor_src, 'wp_global_styles' ), 'editor writes global styles' );
+$assert( false === strpos( $editor_js, 'PluginSidebar' ), 'editor adds header chrome' );
+$assert( false === strpos( $editor_js, 'admin-bar' ), 'editor script targets the admin bar' );
+$assert( false !== strpos( $editor_js, 'InspectorControls' ), 'editor panel is not in the inspector' );
+$assert( false !== strpos( $editor_src, 'edit_posts' ), 'editor search is not limited to people who can edit' );
+$assert( false !== strpos( $editor_src, '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。' ), 'editor empty catalog copy drifted' );
+$assert( false !== strpos( $editor_src, '选一个字体，用在当前区块。全站安装请用字体库。' ), 'editor intro drifted' );
+
+$hooked = false;
+foreach ( $GLOBALS['wpfonts_actions'] as $action ) {
+	if ( 'init' === $action[0] ) {
+		$hooked = true;
+	}
+}
+$assert( $hooked, 'library did not register on init' );
+
+if ( array() !== $failures ) {
+	fwrite( STDERR, implode( "\n", $failures ) . "\n" );
+	exit( 1 );
+}
+
+echo "PASS: enabled packages and catalog names register as Font Library families, and disabled packages drop out.\n";
