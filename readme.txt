@@ -18,7 +18,7 @@ Version 2.0.0-rc.6 can also print one allowlisted Windfonts stylesheet on the fr
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
-Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled on-site packages appear in the Font Library as 文风, ahead of the system collections. 文风云 is unchanged. A confirmed catalog face appears there too, and both are copied into user Global Styles. Settings still call the installable packages 文风字体包. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
+Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled on-site packages appear in the Font Library as 文风字体 (Windfonts in English), ahead of the system collections. 文风云 is unchanged. A confirmed catalog face appears there too, and both are copied into user Global Styles. Settings still call the installable packages 文风字体包. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
 
 The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views.
 
@@ -48,8 +48,8 @@ The collections target the WordPress Font Library. The CDN link is a normal fron
 
 = 2.0.0-rc.6 =
 * Show the block inspector panel 文派字库. On WordPress 6.7 and later, inspector controls render only inside the block edit context, so the panel is added with the editor.BlockEdit filter. Choosing an enabled package or a confirmed cloud face sets that block's typography font family.
-* Name the Font Library collection of enabled on-site packages 文风. The package group inside the block inspector panel uses the same label. 文风云 is unchanged. Settings screens still say 文风字体包.
-* Register 文风 and 文风云 before the system collections, so those tabs sit ahead of 系统 · 中文.
+* Name the Font Library collection of enabled on-site packages 文风字体. English shows Windfonts. The package group inside the block inspector panel uses the same label. 文风云 is unchanged. Settings screens still say 文风字体包.
+* Register 文风字体 and 文风云 before the system collections, so those tabs sit ahead of 系统 · 中文.
 * Rename the system collections to 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文. Expand the Japanese and Korean stacks, and replace faces that are not shipped with Windows, macOS, iOS, Android, or common Linux installs. Existing slugs stay. No font files are downloaded.
 
 = 2.0.0-rc.5 =

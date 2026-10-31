@@ -68,7 +68,7 @@ add_action( 'plugins_loaded', 'wp_fonts_load_textdomain' );
  * stylesheets or font binaries. A registration failure is reported through
  * wpfonts_collection_registration_error and does not alter Global Styles.
  *
- * Priority 25 runs after WPFonts_Library (priority 20) so 文风 and 文风云
+ * Priority 25 runs after WPFonts_Library (priority 20) so 文风字体 and 文风云
  * appear before these collections in the Font Library.
  *
  * @return void

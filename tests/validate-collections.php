@@ -137,15 +137,18 @@ $assert( ! is_dir( $root . '/lib/updatepulse-updater' ), 'UpdatePulse directory 
 $assert( is_dir( $root . '/lib/wenpai-admin-ui' ), 'wenpai-admin-ui must be vendored.' );
 $assert( '0.3.1' === trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) ), 'Vendored kit VERSION must be 0.3.1 or newer and recorded.' );
 
-$assert( false !== strpos( $main, "add_action( 'init', 'wp_fonts_register_collections', 25 )" ), 'System collections must register after 文风.' );
+$assert( false !== strpos( $main, "add_action( 'init', 'wp_fonts_register_collections', 25 )" ), 'System collections must register after 文风字体.' );
 $assert( false !== strpos( $main, '系统 · 中文' ), 'Chinese system collection was not renamed.' );
 $assert( false !== strpos( $main, '系统 · 英文' ), 'English system collection was not renamed.' );
 $assert( false !== strpos( $main, '系统 · 日文' ), 'Japanese system collection was not renamed.' );
 $assert( false !== strpos( $main, '系统 · 韩文' ), 'Korean system collection was not renamed.' );
 $library = file_get_contents( $root . '/includes/class-wpfonts-library.php' );
-$assert( false !== strpos( $library, "add_action( 'init', array( __CLASS__, 'register' ), 20 )" ), '文风 collections must register at priority 20.' );
-$assert( false !== strpos( $library, "__( '文风', 'wpfonts' )" ), 'Font Library package collection must be named 文风.' );
+$assert( false !== strpos( $library, "add_action( 'init', array( __CLASS__, 'register' ), 20 )" ), '文风字体 collections must register at priority 20.' );
+$assert( false !== strpos( $library, "__( 'Windfonts', 'wpfonts' )" ), 'Font Library package collection must use the Windfonts label.' );
+$assert( false === strpos( $library, "__( '文风', 'wpfonts' )" ), 'Font Library package collection is still named 文风.' );
 $assert( false !== strpos( $library, "__( '文风云', 'wpfonts' )" ), 'Font Library cloud collection must stay 文风云.' );
+$zh = file_get_contents( $root . '/languages/wpfonts-zh_CN.po' );
+$assert( false !== strpos( $zh, "msgid \"Windfonts\"\nmsgstr \"文风字体\"" ), 'zh_CN must translate Windfonts to 文风字体.' );
 $admin = file_get_contents( $root . '/includes/class-wpfonts-admin.php' );
 $embed = file_get_contents( $root . '/includes/class-wpfonts-embed.php' );
 $assert( false !== strpos( $admin, "'admin_menu'" ), 'Admin screen must register under admin_menu.' );

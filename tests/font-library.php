@@ -219,7 +219,7 @@ $deleted = WPFonts_Library::package_families(
 $assert( array() === $deleted, 'deleted or disabled package still produced a family' );
 
 $args = WPFonts_Library::packages_collection_args( $built );
-$assert( '文风' === $args['name'], 'package collection name drifted' );
+$assert( 'Windfonts' === $args['name'], 'package collection name drifted' );
 $assert( '本站已启用的文风字体包。关闭或删除后，全站样式里也不再出现。' === $args['description'], 'package collection description drifted' );
 
 $cloud_settings = array(
@@ -329,7 +329,7 @@ $assert( false !== strpos( $editor_src, "'wp-hooks'" ), 'editor script does not 
 $assert( false === strpos( $editor_src, "'wp-plugins'" ), 'editor script still depends on the plugin area' );
 $assert( false !== strpos( $editor_src, 'edit_posts' ), 'editor panel is not limited to people who can edit' );
 $assert( false !== strpos( $editor_src, '设置里还没有确认能打开的文风字体。' ), 'editor cloud empty copy drifted' );
-$assert( false !== strpos( $editor_src, "'packages'    => __( '文风', 'wpfonts' )" ), 'inspector package group is not labeled 文风' );
+$assert( false !== strpos( $editor_src, "'packages'    => __( 'Windfonts', 'wpfonts' )" ), 'inspector package group is not labeled Windfonts' );
 $assert( false !== strpos( $editor_src, '还没有启用的文风字体包。' ), 'inspector empty package copy drifted' );
 $assert( false !== strpos( $editor_src, 'confirmed_cloud_families' ), 'editor still applies raw catalog tokens' );
 $assert( false === strpos( $editor_js, 'wenfeng-' ), 'editor script builds a CSS stack from the catalog token' );
