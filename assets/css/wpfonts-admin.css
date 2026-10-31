@@ -1,5 +1,9 @@
-/* Hide the native file control. The Chinese label is the visible control. */
-.wenpai-app label.btn input[type="file"] {
+/* The drop zone is the control. The file input stays out of view. */
+.wenpai-app #wpfonts-install-zone {
+	cursor: pointer;
+}
+
+.wenpai-app #wpfonts-package-file {
 	position: absolute;
 	width: 1px;
 	height: 1px;

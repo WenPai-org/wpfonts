@@ -1022,43 +1022,48 @@ class WPFonts_Admin {
 			self::notice( 'bad', __( '装不上。请用文风已切好的 zip（内含样式和 woff2）。', 'wpfonts' ) );
 		}
 		if ( array() === $packages ) {
-			echo '<section class="card">';
-			echo '<div class="empty">';
-			echo '<span class="tile">';
-			self::icon( 'download' );
-			echo '</span>';
-			echo '<p>' . esc_html__( '还没有文风字体包', 'wpfonts' ) . '</p>';
-			echo '<p class="meta">' . esc_html__( '安装后由本站提供字体文件。', 'wpfonts' ) . '</p>';
-			echo '</div>';
-			echo '</section>';
+			self::render_install_zone( true );
 		} else {
 			echo '<section class="card">';
 			foreach ( $packages as $package ) {
 				self::render_package_row( $package );
 			}
 			echo '</section>';
+			self::render_install_zone( false );
 		}
-		self::render_install_form();
 		echo '</div>';
 	}
 
 	/**
-	 * Zip upload card. Drag a zip here, or choose a file.
+	 * One drop zone. Choosing or dropping a zip submits immediately.
 	 *
+	 * @param bool $empty Empty state fills the zone. Otherwise a compact strip.
 	 * @return void
 	 */
-	private static function render_install_form() {
+	private static function render_install_zone( $empty ) {
 		echo '<section class="card" id="wpfonts-install-zone">';
-		echo '<h2 class="card-title">' . esc_html__( '安装文风字体包', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '从文风下载已切好的 zip，拖到此处或选择文件。安装后由本站提供字体，不依赖文风云。', 'wpfonts' ) . '</p>';
-		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<form id="wpfonts-install-form" method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_install_package' );
 		echo '<input type="hidden" name="action" value="wpfonts_install_package">';
-		echo '<p class="wenpai-actions"><label class="btn btn-secondary" for="wpfonts-package-file">' . esc_html__( '选择 zip 文件', 'wpfonts' );
-		echo '<input type="file" class="screen-reader-text" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip">';
-		echo '</label></p>';
-		echo '<p class="meta" id="wpfonts-package-name" data-empty="' . esc_attr__( '未选择文件', 'wpfonts' ) . '">' . esc_html__( '未选择文件', 'wpfonts' ) . '</p>';
-		echo '<p><button type="submit" class="btn btn-primary" id="wpfonts-package-install" disabled>' . esc_html__( '安装', 'wpfonts' ) . '</button></p>';
+		echo '<input type="file" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip">';
+		if ( $empty ) {
+			echo '<div class="empty">';
+			echo '<span class="tile">';
+			self::icon( 'download' );
+			echo '</span>';
+			echo '<p>' . esc_html__( '把 zip 拖到这里', 'wpfonts' ) . '</p>';
+			echo '<p class="meta">' . esc_html__( '或点击选择文件。安装后由本站托管，不依赖文风云。', 'wpfonts' ) . '</p>';
+			echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';
+			echo '</div>';
+		} else {
+			echo '<div class="simple-row is-static">';
+			echo '<span class="tile">';
+			self::icon( 'download' );
+			echo '</span><div>';
+			echo '<div class="t">' . esc_html__( '拖入 zip 安装，或点击选择', 'wpfonts' ) . '</div>';
+			echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';
+			echo '</div></div>';
+		}
 		echo '</form>';
 		echo '</section>';
 	}

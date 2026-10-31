@@ -1,39 +1,47 @@
 (function () {
 	var input = document.getElementById("wpfonts-package-file");
 	var zone = document.getElementById("wpfonts-install-zone");
-	var name = document.getElementById("wpfonts-package-name");
-	var button = document.getElementById("wpfonts-package-install");
-	if (!input || !name || !button) {
+	var form = document.getElementById("wpfonts-install-form");
+	var status = document.getElementById("wpfonts-install-status");
+	if (!input || !zone || !form) {
 		return;
 	}
 
-	function emptyText() {
-		return name.getAttribute("data-empty") || "";
+	function isZip(file) {
+		return !!(file && /\.zip$/i.test(file.name));
 	}
 
-	function show(file) {
-		var ok = !!(file && /\.zip$/i.test(file.name));
-		name.textContent = ok ? file.name : emptyText();
-		button.disabled = !ok;
-	}
+	var busy = false;
 
-	function take(file) {
-		if (!file || !/\.zip$/i.test(file.name) || typeof DataTransfer === "undefined") {
+	function install(file, fromInput) {
+		if (busy || !isZip(file)) {
 			return;
 		}
-		var list = new DataTransfer();
-		list.items.add(file);
-		input.files = list.files;
-		show(file);
+		busy = true;
+		if (!fromInput && typeof DataTransfer !== "undefined") {
+			var list = new DataTransfer();
+			list.items.add(file);
+			input.files = list.files;
+		}
+		if (status) {
+			status.hidden = false;
+			status.textContent = status.getAttribute("data-busy") || "";
+		}
+		zone.classList.add("is-busy");
+		form.submit();
 	}
 
-	input.addEventListener("change", function () {
-		show(input.files && input.files[0]);
+	input.addEventListener("click", function (event) {
+		event.stopPropagation();
 	});
 
-	if (!zone) {
-		return;
-	}
+	input.addEventListener("change", function () {
+		install(input.files && input.files[0], true);
+	});
+
+	zone.addEventListener("click", function () {
+		input.click();
+	});
 
 	zone.addEventListener("dragover", function (event) {
 		event.preventDefault();
@@ -51,6 +59,6 @@
 		event.preventDefault();
 		zone.classList.remove("is-drag");
 		var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
-		take(file);
+		install(file, false);
 	});
 })();
