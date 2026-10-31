@@ -4,7 +4,7 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 2.0.0-rc.7
+Stable tag: 2.0.0-rc.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ System font stacks, plus an optional Windfonts CDN link. Release candidate: CI d
 
 WPFonts adds Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device. The collections are named 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文.
 
-Version 2.0.0-rc.7 can print one allowlisted Windfonts stylesheet for each confirmed cloud face. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML, and it is not included in a settings export. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick fontFamily values from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and every confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Removing one cloud face, or disabling a package, removes only that WPFonts entry. System font collections can be turned off per language. The plugin does not edit theme files, and uninstall does not delete Global Styles.
+Version 2.0.0-rc.8 can print one allowlisted Windfonts stylesheet for each confirmed cloud face. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML, and it is not included in a settings export. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick fontFamily values from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and every confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Removing one cloud face, or disabling a package, removes only that WPFonts entry. System font collections can be turned off per language. The plugin does not edit theme files, and uninstall does not delete Global Styles.
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
@@ -45,6 +45,9 @@ No. Global Styles belong to WordPress. Deactivation does not delete them. Uninst
 The collections target the WordPress Font Library. The CDN link is a normal front-end stylesheet and does not require a block theme. A block theme is still required for the Font Library screens.
 
 == Changelog ==
+
+= 2.0.0-rc.8 =
+* Installing a 文风字体包 uses wenfeng-{short} as the package id, the Font Library slug, and the Global Styles slug when the zip says so. A legacy font-family of WF-Xxx or windfonts-Xxx is recorded as that same short name, and local.css is updated to match. The name on the packages screen can stay the human name. woff2 file names are left as they are. The plugin still does not slice fonts.
 
 = 2.0.0-rc.7 =
 * Save more than one confirmed 文风云 face. The Font Library and the block inspector list every confirmed face. A site that stored one face in 2.0.0-rc.6 keeps that face. Removing a face drops only the Global Styles entry this plugin wrote for it.

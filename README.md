@@ -2,9 +2,9 @@
 
 文派字库给 WordPress 字体库加上系统字体，分成「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。文风云默认关闭。开启之后，每条已确认的文风云字体各加一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.7`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
+这一版是 `2.0.0-rc.8`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
 
-WPFonts 2.0.0-rc.7 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP.
+WPFonts 2.0.0-rc.8 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP.
 
 Settings → WPFonts has four screens: Overview, Settings, Font packages, and Tools. Help stays in the header. Enabled packages register in the Font Library as 文风字体 (Windfonts in English), using the woff2 files stored at install. That tab, and 文风云, are registered before the system collections. 文风云 is registered only after the saved stylesheet URL has opened; the Font Library name is the face declared in that CSS, not the catalog token. Those same families are copied into the user Global Styles post, so Appearance → Styles lists them under typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only the entries this plugin wrote. A saved URL that returns 404 is not embedded and is not described as loading. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
 
@@ -18,11 +18,17 @@ Settings → WPFonts has four screens: Overview, Settings, Font packages, and To
 
 把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。安装后的文件在 `wp-content/uploads/wpfonts/packages/`，和文风云开关互不影响。
 
+安装时，包的短名尽量用目录里的 `wenfeng-*`。旧包里的 `WF-*`、`windfonts-*` 会换成这个短名，并写进 `local.css`。列表里仍显示原来的字体名。woff2 文件名不动。
+
 已启用的包会登记到字体库的「文风字体」，排在系统字体前面。英文界面写作 Windfonts。字体文件用的是安装时已经校验过的 woff2。停用或删除后，字体库里不再出现。启用后，字体名会写进全站样式，外观 → 样式里可以直接选用。停用或删除时，只去掉这项，其它全站样式不动。插件不改主题文件，卸载时也不删全站样式。设置页仍称这些包为文风字体包。
 
 ## 编辑器
 
 块编辑器里选中区块后，侧栏有「文派字库」。分组名是「文风字体」和「文风云」。可以把已启用的包，或每一条已确认的文风云字体，用在当前区块。侧栏只改当前区块。打开侧栏不会搜索文风目录。不占顶栏。这些字体也会出现在全站样式里，再到外观 → 样式 → 排版里选用。英文界面里这一组写作 Windfonts。
+
+## 2.0.0-rc.8
+
+- 安装文风字体包时，字体库和全站样式的短名对齐目录里的 `wenfeng-*`。包内如果还是 `WF-*` 或 `windfonts-*`，会换成同一个短名，写进 `local.css`。页面上的名字可以仍是原来的字体名。woff2 文件名不动。插件仍然不切字。
 
 ## 2.0.0-rc.7
 

@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.7' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.8' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );

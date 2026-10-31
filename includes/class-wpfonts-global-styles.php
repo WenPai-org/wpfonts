@@ -19,8 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WPFonts_Global_Styles {
 
 	/**
-	 * Slugs written by the last successful sync. Used to drop a cloud face
-	 * whose catalog token is not a wpfonts-pkg- id.
+	 * Slugs written by the last successful sync. A wenfeng-* entry is removed
+	 * only when it is in this list. Older wpfonts-pkg-* package ids can still
+	 * be removed from the prefix alone.
 	 *
 	 * @var string
 	 */
@@ -717,8 +718,10 @@ class WPFonts_Global_Styles {
 	/**
 	 * A slug this plugin may remove.
 	 *
-	 * Package ids and the cloud fallback are ours even if the option was lost.
-	 * A wenfeng-* slug is ours only after we recorded it.
+	 * Older package ids use the wpfonts-pkg- prefix and stay ours even if the
+	 * option was lost, as does the cloud fallback. A wenfeng-* slug, including
+	 * a local package installed under the catalog family, is ours only after
+	 * we recorded it.
 	 *
 	 * @param string $slug         Family slug.
 	 * @param array  $owned_lookup Recorded slugs as keys.

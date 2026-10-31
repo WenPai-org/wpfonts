@@ -1,7 +1,8 @@
 <?php
 /**
  * Local font packages. The plugin stores a zip the site owner already
- * downloaded. It does not slice fonts.
+ * downloaded. It does not slice fonts. On install, the package id follows
+ * the catalog family wenfeng-{short} when the zip says what that short is.
  *
  * @package WPFonts
  */
@@ -100,6 +101,195 @@ class WPFonts_Packages {
 			$base = rtrim( substr( $base, 0, 48 ), '-' );
 		}
 		return '' === $base ? 'package' : $base;
+	}
+
+	/**
+	 * Catalog family for a CSS or metadata token.
+	 *
+	 * WF-Xxx and windfonts-Xxx become wenfeng-{short}. A token that is already
+	 * wenfeng-* stays, lowercased. The short is the same family the catalog
+	 * stores. Any other name is empty, so the zip file name can still be used.
+	 *
+	 * @param string $token Raw family token.
+	 * @return string
+	 */
+	public static function catalog_family( $token ) {
+		$token = trim( (string) $token );
+		$token = trim( $token, " \t\n\r\0\x0B\"'" );
+		if ( '' === $token || ! preg_match( '/^(?:wenfeng|windfonts|WF)-(.+)$/i', $token, $matches ) ) {
+			return '';
+		}
+		$short = self::fit_slug( $matches[1] );
+		if ( '' === $short ) {
+			return '';
+		}
+		$family = 'wenfeng-' . $short;
+		if ( strlen( $family ) > 48 ) {
+			$family = rtrim( substr( $family, 0, 48 ), '-' );
+		}
+		if ( '' === $family || 0 !== strpos( $family, 'wenfeng-' ) || 'wenfeng-' === $family ) {
+			return '';
+		}
+		return $family;
+	}
+
+	/**
+	 * Package id to try before a collision suffix.
+	 *
+	 * A metadata fontFamily wins when it is a catalog family. Otherwise the
+	 * first @font-face font-family in the extracted stylesheet. Otherwise the
+	 * zip file name, unchanged.
+	 *
+	 * @param string            $filename Zip file name.
+	 * @param string            $css      Stylesheet text, usually result.css.
+	 * @param array|string|null $metadata Decoded metadata, a JSON string, or a catalog token.
+	 * @return string
+	 */
+	public static function package_slug_base( $filename, $css, $metadata = null ) {
+		$from_meta = self::metadata_catalog_family( $metadata );
+		if ( '' !== $from_meta ) {
+			return $from_meta;
+		}
+		$from_css = self::catalog_family( self::family_from_css( (string) $css ) );
+		if ( '' !== $from_css ) {
+			return $from_css;
+		}
+		return self::slug_from_filename( $filename );
+	}
+
+	/**
+	 * Catalog family stored on package metadata, or empty.
+	 *
+	 * Reads fontFamily, then font_family. Those are the catalog fields. A
+	 * display name in family or name is not a slug.
+	 *
+	 * @param array|string|null $metadata Decoded metadata, a JSON string, or a catalog token.
+	 * @return string
+	 */
+	public static function metadata_catalog_family( $metadata ) {
+		if ( is_string( $metadata ) ) {
+			$metadata = trim( $metadata );
+			if ( '' === $metadata ) {
+				return '';
+			}
+			$decoded = self::metadata_array( $metadata );
+			if ( null === $decoded ) {
+				return self::catalog_family( $metadata );
+			}
+			$metadata = $decoded;
+		}
+		$data = self::metadata_array( $metadata );
+		if ( null === $data ) {
+			return '';
+		}
+		foreach ( array( 'fontFamily', 'font_family' ) as $key ) {
+			if ( ! isset( $data[ $key ] ) || ! is_string( $data[ $key ] ) ) {
+				continue;
+			}
+			$family = self::catalog_family( $data[ $key ] );
+			if ( '' !== $family ) {
+				return $family;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Human package name from metadata, or empty.
+	 *
+	 * family, name, and the Chinese name fields are display text. A catalog
+	 * token in one of those fields is skipped.
+	 *
+	 * @param array|string|null $metadata Decoded metadata or a JSON string.
+	 * @return string
+	 */
+	public static function display_name_from_metadata( $metadata ) {
+		$data = self::metadata_array( $metadata );
+		if ( null === $data ) {
+			return '';
+		}
+		foreach ( array( 'family', 'name', 'chineseName', 'chinese_name' ) as $key ) {
+			if ( ! isset( $data[ $key ] ) || ! is_string( $data[ $key ] ) ) {
+				continue;
+			}
+			$name = self::plain_name( $data[ $key ] );
+			if ( strlen( $name ) > 80 ) {
+				$name = trim( substr( $name, 0, 80 ) );
+			}
+			if ( '' === $name || '' !== self::catalog_family( $name ) ) {
+				continue;
+			}
+			return $name;
+		}
+		return '';
+	}
+
+	/**
+	 * Metadata token and display name from an extracted package.
+	 *
+	 * Looks at meta.json, metadata.json, and font.json. The shallowest file
+	 * wins. A file without a catalog family does not hide a later one.
+	 *
+	 * @param string   $root Extracted directory.
+	 * @param string[] $rels Relative file paths.
+	 * @return array{token:string,name:string}
+	 */
+	public static function metadata_from_directory( $root, array $rels ) {
+		$root   = rtrim( (string) $root, '/\\' );
+		$ranked = array(
+			'meta.json'     => 0,
+			'metadata.json' => 1,
+			'font.json'     => 2,
+		);
+		$found  = array();
+		foreach ( $rels as $rel ) {
+			$rel = str_replace( '\\', '/', (string) $rel );
+			if ( ! self::is_safe_rel( $rel ) ) {
+				continue;
+			}
+			$base = strtolower( basename( $rel ) );
+			if ( ! isset( $ranked[ $base ] ) ) {
+				continue;
+			}
+			$found[] = array(
+				'rel'   => $rel,
+				'rank'  => $ranked[ $base ],
+				'depth' => substr_count( $rel, '/' ),
+			);
+		}
+		usort(
+			$found,
+			static function ( $left, $right ) {
+				if ( $left['depth'] !== $right['depth'] ) {
+					return $left['depth'] - $right['depth'];
+				}
+				return $left['rank'] - $right['rank'];
+			}
+		);
+		$token = '';
+		$name  = '';
+		$reads = 0;
+		foreach ( $found as $item ) {
+			if ( 8 <= $reads || ( '' !== $token && '' !== $name ) ) {
+				break;
+			}
+			++$reads;
+			$path = $root . '/' . $item['rel'];
+			$raw  = self::read_metadata_file( $root, $path );
+			if ( '' === $raw ) {
+				continue;
+			}
+			if ( '' === $token ) {
+				$token = self::metadata_catalog_family( $raw );
+			}
+			if ( '' === $name ) {
+				$name = self::display_name_from_metadata( $raw );
+			}
+		}
+		return array(
+			'token' => $token,
+			'name'  => $name,
+		);
 	}
 
 	/**
@@ -298,6 +488,36 @@ class WPFonts_Packages {
 	}
 
 	/**
+	 * Point @font-face font-family at the catalog family.
+	 *
+	 * woff2 file names inside url() are left alone. The call is a no-op unless
+	 * $family is already a wenfeng-* slug, including a collision suffix.
+	 *
+	 * @param string $css    CSS text.
+	 * @param string $family Package slug, such as wenfeng-fzss.
+	 * @return string
+	 */
+	public static function rewrite_family_css( $css, $family ) {
+		$family = self::clean_id( $family );
+		if ( 0 !== strpos( $family, 'wenfeng-' ) || 'wenfeng-' === $family || ! is_string( $css ) || '' === $css ) {
+			return is_string( $css ) ? $css : '';
+		}
+		$rewritten = preg_replace_callback(
+			'/(@font-face\s*\{[^}]*?font-family\s*:\s*)([^;}]+)/is',
+			static function ( $matches ) use ( $family ) {
+				$parts = explode( ',', $matches[2], 2 );
+				$next  = '"' . $family . '"';
+				if ( isset( $parts[1] ) ) {
+					$next .= ',' . $parts[1];
+				}
+				return $matches[1] . $next;
+			},
+			$css
+		);
+		return is_string( $rewritten ) ? $rewritten : $css;
+	}
+
+	/**
 	 * First font-family inside an @font-face rule, without quotes.
 	 *
 	 * @param string $css CSS text.
@@ -493,12 +713,17 @@ class WPFonts_Packages {
 		foreach ( self::all() as $package ) {
 			$existing[] = $package['id'];
 		}
-		$slug    = self::unique_slug( self::slug_from_filename( $name ), $existing );
-		$baseurl = trailingslashit( $uploads['baseurl'] ) . 'wpfonts/packages/' . $slug;
-		$raw     = $wp_filesystem->get_contents( $incoming . '/' . $css_rel );
+		$raw = $wp_filesystem->get_contents( $incoming . '/' . $css_rel );
 		if ( ! is_string( $raw ) || '' === $raw ) {
 			$wp_filesystem->delete( $incoming, true );
 			return new WP_Error( 'wpfonts_package', 'read' );
+		}
+		$meta    = self::metadata_from_directory( $incoming, $rels );
+		$base    = self::package_slug_base( $name, $raw, $meta['token'] );
+		$slug    = self::unique_slug( $base, $existing );
+		$baseurl = trailingslashit( $uploads['baseurl'] ) . 'wpfonts/packages/' . $slug;
+		if ( '' !== self::catalog_family( $base ) ) {
+			$raw = self::rewrite_family_css( $raw, $slug );
 		}
 		$local = self::rewrite_css( $raw, $css_rel, $baseurl );
 		if ( ! $wp_filesystem->put_contents( $incoming . '/local.css', $local, FS_CHMOD_FILE ) ) {
@@ -512,7 +737,10 @@ class WPFonts_Packages {
 			return new WP_Error( 'wpfonts_package', 'move' );
 		}
 
-		$display = self::plain_name( pathinfo( $name, PATHINFO_FILENAME ) );
+		$display = isset( $meta['name'] ) ? self::plain_name( $meta['name'] ) : '';
+		if ( '' === $display ) {
+			$display = self::plain_name( pathinfo( $name, PATHINFO_FILENAME ) );
+		}
 		if ( '' === $display ) {
 			$display = $slug;
 		}
@@ -686,6 +914,73 @@ class WPFonts_Packages {
 		}
 		$name = preg_replace( '/[\x00-\x1F\x7F]/', '', $name );
 		return trim( is_string( $name ) ? $name : '' );
+	}
+
+	/**
+	 * Short name capped so wenfeng-{short} fits the 48 character package id.
+	 *
+	 * @param string $slug Candidate short.
+	 * @return string
+	 */
+	private static function fit_slug( $slug ) {
+		$slug = self::clean_id( $slug );
+		if ( '' === $slug ) {
+			return '';
+		}
+		if ( strlen( $slug ) > 40 ) {
+			$slug = rtrim( substr( $slug, 0, 40 ), '-' );
+		}
+		return $slug;
+	}
+
+	/**
+	 * Decoded metadata object, or null.
+	 *
+	 * @param array|string|null $metadata Raw metadata.
+	 * @return array|null
+	 */
+	private static function metadata_array( $metadata ) {
+		if ( is_array( $metadata ) ) {
+			return $metadata;
+		}
+		if ( ! is_string( $metadata ) ) {
+			return null;
+		}
+		if ( 0 === strncmp( $metadata, "\xEF\xBB\xBF", 3 ) ) {
+			$metadata = substr( $metadata, 3 );
+		}
+		$decoded = json_decode( $metadata, true );
+		return is_array( $decoded ) ? $decoded : null;
+	}
+
+	/**
+	 * Metadata JSON that stays inside the extracted package.
+	 *
+	 * @param string $root Extracted directory.
+	 * @param string $path Absolute file path.
+	 * @return string
+	 */
+	private static function read_metadata_file( $root, $path ) {
+		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
+			return '';
+		}
+		$size = filesize( $path );
+		if ( false === $size || $size < 1 || $size > 262144 ) {
+			return '';
+		}
+		$real_root = realpath( $root );
+		$real_file = realpath( $path );
+		if ( false === $real_root || false === $real_file ) {
+			return '';
+		}
+		$prefix = rtrim( str_replace( '\\', '/', $real_root ), '/' ) . '/';
+		$file   = str_replace( '\\', '/', $real_file );
+		if ( 0 !== strpos( $file, $prefix ) ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local package metadata. WP_Filesystem may prompt for FTP.
+		$raw = file_get_contents( $path );
+		return is_string( $raw ) ? $raw : '';
 	}
 
 	/**

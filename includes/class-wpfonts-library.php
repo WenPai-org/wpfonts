@@ -251,7 +251,7 @@ class WPFonts_Library {
 		}
 		$settings = array(
 			'name'       => $name,
-			'slug'       => 'wpfonts-pkg-' . $id,
+			'slug'       => self::package_family_slug( $id ),
 			'fontFamily' => $stack,
 		);
 		$faces    = self::faces_from_css( is_string( $css ) ? $css : '', $plain );
@@ -261,6 +261,30 @@ class WPFonts_Library {
 		return array(
 			'font_family_settings' => $settings,
 		);
+	}
+
+	/**
+	 * Font Library and Global Styles slug for one package.
+	 *
+	 * A package installed as wenfeng-{short} keeps that id, so the slug matches
+	 * the catalog family. Packages that only have a zip-file name keep the
+	 * wpfonts-pkg- prefix.
+	 *
+	 * @param string $id Package id.
+	 * @return string
+	 */
+	public static function package_family_slug( $id ) {
+		if ( ! class_exists( 'WPFonts_Packages', false ) ) {
+			return '';
+		}
+		$id = WPFonts_Packages::clean_id( $id );
+		if ( '' === $id ) {
+			return '';
+		}
+		if ( 0 === strpos( $id, 'wenfeng-' ) ) {
+			return $id;
+		}
+		return 'wpfonts-pkg-' . $id;
 	}
 
 	/**

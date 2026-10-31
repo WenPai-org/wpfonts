@@ -203,6 +203,20 @@ $built = WPFonts_Library::package_families(
 );
 $assert( 1 === count( $built ), 'disabled package was registered' );
 $assert( 'wpfonts-pkg-demo' === $built[0]['font_family_settings']['slug'], 'package slug drifted' );
+$assert( 'wpfonts-pkg-demo' === WPFonts_Library::package_family_slug( 'demo' ), 'zip-name package slug was not prefixed' );
+$aligned = WPFonts_Library::family_definition(
+	array(
+		'id'      => 'wenfeng-fzss',
+		'name'    => '方正书宋',
+		'family'  => 'wenfeng-fzss',
+		'enabled' => 1,
+	),
+	''
+);
+$assert( is_array( $aligned ), 'wenfeng package produced no family' );
+$assert( 'wenfeng-fzss' === $aligned['font_family_settings']['slug'], 'catalog package slug was prefixed' );
+$assert( '方正书宋' === $aligned['font_family_settings']['name'], 'catalog package display name drifted' );
+$assert( '"wenfeng-fzss", sans-serif' === $aligned['font_family_settings']['fontFamily'], 'catalog package stack drifted' );
 $assert( '演示包' === $built[0]['font_family_settings']['name'], 'package name drifted' );
 $assert( isset( $built[0]['font_family_settings']['fontFace'][0]['src'] ), 'enabled package lost its woff2' );
 $assert( false === strpos( wp_json_encode( $built ), 'evil.example' ), 'non-woff2 url was kept' );
