@@ -12,3 +12,31 @@
 	white-space: nowrap;
 	border: 0;
 }
+
+.wenpai-app .card.is-drag {
+	border-color: var(--wenpai-accent);
+	box-shadow: 0 0 0 2px var(--wenpai-accent-soft);
+}
+
+.wpfonts-preview {
+	margin: 0 0 18px;
+}
+
+.wpfonts-preview-zh,
+.wpfonts-preview-en,
+.wpfonts-preview-num {
+	margin: 0;
+	color: var(--wenpai-ink);
+}
+
+.wpfonts-preview-zh {
+	font-size: 22px;
+	line-height: 1.7;
+}
+
+.wpfonts-preview-en,
+.wpfonts-preview-num {
+	margin-top: 8px;
+	font-size: 18px;
+	line-height: 1.6;
+}

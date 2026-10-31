@@ -415,6 +415,7 @@ $screens = array(
 				array(
 					'id'           => 'wenfeng-ibmps',
 					'name'         => 'wenfeng-ibmps',
+					'family'       => 'IBM Plex Sans SC',
 					'enabled'      => 1,
 					'installed_at' => 1700000000,
 				),
@@ -422,7 +423,7 @@ $screens = array(
 		),
 	),
 	'overview-with-local' => array(
-		'title'   => '概览 · 本站字体包使用中',
+		'title'   => '概览 · 文风字体包使用中',
 		'tab'     => 'overview',
 		'mode'    => 'simple',
 		'options' => array(
@@ -432,6 +433,7 @@ $screens = array(
 				array(
 					'id'           => 'wenfeng-ibmps',
 					'name'         => 'wenfeng-ibmps',
+					'family'       => 'IBM Plex Sans SC',
 					'enabled'      => 1,
 					'installed_at' => 1700000000,
 				),

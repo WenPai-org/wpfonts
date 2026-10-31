@@ -1,6 +1,6 @@
 # WPFonts
 
-文派字库给 WordPress 字体库加上中文、英文、日文、韩文的系统字体。文风 CDN 默认关闭。开启之后，前台只多一条文风服务器上的样式链接，网页里不会出现 API Key。
+文派字库给 WordPress 字体库加上中文、英文、日文、韩文的系统字体。文风云默认关闭。开启之后，前台只多一条文风服务器上的样式链接，网页里不会出现 API Key。
 
 这一版是 `2.0.0-rc.1`。系统字体沿用 1.3。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
 
@@ -12,11 +12,11 @@ WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 
 壳来自 `lib/wenpai-admin-ui/`，这一份是 **0.3.1**（和 WPSlug 里同一份）。加载时谁的版本新就用谁，样式句柄固定 `wenpai-admin-ui`。套件仓库的 0.3.2 在这台环境里读不到，所以没有假装钉到 0.3.2。
 
-## 本站字体包
+## 文风字体包
 
-把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。安装后的文件在 `wp-content/uploads/wpfonts/packages/`，和 CDN 开关互不影响。
+把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。安装后的文件在 `wp-content/uploads/wpfonts/packages/`，和文风云开关互不影响。
 
-## 开启 CDN 之后
+## 开启文风云之后
 
 - 服务器只有 `cn.windfonts.com`、`hk.windfonts.com`、`en.windfonts.com`。
 - 填写了项目名，就用 `https://服务器/p/项目名/index.css`。

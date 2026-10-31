@@ -47,6 +47,10 @@ $assert( false === strpos( $out, 'api_key' ), 'rewrite added a key' );
 $remote = WPFonts_Packages::rewrite_css( 'src:url(https://cdn.example/a.woff2)', 'result.css', 'https://example.test/pkg' );
 $assert( false !== strpos( $remote, 'https://cdn.example/a.woff2' ), 'absolute url left untouched' );
 
+$css_family = "@font-face { font-family: \"IBM Plex Sans SC\"; src: url(1.woff2); }";
+$assert( 'IBM Plex Sans SC' === WPFonts_Packages::family_from_css( $css_family ), 'font-family parsed' );
+$assert( '' === WPFonts_Packages::family_from_css( 'body{color:red}' ), 'missing face is empty' );
+
 if ( array() !== $failures ) {
 	fwrite( STDERR, implode( "\n", $failures ) . "\n" );
 	exit( 1 );

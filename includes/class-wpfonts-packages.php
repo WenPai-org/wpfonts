@@ -46,9 +46,14 @@ class WPFonts_Packages {
 			if ( '' === $name ) {
 				$name = $id;
 			}
+			$family = self::plain_name( isset( $row['family'] ) ? $row['family'] : '' );
+			if ( '' === $family ) {
+				$family = $name;
+			}
 			$out[] = array(
 				'id'           => $id,
 				'name'         => $name,
+				'family'       => $family,
 				'enabled'      => empty( $row['enabled'] ) ? 0 : 1,
 				'installed_at' => isset( $row['installed_at'] ) ? (int) $row['installed_at'] : 0,
 			);
@@ -293,6 +298,24 @@ class WPFonts_Packages {
 	}
 
 	/**
+	 * First font-family inside an @font-face rule, without quotes.
+	 *
+	 * @param string $css CSS text.
+	 * @return string
+	 */
+	public static function family_from_css( $css ) {
+		if ( ! is_string( $css ) || ! preg_match( '/@font-face\s*\{[^}]*font-family\s*:\s*([^;}]+)/is', $css, $matches ) ) {
+			return '';
+		}
+		$value = trim( $matches[1] );
+		$parts = explode( ',', $value );
+		$value = trim( $parts[0] );
+		$value = trim( $value, " \t\n\r\0\x0B\"'" );
+		$value = preg_replace( '/[\x00-\x1F\x7F<>{};\\\\]/', '', $value );
+		return is_string( $value ) ? trim( $value ) : '';
+	}
+
+	/**
 	 * Enqueue enabled local stylesheets. Independent of the CDN switch.
 	 *
 	 * @return void
@@ -312,6 +335,26 @@ class WPFonts_Packages {
 			}
 			$url = $base . $package['id'] . '/local.css';
 			wp_enqueue_style( 'wpfonts-local-' . $package['id'], $url, array(), (string) $package['installed_at'] );
+		}
+	}
+
+	/**
+	 * Enqueue every package stylesheet on the packages screen, including disabled ones.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_admin_previews() {
+		if ( ! function_exists( 'wp_upload_dir' ) || ! function_exists( 'wp_enqueue_style' ) ) {
+			return;
+		}
+		$uploads = wp_upload_dir();
+		if ( ! empty( $uploads['error'] ) ) {
+			return;
+		}
+		$base = trailingslashit( $uploads['baseurl'] ) . 'wpfonts/packages/';
+		foreach ( self::all() as $package ) {
+			$url = $base . $package['id'] . '/local.css';
+			wp_enqueue_style( 'wpfonts-preview-' . $package['id'], $url, array(), (string) $package['installed_at'] );
 		}
 	}
 
@@ -417,10 +460,15 @@ class WPFonts_Packages {
 		if ( strlen( $display ) > 80 ) {
 			$display = substr( $display, 0, 80 );
 		}
+		$family = self::family_from_css( $local );
+		if ( '' === $family ) {
+			$family = $display;
+		}
 		$packages   = self::all();
 		$packages[] = array(
 			'id'           => $slug,
 			'name'         => $display,
+			'family'       => $family,
 			'enabled'      => 1,
 			'installed_at' => time(),
 		);
