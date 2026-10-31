@@ -48,7 +48,7 @@ The collections target the WordPress Font Library. The CDN link is a normal fron
 
 = 2.0.0-rc.6 =
 * Show the block inspector panel 文派字库. On WordPress 6.7 and later, inspector controls render only inside the block edit context, so the panel is added with the editor.BlockEdit filter. Choosing an enabled package or a confirmed cloud face sets that block's typography font family.
-* Name the Font Library collection of enabled on-site packages 文风. 文风云 is unchanged. Settings screens still say 文风字体包.
+* Name the Font Library collection of enabled on-site packages 文风. The package group inside the block inspector panel uses the same label. 文风云 is unchanged. Settings screens still say 文风字体包.
 * Register 文风 and 文风云 before the system collections, so those tabs sit ahead of 系统 · 中文.
 * Rename the system collections to 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文. Expand the Japanese and Korean stacks, and replace faces that are not shipped with Windows, macOS, iOS, Android, or common Linux installs. Existing slugs stay. No font files are downloaded.
 
