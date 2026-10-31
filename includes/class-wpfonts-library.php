@@ -25,6 +25,9 @@ class WPFonts_Library {
 	/**
 	 * Hook registration.
 	 *
+	 * Priority 20 is before the system collections at 25, so 文风 and 文风云
+	 * are inserted ahead of 系统 · 中文.
+	 *
 	 * @return void
 	 */
 	public static function init() {
@@ -117,7 +120,7 @@ class WPFonts_Library {
 	 */
 	public static function packages_collection_args( array $families ) {
 		return array(
-			'name'          => __( '文风字体包', 'wpfonts' ),
+			'name'          => __( '文风', 'wpfonts' ),
 			'description'   => __( '本站已启用的文风字体包。关闭或删除后，全站样式里也不再出现。', 'wpfonts' ),
 			'font_families' => $families,
 		);

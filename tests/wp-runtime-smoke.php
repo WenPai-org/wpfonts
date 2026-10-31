@@ -3,7 +3,7 @@
  * WordPress runtime smoke test for wp eval-file.
  *
  * Requires WordPress 6.5+ with WPFonts active. Asserts four collections,
- * 40 language-prefixed families, the authenticated Font Collections REST
+ * 48 language-prefixed families, the authenticated Font Collections REST
  * response, and a theme.json font-family round trip.
  */
 
@@ -78,8 +78,8 @@ $round_trip = $theme->get_settings()['typography']['fontFamilies']['custom'][0] 
 if ( ( $round_trip['fontFamily'] ?? '' ) !== $sample['fontFamily'] ) {
 	$failures[] = 'theme.json font-family round trip failed.';
 }
-if ( 40 !== $total ) {
-	$failures[] = 'Expected 40 runtime families, got ' . $total . '.';
+if ( 48 !== $total ) {
+	$failures[] = 'Expected 48 runtime families, got ' . $total . '.';
 }
 
 if ( $failures ) {

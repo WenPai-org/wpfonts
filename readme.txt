@@ -4,7 +4,7 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 2.0.0-rc.5
+Stable tag: 2.0.0-rc.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,13 +12,13 @@ System font stacks, plus an optional Windfonts CDN link. Release candidate: CI d
 
 == Description ==
 
-WPFonts adds 40 Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device.
+WPFonts adds Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device. The collections are named 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文.
 
-Version 2.0.0-rc.5 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick a fontFamily from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and a confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only those WPFonts entries. The plugin does not edit theme files, and uninstall does not delete Global Styles.
+Version 2.0.0-rc.6 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick a fontFamily from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and a confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only those WPFonts entries. The plugin does not edit theme files, and uninstall does not delete Global Styles.
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
-Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled 文风字体包 and a confirmed catalog face appear in the Font Library and in user Global Styles. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
+Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled on-site packages appear in the Font Library as 文风, ahead of the system collections. 文风云 is unchanged. A confirmed catalog face appears there too, and both are copied into user Global Styles. Settings still call the installable packages 文风字体包. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
 
 The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views.
 
@@ -45,6 +45,12 @@ No. Global Styles belong to WordPress. Deactivation does not delete them. Uninst
 The collections target the WordPress Font Library. The CDN link is a normal front-end stylesheet and does not require a block theme. A block theme is still required for the Font Library screens.
 
 == Changelog ==
+
+= 2.0.0-rc.6 =
+* Show the block inspector panel 文派字库. On WordPress 6.7 and later, inspector controls render only inside the block edit context, so the panel is added with the editor.BlockEdit filter. Choosing an enabled package or a confirmed cloud face sets that block's typography font family.
+* Name the Font Library collection of enabled on-site packages 文风. 文风云 is unchanged. Settings screens still say 文风字体包.
+* Register 文风 and 文风云 before the system collections, so those tabs sit ahead of 系统 · 中文.
+* Rename the system collections to 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文. Expand the Japanese and Korean stacks, and replace faces that are not shipped with Windows, macOS, iOS, Android, or common Linux installs. Existing slugs stay. No font files are downloaded.
 
 = 2.0.0-rc.5 =
 * Copy enabled on-site package families, and the confirmed 文风云 face, into the user Global Styles post so they appear under Typography. The CSS stack is the one WPFonts_Library already computed.

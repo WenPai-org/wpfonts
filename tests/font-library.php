@@ -219,7 +219,7 @@ $deleted = WPFonts_Library::package_families(
 $assert( array() === $deleted, 'deleted or disabled package still produced a family' );
 
 $args = WPFonts_Library::packages_collection_args( $built );
-$assert( '文风字体包' === $args['name'], 'package collection name drifted' );
+$assert( '文风' === $args['name'], 'package collection name drifted' );
 $assert( '本站已启用的文风字体包。关闭或删除后，全站样式里也不再出现。' === $args['description'], 'package collection description drifted' );
 
 $cloud_settings = array(
@@ -323,6 +323,10 @@ $assert( false === strpos( $editor_src, 'wp_global_styles' ), 'editor writes glo
 $assert( false === strpos( $editor_js, 'PluginSidebar' ), 'editor adds header chrome' );
 $assert( false === strpos( $editor_js, 'admin-bar' ), 'editor script targets the admin bar' );
 $assert( false !== strpos( $editor_js, 'InspectorControls' ), 'editor panel is not in the inspector' );
+$assert( false !== strpos( $editor_js, 'editor.BlockEdit' ), 'editor panel is not inside the block edit context' );
+$assert( false === strpos( $editor_js, 'registerPlugin' ), 'editor panel is registered from the editor root' );
+$assert( false !== strpos( $editor_src, "'wp-hooks'" ), 'editor script does not depend on wp-hooks' );
+$assert( false === strpos( $editor_src, "'wp-plugins'" ), 'editor script still depends on the plugin area' );
 $assert( false !== strpos( $editor_src, 'edit_posts' ), 'editor panel is not limited to people who can edit' );
 $assert( false !== strpos( $editor_src, '设置里还没有确认能打开的文风字体。' ), 'editor cloud empty copy drifted' );
 $assert( false !== strpos( $editor_src, 'confirmed_cloud_families' ), 'editor still applies raw catalog tokens' );

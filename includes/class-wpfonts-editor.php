@@ -30,6 +30,9 @@ class WPFonts_Editor {
 	/**
 	 * Inspector script. Users who cannot edit posts do not receive it.
 	 *
+	 * The script filters editor.BlockEdit. Inspector controls only render
+	 * inside that context.
+	 *
 	 * @return void
 	 */
 	public static function enqueue() {
@@ -45,7 +48,7 @@ class WPFonts_Editor {
 		wp_enqueue_script(
 			'wpfonts-editor',
 			WPFONTS_DIR_URL . 'assets/js/wpfonts-editor.js',
-			array( 'wp-plugins', 'wp-element', 'wp-components', 'wp-data', 'wp-blocks', 'wp-block-editor' ),
+			array( 'wp-hooks', 'wp-element', 'wp-components', 'wp-data', 'wp-blocks', 'wp-block-editor' ),
 			WPFONTS_VERSION,
 			true
 		);

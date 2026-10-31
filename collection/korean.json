@@ -3,43 +3,59 @@
   "font_families": [
     {
       "font_family_settings": {
-        "fontFamily": "system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Nanum Gothic', sans-serif",
+        "fontFamily": "system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans CJK KR', NanumGothic, sans-serif",
         "slug": "kr-system-ui",
-        "name": "시스템 기본"
+        "name": "系统默认"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Batang', 'AppleMyungjo', 'Noto Serif CJK KR', serif",
+        "fontFamily": "'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', NanumGothic, sans-serif",
+        "slug": "kr-gothic",
+        "name": "黑体"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "NanumGothic, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans CJK KR', sans-serif",
+        "slug": "kr-nanum",
+        "name": "纳努姆黑体"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "Batang, AppleMyungjo, NanumMyeongjo, 'Noto Serif CJK KR', UnBatang, serif",
         "slug": "kr-myungjo-style",
-        "name": "명조체"
+        "name": "明体"
       },
       "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'HYGungSo-Bold', 'Hankc', cursive",
+        "fontFamily": "Gungsuh, GungsuhChe, AppleMyungjo, serif",
         "slug": "kr-handwriting",
-        "name": "필기체"
+        "name": "宫书"
       },
-      "categories": ["handwriting"]
+      "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'D2Coding', 'Nanum Gothic Coding', monospace",
-        "slug": "kr-monospace",
-        "name": "고정폭 글꼴"
-      },
-      "categories": ["monospace"]
-    },
-    {
-      "font_family_settings": {
-        "fontFamily": "'Jeju Gothic', 'KoPub Dotum', sans-serif",
+        "fontFamily": "Gulim, Dotum, UnDotum, 'Apple SD Gothic Neo', sans-serif",
         "slug": "kr-regional",
-        "name": "지역 특화"
+        "name": "古林体"
       },
       "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Noto Sans Mono CJK KR', NanumGothicCoding, monospace",
+        "slug": "kr-monospace",
+        "name": "等宽"
+      },
+      "categories": ["monospace"]
     }
   ]
 }
