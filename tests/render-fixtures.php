@@ -262,6 +262,7 @@ require $root . '/lib/wenpai-admin-ui/php/load.php';
 require $root . '/includes/class-wpfonts-link.php';
 require $root . '/includes/class-wpfonts-health.php';
 require $root . '/includes/class-wpfonts-settings.php';
+require $root . '/includes/class-wpfonts-packages.php';
 require $root . '/includes/class-wpfonts-embed.php';
 require $root . '/includes/class-wpfonts-admin.php';
 
@@ -377,6 +378,50 @@ $screens = array(
 				)
 			),
 			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
+		),
+	),
+	'packages-empty'  => array(
+		'title'   => '字体包 · 空',
+		'tab'     => 'packages',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+			'wpfonts_packages' => array(),
+		),
+	),
+	'packages-one'    => array(
+		'title'   => '字体包 · 已安装',
+		'tab'     => 'packages',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+			'wpfonts_packages' => array(
+				array(
+					'id'           => 'wenfeng-ibmps',
+					'name'         => 'wenfeng-ibmps',
+					'enabled'      => 1,
+					'installed_at' => 1700000000,
+				),
+			),
+		),
+	),
+	'overview-with-local' => array(
+		'title'   => '概览 · 本站字体包使用中',
+		'tab'     => 'overview',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+			'wpfonts_packages' => array(
+				array(
+					'id'           => 'wenfeng-ibmps',
+					'name'         => 'wenfeng-ibmps',
+					'enabled'      => 1,
+					'installed_at' => 1700000000,
+				),
+			),
 		),
 	),
 );

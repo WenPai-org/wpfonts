@@ -12,6 +12,10 @@ WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 
 壳来自 `lib/wenpai-admin-ui/`，这一份是 **0.3.1**（和 WPSlug 里同一份）。加载时谁的版本新就用谁，样式句柄固定 `wenpai-admin-ui`。套件仓库的 0.3.2 在这台环境里读不到，所以没有假装钉到 0.3.2。
 
+## 本站字体包
+
+把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。安装后的文件在 `wp-content/uploads/wpfonts/packages/`，和 CDN 开关互不影响。
+
 ## 开启 CDN 之后
 
 - 服务器只有 `cn.windfonts.com`、`hk.windfonts.com`、`en.windfonts.com`。

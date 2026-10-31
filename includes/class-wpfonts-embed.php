@@ -33,11 +33,11 @@ class WPFonts_Embed {
 			return;
 		}
 		$url = WPFonts_Link::embed_url( WPFonts_Settings::get() );
-		if ( '' === $url ) {
-			return;
+		if ( '' !== $url ) {
+			// null avoids appending ?ver=, which would change the CDN request.
+			wp_enqueue_style( 'wpfonts-cdn', $url, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
 		}
-		// null avoids appending ?ver=, which would change the CDN request.
-		wp_enqueue_style( 'wpfonts-cdn', $url, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
+		WPFonts_Packages::enqueue_styles();
 	}
 }
 

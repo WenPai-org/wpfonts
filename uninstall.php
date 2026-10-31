@@ -13,3 +13,4 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 delete_option( 'wpfonts_settings' );
 delete_option( 'wpfonts_api_key' );
+delete_option( 'wpfonts_packages' );

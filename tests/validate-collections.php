@@ -99,6 +99,8 @@ $assert( false !== strpos( $admin, 'wenpai-subnav' ), 'Settings must use the kit
 $assert( false === strpos( $admin, '文派许可证' ), 'Admin UI must not mention the WenPai license.' );
 $assert( false === strpos( $admin, 'updates.wenpai.net' ), 'Admin UI must not explain the update host.' );
 $assert( false === strpos( $admin, 'render_license_card' ), 'License card must stay removed.' );
+$assert( false === strpos( $admin, '去控制台上传' ), 'Admin UI must not offer a console upload button.' );
+$assert( false !== strpos( $admin, '字体包' ), 'Packages tab copy is missing.' );
 $assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
 $assert( false === strpos( $embed, 'api_key' ), 'Front embed must not read the API key.' );
 $uninstall = file_get_contents( $root . '/uninstall.php' );

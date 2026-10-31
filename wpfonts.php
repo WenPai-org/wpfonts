@@ -34,6 +34,7 @@ require_once WPFONTS_DIR_PATH . 'lib/wenpai-admin-ui/php/load.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-link.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-health.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-settings.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-packages.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-embed.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-admin.php';
 

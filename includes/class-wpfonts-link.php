@@ -52,6 +52,13 @@ class WPFonts_Link {
 	const CONSOLE_URL = 'https://app.windfonts.com';
 
 	/**
+	 * WenFeng site home. Footer link only; not an upload button.
+	 *
+	 * @var string
+	 */
+	const SITE_URL = 'https://wenfeng.org';
+
+	/**
 	 * Keep a region id, or fall back to mainland China.
 	 *
 	 * @param mixed $value Raw region.
