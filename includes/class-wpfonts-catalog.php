@@ -5,7 +5,8 @@
  * The settings screen reads one JSON snapshot and does not call the directory
  * on a normal render. WP-Cron rewrites that file about once a month. The
  * settings button can refresh it sooner, with a short cooldown. A failed
- * refresh leaves a good snapshot in place.
+ * refresh leaves a good snapshot in place. A new install with no snapshot
+ * queues one immediate refresh and does not fetch during activation.
  *
  * Snapshot path: wp-content/uploads/wpfonts/catalog.json
  * Shape: { "updated_at": unix, "fonts": [ { "name": "…", "fontFamily": "wenfeng-…" } ] }
@@ -44,6 +45,27 @@ class WPFonts_Catalog {
 	 * @var string
 	 */
 	const CRON_HOOK = 'wpfonts_catalog_refresh';
+
+	/**
+	 * One-shot hook that fills an empty snapshot after activation.
+	 *
+	 * @var string
+	 */
+	const BOOTSTRAP_HOOK = 'wpfonts_catalog_bootstrap';
+
+	/**
+	 * Transient that keeps a failed bootstrap from being queued on every request.
+	 *
+	 * @var string
+	 */
+	const BOOTSTRAP_LOCK = 'wpfonts_cat_bootstrap';
+
+	/**
+	 * Seconds to wait before queueing another bootstrap after a miss.
+	 *
+	 * @var int
+	 */
+	const BOOTSTRAP_RETRY = 3600;
 
 	/**
 	 * About thirty days. There is no core monthly schedule.
@@ -229,22 +251,21 @@ class WPFonts_Catalog {
 	/**
 	 * Schedule the monthly refresh. Activation and later requests both call this.
 	 *
-	 * The first run waits a month. Opening settings does not fetch the directory.
+	 * The monthly run waits a month. Opening settings does not fetch the directory.
+	 * A site with no readable snapshot also gets one immediate bootstrap event.
+	 * That event is not an HTTP call; a failed fetch cannot break this method.
 	 *
 	 * @return void
 	 */
 	public static function ensure_schedule() {
-		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_schedule_event' ) ) {
-			return;
+		if ( function_exists( 'wp_next_scheduled' ) && function_exists( 'wp_schedule_event' ) && ! wp_next_scheduled( self::CRON_HOOK ) ) {
+			wp_schedule_event( time() + self::MONTH_INTERVAL, 'monthly', self::CRON_HOOK );
 		}
-		if ( wp_next_scheduled( self::CRON_HOOK ) ) {
-			return;
-		}
-		wp_schedule_event( time() + self::MONTH_INTERVAL, 'monthly', self::CRON_HOOK );
+		self::maybe_bootstrap();
 	}
 
 	/**
-	 * Schedule on activation.
+	 * Schedule on activation. A missing snapshot is queued, not fetched here.
 	 *
 	 * @return void
 	 */
@@ -253,13 +274,14 @@ class WPFonts_Catalog {
 	}
 
 	/**
-	 * Remove the catalog event on deactivation.
+	 * Remove the catalog events on deactivation.
 	 *
 	 * @return void
 	 */
 	public static function deactivate() {
 		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
 			wp_clear_scheduled_hook( self::CRON_HOOK );
+			wp_clear_scheduled_hook( self::BOOTSTRAP_HOOK );
 		}
 	}
 
@@ -269,6 +291,94 @@ class WPFonts_Catalog {
 	 * @return void
 	 */
 	public static function run_cron() {
+		self::refresh( false );
+	}
+
+	/**
+	 * Whether a readable snapshot is already on disk.
+	 *
+	 * @return bool
+	 */
+	public static function has_snapshot() {
+		return array() !== self::stored_fonts();
+	}
+
+	/**
+	 * Font rows from the snapshot. Empty when the file is missing or unusable.
+	 *
+	 * Does not call the directory.
+	 *
+	 * @return array<int,array{name:string,fontFamily:string}>
+	 */
+	public static function stored_fonts() {
+		$snapshot = self::load_snapshot();
+		if ( null === $snapshot ) {
+			return array();
+		}
+		return $snapshot['fonts'];
+	}
+
+	/**
+	 * Font rows for the block editor search. At most 40 matches.
+	 *
+	 * Callers must already have checked that the user can edit posts.
+	 *
+	 * @param string $search Optional local filter.
+	 * @return array{fonts:array<int,array{name:string,fontFamily:string}>,total:int,truncated:bool}
+	 */
+	public static function editor_list( $search = '' ) {
+		$fonts  = self::stored_fonts();
+		$search = self::clean_search( $search );
+		if ( '' !== $search ) {
+			$fonts = self::filter_fonts( $fonts, $search );
+		}
+		$total = count( $fonts );
+		$limit = 40;
+		if ( $total > $limit ) {
+			$fonts = array_slice( $fonts, 0, $limit );
+		}
+		return array(
+			'fonts'     => $fonts,
+			'total'     => $total,
+			'truncated' => $total > $limit,
+		);
+	}
+
+	/**
+	 * Queue one immediate refresh when the snapshot is missing.
+	 *
+	 * Safe to call on every request. It does not fetch the directory.
+	 *
+	 * @return void
+	 */
+	public static function maybe_bootstrap() {
+		if ( self::has_snapshot() ) {
+			return;
+		}
+		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_schedule_single_event' ) ) {
+			return;
+		}
+		if ( wp_next_scheduled( self::BOOTSTRAP_HOOK ) ) {
+			return;
+		}
+		if ( function_exists( 'get_transient' ) && get_transient( self::BOOTSTRAP_LOCK ) ) {
+			return;
+		}
+		if ( function_exists( 'set_transient' ) ) {
+			set_transient( self::BOOTSTRAP_LOCK, time(), self::BOOTSTRAP_RETRY );
+		}
+		wp_schedule_single_event( time(), self::BOOTSTRAP_HOOK );
+	}
+
+	/**
+	 * Bootstrap cron callback. A failure leaves any good snapshot untouched.
+	 *
+	 * @return void
+	 */
+	public static function run_bootstrap() {
+		if ( self::has_snapshot() ) {
+			return;
+		}
 		self::refresh( false );
 	}
 

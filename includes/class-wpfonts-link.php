@@ -45,6 +45,15 @@ class WPFonts_Link {
 	const KEY_STATUS_URL = 'https://app.windfonts.com/api/key/status';
 
 	/**
+	 * License comment required before every generated CDN link.
+	 *
+	 * Storefront constant WFProto.CDN_LICENSE_NOTE. Do not paraphrase.
+	 *
+	 * @var string
+	 */
+	const CDN_LICENSE_NOTE = '<!-- 此中文网页字体由文风字体（Windfonts）免费提供，您可以自由引用，请务必保留此授权许可标注 https://wenfeng.org/license -->';
+
+	/**
 	 * Console where fonts are uploaded. The plugin does not upload.
 	 *
 	 * @var string
@@ -170,6 +179,75 @@ class WPFonts_Link {
 	}
 
 	/**
+	 * Stylesheet URLs to print when the CDN is on and the key check passed.
+	 *
+	 * Only the saved project or family is returned. Other wenfeng-* tokens found
+	 * in content are not added: the catalog token is not the CSS face name, and
+	 * some tokens 404 for the active subset. A recorded miss returns nothing.
+	 *
+	 * @param array  $settings Saved public settings.
+	 * @param string $html     Post content, or empty.
+	 * @param mixed  $globals  Font family settings from Global Styles, or empty.
+	 * @return string[]
+	 */
+	public static function front_stylesheets( array $settings, $html = '', $globals = array() ) {
+		if ( empty( $settings['cdn_enabled'] ) ) {
+			return array();
+		}
+		$status = isset( $settings['key_status'] ) ? (string) $settings['key_status'] : '';
+		if ( 'valid' !== $status ) {
+			return array();
+		}
+
+		unset( $html, $globals );
+		$primary = self::embed_url( $settings );
+		if ( '' === $primary ) {
+			return array();
+		}
+		return array( $primary );
+	}
+
+	/**
+	 * Copyable embed: license comment, preconnect, then the stylesheet.
+	 *
+	 * Empty when the URL is not an allowlisted CDN stylesheet. The host is
+	 * taken from that URL, so preconnect cannot point anywhere else.
+	 *
+	 * @param string $url Stylesheet URL.
+	 * @return string
+	 */
+	public static function embed_snippet( $url ) {
+		$origin = self::preconnect_origin( $url );
+		if ( '' === $origin ) {
+			return '';
+		}
+		return self::CDN_LICENSE_NOTE . "\n"
+			. '<link rel="preconnect" href="' . $origin . '" crossorigin>' . "\n"
+			. '<link rel="stylesheet" href="' . $url . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Copyable preview text. The front enqueues this URL.
+	}
+
+	/**
+	 * https origin for an allowlisted stylesheet, or empty.
+	 *
+	 * @param string $url Stylesheet URL.
+	 * @return string
+	 */
+	public static function preconnect_origin( $url ) {
+		if ( ! self::is_allowlisted( $url ) ) {
+			return '';
+		}
+		$parts = parse_url( (string) $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Same shape as is_allowlisted(). The CLI test has no WordPress.
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+		$host = strtolower( (string) $parts['host'] );
+		if ( ! in_array( $host, self::HOSTS, true ) ) {
+			return '';
+		}
+		return 'https://' . $host;
+	}
+
+	/**
 	 * Stylesheet URL safe to print on the front, or empty.
 	 *
 	 * @param array $settings Settings row. May include api_key; it is ignored.
@@ -186,8 +264,119 @@ class WPFonts_Link {
 		if ( ! self::has_target( $settings ) ) {
 			return '';
 		}
+		$css_status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
+		if ( 'missing' === $css_status ) {
+			return '';
+		}
 		$url = self::stylesheet_url( $settings );
 		return self::is_allowlisted( $url ) ? $url : '';
+	}
+
+	/**
+	 * Read one stylesheet and record whether it opened, plus the face name.
+	 *
+	 * A 404 is missing. A timeout or other failure is unchecked and does not
+	 * invent a face name. The request is one allowlisted URL, not the catalog.
+	 *
+	 * @param array $settings Public settings.
+	 * @return array{status:string,face:string}
+	 */
+	public static function probe_stylesheet( array $settings ) {
+		$url = self::stylesheet_url( $settings );
+		if ( ! self::is_allowlisted( $url ) || ! function_exists( 'wp_remote_get' ) ) {
+			return array(
+				'status' => 'unchecked',
+				'face'   => '',
+			);
+		}
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout'             => 6,
+				'redirection'         => 0,
+				'limit_response_size' => 65536,
+				'headers'             => array(
+					'Accept' => 'text/css',
+				),
+			)
+		);
+		if ( is_wp_error( $response ) ) {
+			return array(
+				'status' => 'unchecked',
+				'face'   => '',
+			);
+		}
+		$code = function_exists( 'wp_remote_retrieve_response_code' ) ? (int) wp_remote_retrieve_response_code( $response ) : 0;
+		$body = function_exists( 'wp_remote_retrieve_body' ) ? (string) wp_remote_retrieve_body( $response ) : '';
+		return self::interpret_stylesheet( $code, $body );
+	}
+
+	/**
+	 * Map a stylesheet response to ok, missing, or unchecked.
+	 *
+	 * 404 means this family and subset do not exist. A CSS body contributes
+	 * the first @font-face family, which is the name the browser actually uses.
+	 *
+	 * @param int    $code HTTP status. 0 when there was no response.
+	 * @param string $body Response body.
+	 * @return array{status:string,face:string}
+	 */
+	public static function interpret_stylesheet( $code, $body ) {
+		$code = (int) $code;
+		if ( 404 === $code ) {
+			return array(
+				'status' => 'missing',
+				'face'   => '',
+			);
+		}
+		if ( $code < 200 || $code >= 300 || ! is_string( $body ) || '' === $body ) {
+			return array(
+				'status' => 'unchecked',
+				'face'   => '',
+			);
+		}
+		if ( ! preg_match( '/@font-face\s*\{[^}]*font-family\s*:\s*([^;}]+)/is', $body, $matches ) ) {
+			return array(
+				'status' => 'unchecked',
+				'face'   => '',
+			);
+		}
+		$face = self::face_name( $matches[1] );
+		if ( '' === $face ) {
+			return array(
+				'status' => 'unchecked',
+				'face'   => '',
+			);
+		}
+		return array(
+			'status' => 'ok',
+			'face'   => $face,
+		);
+	}
+
+	/**
+	 * CSS font-family name from a stylesheet, without quotes.
+	 *
+	 * @param mixed $value Raw declaration value.
+	 * @return string
+	 */
+	public static function face_name( $value ) {
+		$value = trim( (string) $value );
+		$parts = explode( ',', $value );
+		$value = trim( $parts[0] );
+		$value = trim( $value, " \t\n\r\0\x0B\"'" );
+		$value = preg_replace( '/[\x00-\x1F\x7F<>{};\\\\]/', '', $value );
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+		$value = trim( $value );
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $value, 0, 80 );
+		}
+		if ( strlen( $value ) > 80 ) {
+			return substr( $value, 0, 80 );
+		}
+		return $value;
 	}
 
 	/**

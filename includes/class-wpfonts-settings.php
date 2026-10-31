@@ -41,6 +41,8 @@ class WPFonts_Settings {
 			'family'       => '',
 			'key_status'   => '',
 			'key_checked'  => 0,
+			'css_status'   => '',
+			'css_face'     => '',
 		);
 	}
 
@@ -64,6 +66,12 @@ class WPFonts_Settings {
 			$settings['key_status'] = '';
 		}
 		$settings['key_checked'] = (int) $settings['key_checked'];
+		$css_status              = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
+		if ( ! in_array( $css_status, array( '', 'ok', 'missing', 'unchecked' ), true ) ) {
+			$css_status = '';
+		}
+		$settings['css_status'] = $css_status;
+		$settings['css_face']   = WPFonts_Link::face_name( isset( $settings['css_face'] ) ? $settings['css_face'] : '' );
 		return $settings;
 	}
 
@@ -186,6 +194,7 @@ class WPFonts_Settings {
 		$status                  = WPFonts_Health::query( $key );
 		$settings['key_status']  = $status;
 		$settings['key_checked'] = time();
+		$settings                = self::refresh_css( $settings );
 		self::write( $settings );
 		return $status;
 	}
@@ -195,7 +204,7 @@ class WPFonts_Settings {
 	 *
 	 * @param array $settings Public settings.
 	 * @param bool  $has_key  Whether an API key is stored.
-	 * @return string empty|nokey|unchecked|invalid|unreachable|incomplete|ok
+	 * @return string empty|nokey|unchecked|invalid|unreachable|incomplete|css_missing|ok
 	 */
 	public static function view_state( array $settings, $has_key ) {
 		if ( empty( $settings['cdn_enabled'] ) ) {
@@ -217,7 +226,37 @@ class WPFonts_Settings {
 		if ( ! WPFonts_Link::has_target( $settings ) ) {
 			return 'incomplete';
 		}
+		if ( isset( $settings['css_status'] ) && 'missing' === $settings['css_status'] ) {
+			return 'css_missing';
+		}
 		return 'ok';
+	}
+
+	/**
+	 * Check the saved stylesheet once. A miss is stored. A timeout keeps an
+	 * earlier confirmation when the address did not change.
+	 *
+	 * @param array $settings Public settings. May include a previous css_status.
+	 * @return array
+	 */
+	public static function refresh_css( array $settings ) {
+		$settings = array_merge( self::defaults(), $settings );
+		if ( empty( $settings['cdn_enabled'] ) || 'valid' !== (string) $settings['key_status'] || ! WPFonts_Link::has_target( $settings ) ) {
+			$settings['css_status'] = '';
+			$settings['css_face']   = '';
+			return $settings;
+		}
+		$previous_status = (string) $settings['css_status'];
+		$previous_face   = (string) $settings['css_face'];
+		$probe           = WPFonts_Link::probe_stylesheet( $settings );
+		if ( 'unchecked' === $probe['status'] && 'ok' === $previous_status && '' !== $previous_face ) {
+			$settings['css_status'] = 'ok';
+			$settings['css_face']   = WPFonts_Link::face_name( $previous_face );
+			return $settings;
+		}
+		$settings['css_status'] = $probe['status'];
+		$settings['css_face']   = $probe['face'];
+		return $settings;
 	}
 
 	/**
@@ -236,6 +275,9 @@ class WPFonts_Settings {
 		$status                   = isset( $input['key_status'] ) ? (string) $input['key_status'] : '';
 		$settings['key_status']   = in_array( $status, array( '', 'valid', 'invalid', 'unreachable' ), true ) ? $status : '';
 		$settings['key_checked']  = isset( $input['key_checked'] ) ? (int) $input['key_checked'] : 0;
+		$css_status               = isset( $input['css_status'] ) ? (string) $input['css_status'] : '';
+		$settings['css_status']   = in_array( $css_status, array( '', 'ok', 'missing', 'unchecked' ), true ) ? $css_status : '';
+		$settings['css_face']     = WPFonts_Link::face_name( isset( $input['css_face'] ) ? $input['css_face'] : '' );
 		return $settings;
 	}
 
@@ -272,6 +314,8 @@ class WPFonts_Settings {
 		if ( '' === $key ) {
 			$next['key_status']  = '';
 			$next['key_checked'] = 0;
+			$next['css_status']  = '';
+			$next['css_face']    = '';
 			if ( $changed ) {
 				delete_option( self::KEY_OPTION );
 			}
@@ -282,13 +326,32 @@ class WPFonts_Settings {
 		if ( $changed && empty( $next['cdn_enabled'] ) ) {
 			$next['key_status']  = '';
 			$next['key_checked'] = 0;
+			$next['css_status']  = '';
+			$next['css_face']    = '';
 			return $next;
 		}
 		if ( $should_check ) {
 			$next['key_status']  = WPFonts_Health::query( $key );
 			$next['key_checked'] = time();
 		}
-		return $next;
+		$next['css_status'] = isset( $prev['css_status'] ) ? (string) $prev['css_status'] : '';
+		$next['css_face']   = isset( $prev['css_face'] ) ? (string) $prev['css_face'] : '';
+		if ( self::stylesheet_changed( $prev, $next ) ) {
+			$next['css_status'] = '';
+			$next['css_face']   = '';
+		}
+		return self::refresh_css( $next );
+	}
+
+	/**
+	 * Whether the public stylesheet address changed.
+	 *
+	 * @param array $prev Previous public settings.
+	 * @param array $next Next public settings.
+	 * @return bool
+	 */
+	private static function stylesheet_changed( array $prev, array $next ) {
+		return WPFonts_Link::stylesheet_url( $prev ) !== WPFonts_Link::stylesheet_url( $next );
 	}
 
 	/**

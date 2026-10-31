@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.3' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.4' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -321,28 +321,12 @@ function wpfonts_sample_catalog() {
 		'ok'        => true,
 		'fonts'     => array(
 			array(
-				'name'       => '钟齐志莽行书',
-				'fontFamily' => 'wenfeng-zhi-mang-xing',
-			),
-			array(
-				'name'       => '寒蝉无机体',
-				'fontFamily' => 'wenfeng-hcwjt',
+				'name'       => 'IBM Plex 无衬线简体中文',
+				'fontFamily' => 'wenfeng-ibmps',
 			),
 			array(
 				'name'       => '975 圆体',
 				'fontFamily' => 'wenfeng-975yt',
-			),
-			array(
-				'name'       => 'Aleo',
-				'fontFamily' => 'wenfeng-aleo',
-			),
-			array(
-				'name'       => 'Alibaba Sans Thai',
-				'fontFamily' => 'wenfeng-alibabasansthai',
-			),
-			array(
-				'name'       => 'Alibaba Sans Viet',
-				'fontFamily' => 'wenfeng-alibabasansviet',
 			),
 		),
 		'page'      => 1,
@@ -409,6 +393,8 @@ $screens = array(
 				array(
 					'cdn_enabled' => 1,
 					'family'      => 'wenfeng-ibmps',
+					'css_status'  => 'ok',
+					'css_face'    => 'windfonts-ibmps',
 					'key_status'  => 'valid',
 					'key_checked' => 1700000000,
 				)
@@ -505,8 +491,40 @@ $screens = array(
 				$public,
 				array(
 					'cdn_enabled' => 1,
+					'family'      => 'wenfeng-ibmps',
+					'css_status'  => 'ok',
+					'css_face'    => 'windfonts-ibmps',
+					'subset'      => 'zh-common',
+					'key_status'  => 'valid',
+					'key_checked' => 1700000000,
+				)
+			),
+			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
+		),
+		'catalog' => wpfonts_sample_catalog(),
+	),
+	'help'            => array(
+		'title'   => '帮助',
+		'tab'     => 'help',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+		),
+	),
+	'settings-css-missing' => array(
+		'title'   => '设置 · 地址打不开',
+		'tab'     => 'settings',
+		'mode'    => 'advanced',
+		'options' => array(
+			'wpfonts_settings' => array_merge(
+				$public,
+				array(
+					'cdn_enabled' => 1,
 					'family'      => 'wenfeng-zhi-mang-xing',
 					'subset'      => 'zh-common',
+					'css_status'  => 'missing',
+					'css_face'    => '',
 					'key_status'  => 'valid',
 					'key_checked' => 1700000000,
 				)
@@ -525,6 +543,8 @@ $screens = array(
 				array(
 					'cdn_enabled' => 1,
 					'family'      => 'wenfeng-ibmps',
+					'css_status'  => 'ok',
+					'css_face'    => 'windfonts-ibmps',
 					'subset'      => 'zh-common',
 					'key_status'  => 'valid',
 					'key_checked' => 1700000000,
@@ -553,4 +573,54 @@ foreach ( $screens as $name => $screen ) {
 	$path = $out . '/' . $name . '.html';
 	file_put_contents( $path, $html );
 	echo $path . "\n";
+}
+
+$catalog_html = (string) file_get_contents( $out . '/settings-catalog.html' );
+$missing_html = (string) file_get_contents( $out . '/settings-css-missing.html' );
+if ( false !== strpos( $catalog_html, 'wenfeng-zhi-mang-xing' ) ) {
+	fwrite( STDERR, "settings catalog fixture still uses wenfeng-zhi-mang-xing.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, 'family=wenfeng-ibmps&amp;subset=zh-common' ) ) {
+	fwrite( STDERR, "settings catalog fixture is not the ibmps zh-common URL.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, '前台会加载这一条。' ) ) {
+	fwrite( STDERR, "confirmed ibmps preview lost the healthy hint.\n" );
+	exit( 1 );
+}
+$license = '此中文网页字体由文风字体（Windfonts）免费提供，您可以自由引用，请务必保留此授权许可标注 https://wenfeng.org/license';
+$ok_html = (string) file_get_contents( $out . '/settings-ok.html' );
+foreach ( array( 'settings-catalog' => $catalog_html, 'settings-ok' => $ok_html ) as $name => $html ) {
+	$note_at = strpos( $html, $license );
+	$pre_at  = strpos( $html, 'rel=&quot;preconnect&quot; href=&quot;https://cn.windfonts.com&quot; crossorigin' );
+	if ( false === $pre_at ) {
+		$pre_at = strpos( $html, 'rel="preconnect" href="https://cn.windfonts.com" crossorigin' );
+	}
+	$css_at = strpos( $html, 'family=wenfeng-ibmps&amp;subset=zh-common' );
+	if ( false === $note_at || false === $pre_at || false === $css_at || $note_at > $pre_at || $pre_at > $css_at ) {
+		fwrite( STDERR, $name . " embed is missing the license note before preconnect and the stylesheet.\n" );
+		exit( 1 );
+	}
+}
+if ( false === strpos( $missing_html, '这条地址打不开，前台不会加载。' ) ) {
+	fwrite( STDERR, "missing stylesheet fixture lost the warning.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $missing_html, '前台会加载这一条。' ) ) {
+	fwrite( STDERR, "missing stylesheet fixture still says the front will load it.\n" );
+	exit( 1 );
+}
+$packages_html = (string) file_get_contents( $out . '/packages-one.html' );
+if ( false !== strpos( $packages_html, 'confirm(' ) || false !== strpos( $packages_html, 'onclick=' ) ) {
+	fwrite( STDERR, "packages fixture still asks the browser to confirm delete.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, 'wenpai-gate' ) || false === strpos( $packages_html, 'data-wenpai-need-apply' ) || false === strpos( $packages_html, 'disabled' ) ) {
+	fwrite( STDERR, "packages fixture is missing the delete gate.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, '删除后本站不再提供这份字体。我已核对。' ) ) {
+	fwrite( STDERR, "packages fixture lost the delete gate copy.\n" );
+	exit( 1 );
 }

@@ -4,7 +4,7 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 2.0.0-rc.3
+Stable tag: 2.0.0-rc.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,11 +14,11 @@ System font stacks, plus an optional Windfonts CDN link. Release candidate: CI d
 
 WPFonts adds 40 Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device.
 
-Version 2.0.0-rc.3 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick a fontFamily from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory.
+Version 2.0.0-rc.4 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick a fontFamily from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and catalog names are registered in the Font Library. Installing one there writes Global Styles the usual WordPress way. The plugin does not edit theme files, and uninstall does not delete Global Styles.
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
-Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). This version does not rewrite Global Styles or write `wenfeng-*` names into theme.json.
+Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled 文风字体包 and catalog `wenfeng-*` names appear in the Font Library. Installing them writes Global Styles through WordPress. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
 
 The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views.
 
@@ -45,6 +45,13 @@ No. Global Styles belong to WordPress. Deactivation does not delete them. Uninst
 The collections target the WordPress Font Library. The CDN link is a normal front-end stylesheet and does not require a block theme. A block theme is still required for the Font Library screens.
 
 == Changelog ==
+
+= 2.0.0-rc.4 =
+* Register enabled on-site font packages in the Font Library as 文风字体包, using the woff2 files already stored for that package. Disabled or deleted packages drop out of the collection. Catalog names register as 文风云, without font files.
+* Queue one immediate catalog refresh when a site has no snapshot yet. Activation does not call the directory. A failed refresh still keeps a good snapshot.
+* Add a block inspector panel, 文派字库, so an editor can apply an enabled package or a catalog family to the current block. No admin-bar button.
+* Installing a family from the Font Library writes Global Styles. Uninstall still does not delete them.
+* A saved public stylesheet that returns HTTP 404 is not embedded and is not described as loading. The Font Library cloud entry uses the face name declared in that CSS, not the catalog token, and only after the address has opened.
 
 = 2.0.0-rc.3 =
 * Store the font directory at wp-content/uploads/wpfonts/catalog.json. The settings screen reads that file and does not call app.windfonts.com on a normal render.

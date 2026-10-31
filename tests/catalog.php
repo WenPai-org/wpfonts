@@ -151,6 +151,17 @@ function wp_schedule_event( $timestamp, $recurrence, $hook ) {
 	return true;
 }
 
+/**
+ * @param int    $timestamp Timestamp.
+ * @param string $hook Hook.
+ * @return bool
+ */
+function wp_schedule_single_event( $timestamp, $hook ) {
+	$GLOBALS['wpfonts_cron_events'][ $hook ] = $timestamp;
+	$GLOBALS['wpfonts_schedule_log'][]       = array( (int) $timestamp, 'single', (string) $hook );
+	return true;
+}
+
 $catalog_dir = sys_get_temp_dir() . '/wpfonts-catalog-' . getmypid();
 if ( ! is_dir( $catalog_dir ) && ! mkdir( $catalog_dir, 0777, true ) && ! is_dir( $catalog_dir ) ) {
 	fwrite( STDERR, "Could not create catalog temp dir.\n" );
@@ -513,6 +524,86 @@ $assert( WPFonts_Catalog::CRON_HOOK === $GLOBALS['wpfonts_schedule_log'][0][2], 
 $assert( abs( $GLOBALS['wpfonts_schedule_log'][0][0] - ( time() + 2592000 ) ) < 5, 'first cron run is sooner than a month' );
 $assert( array() === $GLOBALS['http_log'], 'scheduling called the directory' );
 
+foreach ( array( WPFONTS_CATALOG_PATH, WPFONTS_CATALOG_PATH . '.tmp' ) as $path ) {
+	if ( is_file( $path ) ) {
+		unlink( $path );
+	}
+}
+$GLOBALS['wpfonts_cron_events']             = array();
+$GLOBALS['wpfonts_schedule_log']            = array();
+$GLOBALS['transients']                      = array();
+$GLOBALS['http_log']                        = array();
+$GLOBALS['http_queue']                      = array();
+$GLOBALS['wp_doing_cron']                   = false;
+WPFonts_Catalog::activate();
+$assert( array() === $GLOBALS['http_log'], 'activation fetched the directory' );
+$assert( ! is_file( WPFONTS_CATALOG_PATH ), 'activation wrote a snapshot' );
+$boot_hooks = array();
+foreach ( $GLOBALS['wpfonts_schedule_log'] as $entry ) {
+	$boot_hooks[] = $entry[2];
+}
+$assert( in_array( WPFonts_Catalog::CRON_HOOK, $boot_hooks, true ), 'activation skipped the monthly event' );
+$assert( in_array( WPFonts_Catalog::BOOTSTRAP_HOOK, $boot_hooks, true ), 'activation skipped the bootstrap event' );
+$boot_count = 0;
+foreach ( $GLOBALS['wpfonts_schedule_log'] as $entry ) {
+	if ( WPFonts_Catalog::BOOTSTRAP_HOOK === $entry[2] ) {
+		++$boot_count;
+		$assert( 'single' === $entry[1], 'bootstrap event is recurring' );
+	}
+}
+$assert( 1 === $boot_count, 'activation queued more than one bootstrap' );
+WPFonts_Catalog::ensure_schedule();
+$assert( 1 === $boot_count, 'a second ensure queued another bootstrap before the count was refreshed' );
+$boot_count = 0;
+foreach ( $GLOBALS['wpfonts_schedule_log'] as $entry ) {
+	if ( WPFonts_Catalog::BOOTSTRAP_HOOK === $entry[2] ) {
+		++$boot_count;
+	}
+}
+$assert( 1 === $boot_count, 'ensure_schedule duplicated the bootstrap event' );
+
+$GLOBALS['wp_doing_cron'] = true;
+$GLOBALS['http_queue']    = array(
+	array(
+		'code' => 500,
+		'body' => '',
+	),
+);
+$failed_boot = WPFonts_Catalog::run_bootstrap();
+unset( $failed_boot );
+$assert( ! is_file( WPFONTS_CATALOG_PATH ), 'a failed bootstrap created a snapshot' );
+
+$GLOBALS['http_log']   = array();
+$GLOBALS['http_queue'] = array(
+	array(
+		'code' => 200,
+		'body' => $catalog_body(
+			1,
+			1,
+			array(
+				array(
+					'name'       => 'IBM Plex 无衬线简体中文',
+					'fontFamily' => 'wenfeng-ibmps',
+				),
+			)
+		),
+	),
+);
+WPFonts_Catalog::run_bootstrap();
+$assert( is_file( WPFONTS_CATALOG_PATH ), 'bootstrap did not write a snapshot' );
+$boot_saved = (string) file_get_contents( WPFONTS_CATALOG_PATH );
+$assert( false !== strpos( $boot_saved, 'wenfeng-ibmps' ), 'bootstrap snapshot dropped fontFamily' );
+$assert( false === strpos( $boot_saved, 'wenfeng-zhi-mang-xing' ), 'bootstrap sample used a family that 404s for zh-common' );
+$GLOBALS['http_queue'] = array(
+	array(
+		'code' => 500,
+		'body' => '',
+	),
+);
+WPFonts_Catalog::run_bootstrap();
+$assert( $boot_saved === (string) file_get_contents( WPFONTS_CATALOG_PATH ), 'bootstrap replaced a good snapshot' );
+$GLOBALS['wp_doing_cron'] = false;
+
 $admin     = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-admin.php' );
 $js        = file_get_contents( dirname( __DIR__ ) . '/assets/js/wpfonts-admin.js' );
 $embed     = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-embed.php' );
@@ -531,6 +622,9 @@ $assert( false !== strpos( $admin, '正在更新字体目录…' ), 'refresh pro
 $assert( false !== strpos( $admin, '字体目录已更新。' ), 'refresh success copy drifted' );
 $assert( false !== strpos( $admin, '暂时更新不了，仍显示上次保存的目录。稍后再试。' ), 'stale refresh copy drifted' );
 $assert( false !== strpos( $admin, '暂时读不到字体目录。你可以手动填写字体名，稍后再试。' ), 'missing snapshot copy drifted' );
+$assert( false !== strpos( $admin, '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。' ), 'empty catalog one-liner drifted' );
+$assert( false !== strpos( $admin, '字体目录' ), 'help card title drifted' );
+$assert( false !== strpos( $admin, '目录保存在本站。大约每月自动更新一次，也可在设置里立刻更新。选中后写入字体名；更新失败不会盖掉已有目录。' ), 'help card body drifted' );
 $assert( false !== strpos( $admin, '目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。' ), 'catalog note drifted' );
 $assert( false === strpos( $admin, '去控制台上传' ), 'admin offered a console upload' );
 $assert( false !== strpos( $js, 'family.value = target.value' ), 'picking a font does not write the radio value into the font name field' );
@@ -542,11 +636,14 @@ $catalog_src = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-
 $assert( false !== strpos( $catalog_src, "const CRON_HOOK = 'wpfonts_catalog_refresh'" ), 'cron hook name drifted' );
 $assert( false !== strpos( $main, 'WPFonts_Catalog::CRON_HOOK' ), 'cron hook is not registered' );
 $assert( false !== strpos( $main, "'WPFonts_Catalog', 'run_cron'" ), 'cron callback is not registered' );
+$assert( false !== strpos( $main, "'WPFonts_Catalog', 'run_bootstrap'" ), 'bootstrap callback is not registered' );
+$assert( false !== strpos( $catalog_src, "const BOOTSTRAP_HOOK = 'wpfonts_catalog_bootstrap'" ), 'bootstrap hook name drifted' );
 $assert( false !== strpos( $main, 'register_activation_hook' ), 'activation does not schedule the catalog' );
 $assert( false !== strpos( $main, 'register_deactivation_hook' ), 'deactivation does not clear the catalog cron' );
 $assert( false !== strpos( $main, 'cron_schedules' ), 'monthly schedule filter missing' );
 $assert( false !== strpos( $uninstall, 'wpfonts/catalog.json' ), 'uninstall does not delete the snapshot' );
 $assert( false !== strpos( $uninstall, 'wpfonts_catalog_refresh' ), 'uninstall does not clear the catalog cron' );
+$assert( false !== strpos( $uninstall, 'wpfonts_catalog_bootstrap' ), 'uninstall does not clear the bootstrap cron' );
 
 if ( array() !== $failures ) {
 	fwrite( STDERR, implode( "\n", $failures ) . "\n" );

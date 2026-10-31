@@ -74,8 +74,8 @@ foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp
 }
 $assert( false !== strpos( $main, 'Requires at least: 6.5' ), 'Requires at least 6.5.' );
 $assert( false !== strpos( $main, 'Requires PHP: 7.4' ), 'Requires PHP 7.4.' );
-$assert( false !== strpos( $main, 'Version: 2.0.0-rc.3' ), 'Version header must be 2.0.0-rc.3.' );
-$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.3' )" ), 'Version constant must be 2.0.0-rc.3.' );
+$assert( false !== strpos( $main, 'Version: 2.0.0-rc.4' ), 'Version header must be 2.0.0-rc.4.' );
+$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.4' )" ), 'Version constant must be 2.0.0-rc.4.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
 $assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );
@@ -122,10 +122,19 @@ $assert( false !== strpos( $admin, '选填。填写后前台改用项目样式�
 $assert( false !== strpos( $admin, '打开文风控制台' ), 'Console link label drifted.' );
 $assert( false !== strpos( $admin, '字体包' ), 'Packages tab copy is missing.' );
 $assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
+$assert( false === strpos( $admin, 'confirm(' ), 'Package delete must not use confirm().' );
+$assert( false === strpos( $admin, 'onclick=' ), 'Package delete must not use an onclick confirm.' );
+$assert( false !== strpos( $admin, 'wenpai-gate' ), 'Package delete must use the kit gate.' );
+$assert( false !== strpos( $admin, 'data-wenpai-need-apply' ), 'Delete button must stay disabled until the gate is checked.' );
+$assert( false !== strpos( $admin, '删除后本站不再提供这份字体。我已核对。' ), 'Delete gate copy drifted.' );
+$assert( false !== strpos( $admin, '未勾选不能点。' ), 'Delete gate hint drifted.' );
+$assert( false !== strpos( $admin, "check_admin_referer( 'wpfonts_package_delete' )" ), 'Delete handler lost its nonce check.' );
+$assert( false !== strpos( $admin, 'wpfonts_delete_ack' ), 'Delete handler no longer requires the gate checkbox.' );
 $assert( false === strpos( $embed, 'api_key' ), 'Front embed must not read the API key.' );
 $uninstall = file_get_contents( $root . '/uninstall.php' );
 $assert( false !== strpos( $uninstall, 'wpfonts_api_key' ), 'Uninstall must delete the API key option.' );
 $assert( false === strpos( $uninstall, 'wp_global_styles' ), 'Uninstall must not touch Global Styles.' );
+$assert( false === strpos( $admin, '块主题全局样式与 theme.json 写入，本版不做。' ), 'Help still says theme.json writes are out of scope.' );
 
 if ( $failures ) {
 	fwrite( STDERR, implode( PHP_EOL, $failures ) . PHP_EOL );

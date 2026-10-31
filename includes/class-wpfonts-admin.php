@@ -601,9 +601,13 @@ class WPFonts_Admin {
 			__( '文风字体包', 'wpfonts' ),
 			__( '安装文风已切好的包，文件放在本站。插件不切字，也不把原始字体传到文风去切。', 'wpfonts' )
 		);
+		self::help_card(
+			__( '字体目录', 'wpfonts' ),
+			__( '目录保存在本站。大约每月自动更新一次，也可在设置里立刻更新。选中后写入字体名；更新失败不会盖掉已有目录。', 'wpfonts' )
+		);
 		echo '<section class="card">';
 		echo '<h2 class="card-title">' . esc_html__( '本版不做', 'wpfonts' ) . '</h2>';
-		echo '<p>' . esc_html__( '插件不切字。块主题全局样式与 theme.json 写入，本版不做。', 'wpfonts' ) . '</p>';
+		echo '<p>' . esc_html__( '插件不切字。全站样式由字体库安装写入，本插件不改主题文件，卸载时也不删除全站样式。', 'wpfonts' ) . '</p>';
 		echo '</section>';
 		echo '</div>';
 	}
@@ -656,6 +660,9 @@ class WPFonts_Admin {
 			$text = __( '这次未能连接。暂不判定 Key 无效。系统字体仍然可用，请稍后再检查。', 'wpfonts' );
 		} elseif ( 'incomplete' === $state ) {
 			$text = __( '文风 API Key 可用。还需要字体名或项目名，前台暂不加载样式。', 'wpfonts' );
+		} elseif ( 'css_missing' === $state ) {
+			$level = 'bad';
+			$text  = __( '这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。', 'wpfonts' );
 		} elseif ( 'ok' === $state ) {
 			$level = 'ok';
 			$text  = __( '文风云已开启，文风 API Key 可用。前台会加载文风服务器上的样式，网页中不会出现 Key。', 'wpfonts' );
@@ -811,7 +818,7 @@ class WPFonts_Admin {
 	/**
 	 * Catalog status lines. The new strings are the Foundry copy for this screen.
 	 *
-	 * @return array{loading:string,fail:string,empty:string,loaded:string,updating:string,updated:string,stale:string,note:string,refresh:string}
+	 * @return array{loading:string,fail:string,empty:string,loaded:string,updating:string,updated:string,stale:string,note:string,refresh:string,missing:string}
 	 */
 	private static function catalog_messages() {
 		return array(
@@ -824,6 +831,7 @@ class WPFonts_Admin {
 			'stale'    => __( '暂时更新不了，仍显示上次保存的目录。稍后再试。', 'wpfonts' ),
 			'note'     => __( '目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。', 'wpfonts' ),
 			'refresh'  => __( '更新字体目录', 'wpfonts' ),
+			'missing'  => __( '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。', 'wpfonts' ),
 		);
 	}
 
@@ -913,7 +921,7 @@ class WPFonts_Admin {
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
 		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '">';
 		if ( $failed ) {
-			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['fail'] ) . '</p>';
+			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['missing'] ) . '</p>';
 		} elseif ( array() === $fonts ) {
 			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['empty'] ) . '</p>';
 		} else {
@@ -1045,10 +1053,17 @@ class WPFonts_Admin {
 
 		$url = WPFonts_Link::stylesheet_url( $settings );
 		// Text preview only. esc_html() below keeps the browser from loading it.
-		$tag = '<link rel="stylesheet" href="' . $url . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Not a live tag.
-		echo '<div class="wenpai-code"><code>' . esc_html( $tag ) . '</code></div>';
-		if ( 'ok' === $state ) {
+		$css_status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
+		if ( 'css_missing' === $state || 'missing' === $css_status ) {
+			self::notice( 'bad', __( '这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。', 'wpfonts' ) );
+			self::echo_embed_code( $url );
+			return;
+		}
+		self::echo_embed_code( $url );
+		if ( 'ok' === $state && 'ok' === $css_status ) {
 			echo '<p class="hint is-ok">' . esc_html__( '前台会加载这一条。链接中没有 API Key。', 'wpfonts' ) . '</p>';
+		} elseif ( 'ok' === $state ) {
+			echo '<p class="hint">' . esc_html__( '还没确认这条地址能打开。保存一次后再看。', 'wpfonts' ) . '</p>';
 		} elseif ( 'unreachable' === $state || 'unchecked' === $state ) {
 			echo '<p class="hint">' . esc_html__( '尚未验证通过，前台暂不使用。', 'wpfonts' ) . '</p>';
 		} elseif ( $in_form && 'empty' === $state ) {
@@ -1069,6 +1084,20 @@ class WPFonts_Admin {
 			);
 			echo '</p>';
 		}
+	}
+
+	/**
+	 * The copyable embed. License comment, preconnect, then the stylesheet.
+	 *
+	 * @param string $url Stylesheet URL.
+	 * @return void
+	 */
+	private static function echo_embed_code( $url ) {
+		$snippet = WPFonts_Link::embed_snippet( $url );
+		if ( '' === $snippet ) {
+			return;
+		}
+		echo '<div class="wenpai-code"><code>' . esc_html( $snippet ) . '</code></div>';
 	}
 
 	/**
@@ -1109,7 +1138,7 @@ class WPFonts_Admin {
 		if ( 'ok' === $state || 'incomplete' === $state ) {
 			return 'ok';
 		}
-		if ( 'invalid' === $state ) {
+		if ( 'invalid' === $state || 'css_missing' === $state ) {
 			return 'bad';
 		}
 		if ( 'unreachable' === $state || 'unchecked' === $state || 'nokey' === $state ) {
@@ -1143,6 +1172,9 @@ class WPFonts_Admin {
 		if ( 'incomplete' === $state ) {
 			return __( '文风 API Key 可用。还需要字体名或项目名。', 'wpfonts' );
 		}
+		if ( 'css_missing' === $state ) {
+			return __( '这条地址打不开，前台不会加载。', 'wpfonts' );
+		}
 		return __( '已开启。前台会加载文风服务器上的样式。', 'wpfonts' );
 	}
 
@@ -1156,7 +1188,7 @@ class WPFonts_Admin {
 		if ( 'ok' === $state ) {
 			return 'ok';
 		}
-		if ( 'invalid' === $state ) {
+		if ( 'invalid' === $state || 'css_missing' === $state ) {
 			return 'bad';
 		}
 		if ( 'empty' === $state ) {
@@ -1189,6 +1221,9 @@ class WPFonts_Admin {
 		}
 		if ( 'incomplete' === $state ) {
 			return __( '未完成', 'wpfonts' );
+		}
+		if ( 'css_missing' === $state ) {
+			return __( '打不开', 'wpfonts' );
 		}
 		return __( '已开启', 'wpfonts' );
 	}
@@ -1246,11 +1281,9 @@ class WPFonts_Admin {
 		if ( array() === $packages ) {
 			self::render_install_zone( true );
 		} else {
-			echo '<section class="card">';
 			foreach ( $packages as $package ) {
 				self::render_package_row( $package );
 			}
-			echo '</section>';
 			self::render_install_zone( false );
 		}
 		echo '</div>';
@@ -1298,6 +1331,7 @@ class WPFonts_Admin {
 	 */
 	private static function render_package_row( array $package ) {
 		$on = ! empty( $package['enabled'] );
+		echo '<section class="card">';
 		echo '<div class="simple-row">';
 		echo '<span class="tile ' . esc_attr( $on ? 'ok' : '' ) . '">';
 		self::icon( 'download' );
@@ -1312,16 +1346,21 @@ class WPFonts_Admin {
 		echo '<input type="hidden" name="enabled" value="' . esc_attr( $on ? '0' : '1' ) . '">';
 		echo '<button type="submit" class="btn btn-secondary">' . esc_html( $on ? __( '停用', 'wpfonts' ) : __( '启用', 'wpfonts' ) ) . '</button>';
 		echo '</form>';
-		$confirm = esc_js( __( '删除后本站不再提供这份字体。确定删除？', 'wpfonts' ) );
+		echo '</div></div>';
+		self::render_package_preview( $package );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_package_delete' );
 		echo '<input type="hidden" name="action" value="wpfonts_package_delete">';
 		echo '<input type="hidden" name="id" value="' . esc_attr( $package['id'] ) . '">';
-		// $confirm is escaped with esc_js() for the confirm() string.
-		echo '<button type="submit" class="btn btn-danger" onclick="return confirm(\'' . $confirm . '\');">' . esc_html__( '删除', 'wpfonts' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<div class="wenpai-gate">';
+		echo '<label><input type="checkbox" name="wpfonts_delete_ack" value="1"> ' . esc_html__( '删除后本站不再提供这份字体。我已核对。', 'wpfonts' ) . '</label>';
+		echo '</div>';
+		echo '<div class="card-foot start">';
+		echo '<span class="meta">' . esc_html__( '未勾选不能点。', 'wpfonts' ) . '</span>';
+		echo '<button type="submit" class="btn btn-danger" data-wenpai-need-apply disabled>' . esc_html__( '删除', 'wpfonts' ) . '</button>';
+		echo '</div>';
 		echo '</form>';
-		echo '</div></div>';
-		self::render_package_preview( $package );
+		echo '</section>';
 	}
 
 	/**
@@ -1418,7 +1457,7 @@ class WPFonts_Admin {
 	}
 
 	/**
-	 * Delete a package after the confirmation box is checked.
+	 * Delete a package. The screen checkbox must be posted with the nonce.
 	 *
 	 * @return void
 	 */
@@ -1427,8 +1466,11 @@ class WPFonts_Admin {
 			wp_die( esc_html__( '你没有权限做这件事。', 'wpfonts' ) );
 		}
 		check_admin_referer( 'wpfonts_package_delete' );
-		$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
-		WPFonts_Packages::delete( $id );
+		$ack = isset( $_POST['wpfonts_delete_ack'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['wpfonts_delete_ack'] ) );
+		if ( $ack ) {
+			$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+			WPFonts_Packages::delete( $id );
+		}
 		wp_safe_redirect( self::page_url( array( 'tab' => 'packages' ) ) );
 		exit;
 	}
