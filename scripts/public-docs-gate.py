@@ -20,7 +20,9 @@ def main() -> int:
             sys.argv = [str(gate), "--cwd", str(CWD), *sys.argv[1:]]
             runpy.run_path(str(gate), run_name="__main__")
             return 0
-    # Minimal fallback: docs/ may only contain README.md
+    # Minimal fallback: public stub plus the dated Phase 0 audit note.
+    # Internal SOP (HANDOFF, APPROVAL, and similar) stays out of this tree.
+    allowed = {"docs/README.md", "docs/AUDIT_2026-08-09.md"}
     docs = CWD / "docs"
     if not docs.exists():
         print("public-docs-gate: PASS (no docs/)")
@@ -30,7 +32,7 @@ def main() -> int:
         if p.is_dir():
             continue
         rel = p.relative_to(CWD).as_posix()
-        if rel != "docs/README.md":
+        if rel not in allowed:
             bad.append(rel)
     for name in ("APPROVAL.md", "HANDOFF.md", "CLAUDE.md", "MEMORY.md"):
         if (CWD / name).exists():

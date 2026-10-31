@@ -3,43 +3,67 @@
   "font_families": [
     {
       "font_family_settings": {
-        "fontFamily": "system-ui, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif",
-        "slug": "system-ui-jp",
-        "name": "システムデフォルト"
+        "fontFamily": "system-ui, 'Hiragino Sans', 'Yu Gothic UI', 'Yu Gothic', Meiryo, 'Noto Sans CJK JP', sans-serif",
+        "slug": "jp-system-ui",
+        "name": "系统默认"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Yu Mincho', 'Hiragino Mincho ProN', 'MS PMincho', 'Noto Serif CJK JP', serif",
-        "slug": "mincho-style",
-        "name": "明朝体"
+        "fontFamily": "'Yu Gothic', 'Hiragino Kaku Gothic ProN', Meiryo, 'Noto Sans CJK JP', TakaoGothic, IPAexGothic, sans-serif",
+        "slug": "jp-gothic",
+        "name": "黑体"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Yu Gothic UI', 'Hiragino Sans', 'Meiryo UI', 'Noto Sans CJK JP', sans-serif",
+        "slug": "jp-ui",
+        "name": "界面黑体"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Yu Mincho', 'Hiragino Mincho ProN', 'MS PMincho', 'Noto Serif CJK JP', IPAexMincho, serif",
+        "slug": "jp-mincho-style",
+        "name": "明朝"
       },
       "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'HGSSoeiKakupoptai', 'HGPSoeiKakupoptai', cursive",
-        "slug": "calligraphic-jp",
-        "name": "楷書体"
+        "fontFamily": "'MS Mincho', 'MS PMincho', 'Hiragino Mincho ProN', IPAMincho, serif",
+        "slug": "jp-mincho-classic",
+        "name": "传统明朝"
+      },
+      "categories": ["serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "YuKyokasho, 'Yu Kyokasho', Klee, HGSeikaishotai, cursive",
+        "slug": "jp-calligraphic",
+        "name": "教科书体"
       },
       "categories": ["handwriting"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'MS Gothic', 'Osaka-Mono', 'Noto Sans Mono CJK JP', monospace",
-        "slug": "monospace-jp",
-        "name": "等幅フォント"
+        "fontFamily": "'Hiragino Maru Gothic ProN', 'Tsukushi A Round Gothic', 'Yu Gothic', sans-serif",
+        "slug": "jp-rounded",
+        "name": "圆体"
       },
-      "categories": ["monospace"]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Arial Unicode MS', 'M PLUS Rounded 1c', sans-serif",
-        "slug": "rounded-jp",
-        "name": "丸ゴシック"
+        "fontFamily": "'MS Gothic', 'Osaka-Mono', 'Noto Sans Mono CJK JP', 'VL Gothic', monospace",
+        "slug": "jp-monospace",
+        "name": "等宽"
       },
-      "categories": ["sans-serif"]
+      "categories": ["monospace"]
     }
   ]
 }
