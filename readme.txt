@@ -51,6 +51,7 @@ The collections target the WordPress Font Library. The CDN link is a normal fron
 * Queue one immediate catalog refresh when a site has no snapshot yet. Activation does not call the directory. A failed refresh still keeps a good snapshot.
 * Add a block inspector panel, 文派字库, so an editor can apply an enabled package or a catalog family to the current block. No admin-bar button.
 * Installing a family from the Font Library writes Global Styles. Uninstall still does not delete them.
+* A saved public stylesheet that returns HTTP 404 is not embedded and is not described as loading. The Font Library cloud entry uses the face name declared in that CSS, not the catalog token, and only after the address has opened.
 
 = 2.0.0-rc.3 =
 * Store the font directory at wp-content/uploads/wpfonts/catalog.json. The settings screen reads that file and does not call app.windfonts.com on a normal render.

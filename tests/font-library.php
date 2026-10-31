@@ -156,6 +156,7 @@ function wp_unregister_font_collection( $slug ) {
 require dirname( __DIR__ ) . '/includes/class-wpfonts-link.php';
 require dirname( __DIR__ ) . '/includes/class-wpfonts-packages.php';
 require dirname( __DIR__ ) . '/includes/class-wpfonts-catalog.php';
+require dirname( __DIR__ ) . '/includes/class-wpfonts-settings.php';
 require dirname( __DIR__ ) . '/includes/class-wpfonts-library.php';
 
 $failures = array();
@@ -221,26 +222,27 @@ $args = WPFonts_Library::packages_collection_args( $built );
 $assert( '文风字体包' === $args['name'], 'package collection name drifted' );
 $assert( '本站已安装的文风字体包。关闭或删除后不再出现。' === $args['description'], 'package collection description drifted' );
 
-$cloud = WPFonts_Library::cloud_families(
-	array(
-		array(
-			'name'       => '寒蝉无机体',
-			'fontFamily' => 'wenfeng-hcwjt',
-		),
-		array(
-			'name'       => '再次',
-			'fontFamily' => 'wenfeng-hcwjt',
-		),
-		array(
-			'name'       => '丢弃',
-			'fontFamily' => 'not-wenfeng',
-		),
-	)
+$cloud_settings = array(
+	'cdn_enabled'  => 1,
+	'region'       => 'cn',
+	'subset'       => 'zh-common',
+	'project_slug' => '',
+	'family'       => 'wenfeng-ibmps',
+	'key_status'   => 'valid',
+	'css_status'   => 'ok',
+	'css_face'     => 'windfonts-ibmps',
 );
-$assert( 1 === count( $cloud ), 'cloud collection did not dedupe' );
-$assert( 'wenfeng-hcwjt' === $cloud[0]['font_family_settings']['slug'], 'cloud slug drifted' );
-$assert( '"wenfeng-hcwjt", sans-serif' === $cloud[0]['font_family_settings']['fontFamily'], 'cloud stack drifted' );
+$cloud          = WPFonts_Library::confirmed_cloud_families( $cloud_settings, 'IBM Plex 无衬线简体中文' );
+$assert( 1 === count( $cloud ), 'confirmed cloud family was dropped' );
+$assert( 'wenfeng-ibmps' === $cloud[0]['font_family_settings']['slug'], 'cloud slug drifted' );
+$assert( '"windfonts-ibmps", sans-serif' === $cloud[0]['font_family_settings']['fontFamily'], 'cloud stack used the catalog token' );
+$assert( 'IBM Plex 无衬线简体中文' === $cloud[0]['font_family_settings']['name'], 'cloud label drifted' );
 $assert( ! isset( $cloud[0]['font_family_settings']['fontFace'] ), 'cloud family attached a font file' );
+$unconfirmed                   = $cloud_settings;
+$unconfirmed['css_status']     = 'missing';
+$unconfirmed['family']         = 'wenfeng-zhi-mang-xing';
+$unconfirmed['css_face']       = 'WF-Zmxs';
+$assert( array() === WPFonts_Library::confirmed_cloud_families( $unconfirmed, '钟齐志莽行书' ), 'a missing stylesheet was registered for Global Styles' );
 $cloud_args = WPFonts_Library::cloud_collection_args( $cloud );
 $assert( '文风云' === $cloud_args['name'], 'cloud collection name drifted' );
 
@@ -260,17 +262,26 @@ file_put_contents(
 			'updated_at' => 10,
 			'fonts'      => array(
 				array(
-					'name'       => '寒蝉无机体',
-					'fontFamily' => 'wenfeng-hcwjt',
+					'name'       => 'IBM Plex 无衬线简体中文',
+					'fontFamily' => 'wenfeng-ibmps',
 				),
 			),
 		)
 	)
 );
 
-$GLOBALS['wpfonts_upload_dir']  = $upload_dir;
-$GLOBALS['wpfonts_options']     = array(
+$GLOBALS['wpfonts_upload_dir'] = $upload_dir;
+$GLOBALS['wpfonts_options']    = array(
 	'wpfonts_packages' => $packages,
+	'wpfonts_settings' => array(
+		'cdn_enabled'  => 1,
+		'region'       => 'cn',
+		'subset'       => 'zh-common',
+		'family'       => 'wenfeng-ibmps',
+		'key_status'   => 'valid',
+		'css_status'   => 'ok',
+		'css_face'     => 'windfonts-ibmps',
+	),
 );
 $GLOBALS['wpfonts_registered']   = array();
 $GLOBALS['wpfonts_unregistered'] = array();
@@ -280,10 +291,19 @@ foreach ( $GLOBALS['wpfonts_registered'] as $call ) {
 	$slugs[] = $call[0];
 }
 $assert( in_array( WPFonts_Library::PACKAGES_SLUG, $slugs, true ), 'enabled package collection was not registered' );
-$assert( in_array( WPFonts_Library::CLOUD_SLUG, $slugs, true ), 'catalog collection was not registered' );
+$assert( in_array( WPFonts_Library::CLOUD_SLUG, $slugs, true ), 'confirmed cloud collection was not registered' );
+$cloud_registered = WP_Font_Library::get_instance()->slugs[ WPFonts_Library::CLOUD_SLUG ]['font_families'][0]['font_family_settings'];
+$assert( '"windfonts-ibmps", sans-serif' === $cloud_registered['fontFamily'], 'registered cloud family used the catalog token' );
 $assert( isset( WP_Font_Library::get_instance()->slugs[ WPFonts_Library::PACKAGES_SLUG ] ), 'package collection missing from the registry' );
 
 $GLOBALS['wpfonts_options']['wpfonts_packages'] = array();
+$GLOBALS['wpfonts_options']['wpfonts_settings'] = array(
+	'css_status' => 'missing',
+	'family'     => 'wenfeng-zhi-mang-xing',
+	'subset'     => 'zh-common',
+	'cdn_enabled' => 1,
+	'key_status' => 'valid',
+);
 unlink( WPFONTS_CATALOG_PATH );
 $GLOBALS['wpfonts_registered']   = array();
 $GLOBALS['wpfonts_unregistered'] = array();
@@ -303,8 +323,10 @@ $assert( false === strpos( $editor_src, 'wp_global_styles' ), 'editor writes glo
 $assert( false === strpos( $editor_js, 'PluginSidebar' ), 'editor adds header chrome' );
 $assert( false === strpos( $editor_js, 'admin-bar' ), 'editor script targets the admin bar' );
 $assert( false !== strpos( $editor_js, 'InspectorControls' ), 'editor panel is not in the inspector' );
-$assert( false !== strpos( $editor_src, 'edit_posts' ), 'editor search is not limited to people who can edit' );
-$assert( false !== strpos( $editor_src, '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。' ), 'editor empty catalog copy drifted' );
+$assert( false !== strpos( $editor_src, 'edit_posts' ), 'editor panel is not limited to people who can edit' );
+$assert( false !== strpos( $editor_src, '设置里还没有确认能打开的文风字体。' ), 'editor cloud empty copy drifted' );
+$assert( false !== strpos( $editor_src, 'confirmed_cloud_families' ), 'editor still applies raw catalog tokens' );
+$assert( false === strpos( $editor_js, 'wenfeng-' ), 'editor script builds a CSS stack from the catalog token' );
 $assert( false !== strpos( $editor_src, '选一个字体，用在当前区块。全站安装请用字体库。' ), 'editor intro drifted' );
 
 $hooked = false;

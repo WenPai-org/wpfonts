@@ -660,6 +660,9 @@ class WPFonts_Admin {
 			$text = __( '这次未能连接。暂不判定 Key 无效。系统字体仍然可用，请稍后再检查。', 'wpfonts' );
 		} elseif ( 'incomplete' === $state ) {
 			$text = __( '文风 API Key 可用。还需要字体名或项目名，前台暂不加载样式。', 'wpfonts' );
+		} elseif ( 'css_missing' === $state ) {
+			$level = 'bad';
+			$text  = __( '这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。', 'wpfonts' );
 		} elseif ( 'ok' === $state ) {
 			$level = 'ok';
 			$text  = __( '文风云已开启，文风 API Key 可用。前台会加载文风服务器上的样式，网页中不会出现 Key。', 'wpfonts' );
@@ -1050,10 +1053,18 @@ class WPFonts_Admin {
 
 		$url = WPFonts_Link::stylesheet_url( $settings );
 		// Text preview only. esc_html() below keeps the browser from loading it.
-		$tag = '<link rel="stylesheet" href="' . $url . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Not a live tag.
+		$tag        = '<link rel="stylesheet" href="' . $url . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Not a live tag.
+		$css_status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
+		if ( 'css_missing' === $state || 'missing' === $css_status ) {
+			self::notice( 'bad', __( '这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。', 'wpfonts' ) );
+			echo '<div class="wenpai-code"><code>' . esc_html( $tag ) . '</code></div>';
+			return;
+		}
 		echo '<div class="wenpai-code"><code>' . esc_html( $tag ) . '</code></div>';
-		if ( 'ok' === $state ) {
+		if ( 'ok' === $state && 'ok' === $css_status ) {
 			echo '<p class="hint is-ok">' . esc_html__( '前台会加载这一条。链接中没有 API Key。', 'wpfonts' ) . '</p>';
+		} elseif ( 'ok' === $state ) {
+			echo '<p class="hint">' . esc_html__( '还没确认这条地址能打开。保存一次后再看。', 'wpfonts' ) . '</p>';
 		} elseif ( 'unreachable' === $state || 'unchecked' === $state ) {
 			echo '<p class="hint">' . esc_html__( '尚未验证通过，前台暂不使用。', 'wpfonts' ) . '</p>';
 		} elseif ( $in_form && 'empty' === $state ) {
@@ -1114,7 +1125,7 @@ class WPFonts_Admin {
 		if ( 'ok' === $state || 'incomplete' === $state ) {
 			return 'ok';
 		}
-		if ( 'invalid' === $state ) {
+		if ( 'invalid' === $state || 'css_missing' === $state ) {
 			return 'bad';
 		}
 		if ( 'unreachable' === $state || 'unchecked' === $state || 'nokey' === $state ) {
@@ -1148,6 +1159,9 @@ class WPFonts_Admin {
 		if ( 'incomplete' === $state ) {
 			return __( '文风 API Key 可用。还需要字体名或项目名。', 'wpfonts' );
 		}
+		if ( 'css_missing' === $state ) {
+			return __( '这条地址打不开，前台不会加载。', 'wpfonts' );
+		}
 		return __( '已开启。前台会加载文风服务器上的样式。', 'wpfonts' );
 	}
 
@@ -1161,7 +1175,7 @@ class WPFonts_Admin {
 		if ( 'ok' === $state ) {
 			return 'ok';
 		}
-		if ( 'invalid' === $state ) {
+		if ( 'invalid' === $state || 'css_missing' === $state ) {
 			return 'bad';
 		}
 		if ( 'empty' === $state ) {
@@ -1194,6 +1208,9 @@ class WPFonts_Admin {
 		}
 		if ( 'incomplete' === $state ) {
 			return __( '未完成', 'wpfonts' );
+		}
+		if ( 'css_missing' === $state ) {
+			return __( '打不开', 'wpfonts' );
 		}
 		return __( '已开启', 'wpfonts' );
 	}

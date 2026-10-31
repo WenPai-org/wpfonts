@@ -321,28 +321,12 @@ function wpfonts_sample_catalog() {
 		'ok'        => true,
 		'fonts'     => array(
 			array(
-				'name'       => '钟齐志莽行书',
-				'fontFamily' => 'wenfeng-zhi-mang-xing',
-			),
-			array(
-				'name'       => '寒蝉无机体',
-				'fontFamily' => 'wenfeng-hcwjt',
+				'name'       => 'IBM Plex 无衬线简体中文',
+				'fontFamily' => 'wenfeng-ibmps',
 			),
 			array(
 				'name'       => '975 圆体',
 				'fontFamily' => 'wenfeng-975yt',
-			),
-			array(
-				'name'       => 'Aleo',
-				'fontFamily' => 'wenfeng-aleo',
-			),
-			array(
-				'name'       => 'Alibaba Sans Thai',
-				'fontFamily' => 'wenfeng-alibabasansthai',
-			),
-			array(
-				'name'       => 'Alibaba Sans Viet',
-				'fontFamily' => 'wenfeng-alibabasansviet',
 			),
 		),
 		'page'      => 1,
@@ -409,6 +393,8 @@ $screens = array(
 				array(
 					'cdn_enabled' => 1,
 					'family'      => 'wenfeng-ibmps',
+					'css_status'  => 'ok',
+					'css_face'    => 'windfonts-ibmps',
 					'key_status'  => 'valid',
 					'key_checked' => 1700000000,
 				)
@@ -505,7 +491,9 @@ $screens = array(
 				$public,
 				array(
 					'cdn_enabled' => 1,
-					'family'      => 'wenfeng-zhi-mang-xing',
+					'family'      => 'wenfeng-ibmps',
+					'css_status'  => 'ok',
+					'css_face'    => 'windfonts-ibmps',
 					'subset'      => 'zh-common',
 					'key_status'  => 'valid',
 					'key_checked' => 1700000000,
@@ -524,6 +512,27 @@ $screens = array(
 			'wpfonts_api_key'  => '',
 		),
 	),
+	'settings-css-missing' => array(
+		'title'   => '设置 · 地址打不开',
+		'tab'     => 'settings',
+		'mode'    => 'advanced',
+		'options' => array(
+			'wpfonts_settings' => array_merge(
+				$public,
+				array(
+					'cdn_enabled' => 1,
+					'family'      => 'wenfeng-zhi-mang-xing',
+					'subset'      => 'zh-common',
+					'css_status'  => 'missing',
+					'css_face'    => '',
+					'key_status'  => 'valid',
+					'key_checked' => 1700000000,
+				)
+			),
+			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
+		),
+		'catalog' => wpfonts_sample_catalog(),
+	),
 	'settings-catalog-fail' => array(
 		'title'   => '设置 · 目录读不到',
 		'tab'     => 'settings',
@@ -534,6 +543,8 @@ $screens = array(
 				array(
 					'cdn_enabled' => 1,
 					'family'      => 'wenfeng-ibmps',
+					'css_status'  => 'ok',
+					'css_face'    => 'windfonts-ibmps',
 					'subset'      => 'zh-common',
 					'key_status'  => 'valid',
 					'key_checked' => 1700000000,
@@ -562,4 +573,27 @@ foreach ( $screens as $name => $screen ) {
 	$path = $out . '/' . $name . '.html';
 	file_put_contents( $path, $html );
 	echo $path . "\n";
+}
+
+$catalog_html = (string) file_get_contents( $out . '/settings-catalog.html' );
+$missing_html = (string) file_get_contents( $out . '/settings-css-missing.html' );
+if ( false !== strpos( $catalog_html, 'wenfeng-zhi-mang-xing' ) ) {
+	fwrite( STDERR, "settings catalog fixture still uses wenfeng-zhi-mang-xing.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, 'family=wenfeng-ibmps&amp;subset=zh-common' ) ) {
+	fwrite( STDERR, "settings catalog fixture is not the ibmps zh-common URL.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, '前台会加载这一条。' ) ) {
+	fwrite( STDERR, "confirmed ibmps preview lost the healthy hint.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $missing_html, '这条地址打不开，前台不会加载。' ) ) {
+	fwrite( STDERR, "missing stylesheet fixture lost the warning.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $missing_html, '前台会加载这一条。' ) ) {
+	fwrite( STDERR, "missing stylesheet fixture still says the front will load it.\n" );
+	exit( 1 );
 }

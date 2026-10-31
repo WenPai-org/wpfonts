@@ -45,8 +45,31 @@ class WPFonts_Library {
 			self::PACKAGES_SLUG,
 			self::packages_collection_args( self::package_families( $packages, self::css_map( $packages ) ) )
 		);
-		$fonts = class_exists( 'WPFonts_Catalog', false ) ? WPFonts_Catalog::stored_fonts() : array();
-		self::sync_collection( self::CLOUD_SLUG, self::cloud_collection_args( self::cloud_families( $fonts ) ) );
+		$settings = class_exists( 'WPFonts_Settings', false ) ? WPFonts_Settings::get() : array();
+		$label    = self::catalog_label( $settings );
+		self::sync_collection( self::CLOUD_SLUG, self::cloud_collection_args( self::confirmed_cloud_families( $settings, $label ) ) );
+	}
+
+	/**
+	 * Display name for the saved catalog token, or empty.
+	 *
+	 * @param array $settings Public settings.
+	 * @return string
+	 */
+	public static function catalog_label( array $settings ) {
+		if ( ! class_exists( 'WPFonts_Catalog', false ) || ! class_exists( 'WPFonts_Link', false ) ) {
+			return '';
+		}
+		$token = WPFonts_Link::family( $settings );
+		if ( '' === $token ) {
+			return '';
+		}
+		foreach ( WPFonts_Catalog::stored_fonts() as $font ) {
+			if ( isset( $font['fontFamily'] ) && $font['fontFamily'] === $token && isset( $font['name'] ) ) {
+				return trim( (string) $font['name'] );
+			}
+		}
+		return '';
 	}
 
 	/**
@@ -109,8 +132,48 @@ class WPFonts_Library {
 	public static function cloud_collection_args( array $families ) {
 		return array(
 			'name'          => __( '文风云', 'wpfonts' ),
-			'description'   => __( '文风目录里的字体名。安装后写入全站样式。', 'wpfonts' ),
+			'description'   => __( '已确认能打开的文风字体。安装后写入全站样式。', 'wpfonts' ),
 			'font_families' => $families,
+		);
+	}
+
+	/**
+	 * One Font Library family when the saved stylesheet opened and named a face.
+	 *
+	 * The catalog token stays the slug and the URL key. The CSS font-family is
+	 * the face the stylesheet declares, which is not the same string.
+	 *
+	 * @param array  $settings Public settings.
+	 * @param string $label    Optional display name.
+	 * @return array<int,array{font_family_settings:array}>
+	 */
+	public static function confirmed_cloud_families( array $settings, $label = '' ) {
+		$status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
+		if ( 'ok' !== $status ) {
+			return array();
+		}
+		$face = self::plain_family( isset( $settings['css_face'] ) ? $settings['css_face'] : '' );
+		if ( '' === $face || ! class_exists( 'WPFonts_Link', false ) ) {
+			return array();
+		}
+		$token = WPFonts_Link::family( $settings );
+		$slug  = ( '' !== $token && 0 === strpos( $token, 'wenfeng-' ) ) ? $token : 'wpfonts-cloud';
+		$name  = trim( (string) $label );
+		if ( '' === $name ) {
+			$name = $face;
+		}
+		$stack = self::css_stack( $face );
+		if ( '' === $stack ) {
+			return array();
+		}
+		return array(
+			array(
+				'font_family_settings' => array(
+					'name'       => $name,
+					'slug'       => $slug,
+					'fontFamily' => $stack,
+				),
+			),
 		);
 	}
 
@@ -144,43 +207,6 @@ class WPFonts_Library {
 			}
 			$seen[ $slug ] = true;
 			$out[]         = $family;
-		}
-		return $out;
-	}
-
-	/**
-	 * Catalog rows as Font Library families. No font files are attached.
-	 *
-	 * @param array $fonts Catalog rows.
-	 * @return array<int,array{font_family_settings:array}>
-	 */
-	public static function cloud_families( array $fonts ) {
-		$out  = array();
-		$seen = array();
-		foreach ( $fonts as $font ) {
-			if ( ! is_array( $font ) ) {
-				continue;
-			}
-			$token = WPFonts_Link::token( isset( $font['fontFamily'] ) ? $font['fontFamily'] : '', 80 );
-			if ( '' === $token || 0 !== strpos( $token, 'wenfeng-' ) || isset( $seen[ $token ] ) ) {
-				continue;
-			}
-			$stack = self::css_stack( $token );
-			if ( '' === $stack ) {
-				continue;
-			}
-			$name = isset( $font['name'] ) ? trim( (string) $font['name'] ) : '';
-			if ( '' === $name ) {
-				$name = $token;
-			}
-			$seen[ $token ] = true;
-			$out[]          = array(
-				'font_family_settings' => array(
-					'name'       => $name,
-					'slug'       => $token,
-					'fontFamily' => $stack,
-				),
-			);
 		}
 		return $out;
 	}

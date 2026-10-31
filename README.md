@@ -6,7 +6,7 @@
 
 WPFonts 2.0.0-rc.4 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
 
-Settings → WPFonts has four screens: Overview, Settings, Font packages, and Tools. Help stays in the header. Enabled packages register in the Font Library as 文风字体包, using the woff2 files stored at install. Catalog names register as 文风云, with no font files. Installing either writes Global Styles the usual WordPress way. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
+Settings → WPFonts has four screens: Overview, Settings, Font packages, and Tools. Help stays in the header. Enabled packages register in the Font Library as 文风字体包, using the woff2 files stored at install. 文风云 is registered only after the saved stylesheet URL has opened; the Font Library name is the face declared in that CSS, not the catalog token. Installing either writes Global Styles the usual WordPress way. A saved URL that returns 404 is not embedded and is not described as loading. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
 
 ## 后台
 
@@ -28,7 +28,7 @@ Settings → WPFonts has four screens: Overview, Settings, Font packages, and To
 
 设置页只读本站这份目录：`wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。文件形如 `{ "updated_at": unix, "fonts": [ { "name", "fontFamily" } ] }`。WP-Cron 使用自定义 `monthly` 间隔（约 30 天）拉取 `https://app.windfonts.com/api/fonts` 的全部分页并写成这一份快照。新装站点如果还没有这份文件，会再排一次马上执行的任务去拉取；激活本身不发请求，失败也不会写一份空目录。站长也可以点「更新字体目录」立刻更新，两次之间至少隔 60 秒。选中后写入 `fontFamily`（`wenfeng-*`）。更新失败不会盖掉已有快照。没有快照时仍可手填字体名。页面上的说明是：目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。字符范围四档写在选项上。项目名收在「项目与白名单」里，域名白名单到文风控制台配置。旧的按页 transient 不再读取。
 
-目录里的字体名会登记到字体库的「文风云」，只有名字，不带字体文件。在字体库里安装后，名字写入全站样式。前台要看到这些字，文风云仍须开启且 Key 可用。
+目录里的 `fontFamily` 是样式地址用的字体名，不一定等于 CSS 里的 `font-family`。保存或再检查时会看一眼这条地址。打不开就不会放到前台，也不会标成会加载。字体库里的「文风云」只登记已经确认能打开、并且读到了真实字体名的那一个。
 
 ## 开启文风云之后
 

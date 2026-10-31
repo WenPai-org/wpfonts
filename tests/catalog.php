@@ -577,13 +577,23 @@ $GLOBALS['http_log']   = array();
 $GLOBALS['http_queue'] = array(
 	array(
 		'code' => 200,
-		'body' => $body,
+		'body' => $catalog_body(
+			1,
+			1,
+			array(
+				array(
+					'name'       => 'IBM Plex 无衬线简体中文',
+					'fontFamily' => 'wenfeng-ibmps',
+				),
+			)
+		),
 	),
 );
 WPFonts_Catalog::run_bootstrap();
 $assert( is_file( WPFONTS_CATALOG_PATH ), 'bootstrap did not write a snapshot' );
 $boot_saved = (string) file_get_contents( WPFONTS_CATALOG_PATH );
-$assert( false !== strpos( $boot_saved, 'wenfeng-zhi-mang-xing' ), 'bootstrap snapshot dropped fontFamily' );
+$assert( false !== strpos( $boot_saved, 'wenfeng-ibmps' ), 'bootstrap snapshot dropped fontFamily' );
+$assert( false === strpos( $boot_saved, 'wenfeng-zhi-mang-xing' ), 'bootstrap sample used a family that 404s for zh-common' );
 $GLOBALS['http_queue'] = array(
 	array(
 		'code' => 500,

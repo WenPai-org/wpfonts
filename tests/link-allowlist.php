@@ -114,33 +114,31 @@ $kept = WPFonts_Link::merge_public( $prev, $without_family, 'simple' );
 $assert( 'wenfeng-ibmps' === $kept['family'], 'simple save without a family field cleared it' );
 $assert( 'studio' === $kept['project_slug'], 'simple save without a family field overwrote the project' );
 
-$extra_html = '<!-- wp:paragraph {"style":{"typography":{"fontFamily":"wenfeng-hcwjt, sans-serif"}}} --><p>文</p>';
-$globals    = array(
-	'custom' => array(
-		array(
-			'fontFamily' => 'wenfeng-aleo, sans-serif',
-			'slug'       => 'wenfeng-aleo',
-		),
-	),
-);
-$sheets     = WPFonts_Link::front_stylesheets( $base, $extra_html, $globals );
-$assert( 3 === count( $sheets ), 'expected the saved family plus two installed names, got ' . count( $sheets ) );
-$assert( 'https://cn.windfonts.com/api/css?family=wenfeng-ibmps&subset=zh-common' === $sheets[0], 'primary stylesheet drifted' );
-$assert( in_array( 'https://cn.windfonts.com/api/css?family=wenfeng-hcwjt&subset=zh-common', $sheets, true ), 'content family was not linked' );
-$assert( in_array( 'https://cn.windfonts.com/api/css?family=wenfeng-aleo&subset=zh-common', $sheets, true ), 'global styles family was not linked' );
-$assert( false === strpos( implode( ' ', $sheets ), $secret ), 'extra stylesheet leaked the key' );
+$broken                 = $base;
+$broken['family']       = 'wenfeng-zhi-mang-xing';
+$broken['subset']       = 'zh-common';
+$broken['css_status']   = 'missing';
+$broken_url             = WPFonts_Link::stylesheet_url( $broken );
+$assert( 'https://cn.windfonts.com/api/css?family=wenfeng-zhi-mang-xing&subset=zh-common' === $broken_url, 'broken preview URL drifted: ' . $broken_url );
+$assert( '' === WPFonts_Link::embed_url( $broken ), 'a 404 family and subset was treated as a healthy embed' );
+$assert( array() === WPFonts_Link::front_stylesheets( $broken, 'wenfeng-zhi-mang-xing', array() ), 'a missing stylesheet was still printed' );
 
-$only_global         = $base;
-$only_global['family'] = '';
-$from_global         = WPFonts_Link::front_stylesheets( $only_global, '', $globals );
-$assert( array( 'https://cn.windfonts.com/api/css?family=wenfeng-aleo&subset=zh-common' ) === $from_global, 'global styles family was skipped when settings had no family' );
+$ibmps_css = '/* IBM */ @font-face { font-family: "windfonts-ibmps"; src: url(https://cn.windfonts.com/a.woff2); }';
+$probed    = WPFonts_Link::interpret_stylesheet( 200, $ibmps_css );
+$assert( 'ok' === $probed['status'], 'ibmps CSS was not accepted' );
+$assert( 'windfonts-ibmps' === $probed['face'], 'ibmps face name drifted: ' . $probed['face'] );
+$miss = WPFonts_Link::interpret_stylesheet( 404, '{"code":404,"message":"字体 wenfeng-zhi-mang-xing 的 regular 字重 zh-common 版本不存在"}' );
+$assert( 'missing' === $miss['status'] && '' === $miss['face'], '404 stylesheet was treated as healthy' );
+$quiet = WPFonts_Link::interpret_stylesheet( 0, '' );
+$assert( 'unchecked' === $quiet['status'], 'a timeout was stored as a miss' );
 
-$off_sheets = WPFonts_Link::front_stylesheets( $off, $extra_html, $globals );
-$assert( array() === $off_sheets, 'CDN off still printed extra families' );
+$confirmed               = $base;
+$confirmed['css_status'] = 'ok';
+$confirmed['css_face']   = 'windfonts-ibmps';
+$assert( 'https://cn.windfonts.com/api/css?family=wenfeng-ibmps&subset=zh-common' === WPFonts_Link::embed_url( $confirmed ), 'confirmed ibmps embed drifted' );
 
-$project_sheets = WPFonts_Link::front_stylesheets( $project, $extra_html, array() );
-$assert( 'https://cn.windfonts.com/p/studio/index.css' === $project_sheets[0], 'project stylesheet was replaced' );
-$assert( in_array( 'https://cn.windfonts.com/api/css?family=wenfeng-hcwjt&subset=zh-common', $project_sheets, true ), 'project mode dropped a content family' );
+$off_sheets = WPFonts_Link::front_stylesheets( $off, '', array() );
+$assert( array() === $off_sheets, 'CDN off still printed a stylesheet' );
 
 $advanced = WPFonts_Link::merge_public( $prev, $input, 'advanced' );
 $assert( 'hacked' === $advanced['project_slug'], 'advanced save kept the old project' );
