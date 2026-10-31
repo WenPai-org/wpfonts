@@ -85,7 +85,12 @@
 		var note = noteState[0];
 		var setNote = noteState[1];
 		var packages = cfg.packages || [];
-		var cloud = cfg.cloud || null;
+		var cloudList = [];
+		if (Object.prototype.toString.call(cfg.cloud) === "[object Array]") {
+			cloudList = cfg.cloud;
+		} else if (cfg.cloud && cfg.cloud.stack) {
+			cloudList = [cfg.cloud];
+		}
 
 		function onPick(stack, css, preconnect, licenseNote) {
 			if ("function" !== typeof props.setAttributes || !acceptsFont(props.name)) {
@@ -119,18 +124,21 @@
 				? el("div", { className: "wpfonts-editor-list" }, packageButtons)
 				: el("p", { className: "wpfonts-editor-note" }, i18n.noPackages || ""),
 			el("p", { className: "wpfonts-editor-note" }, i18n.cloud || ""),
-			cloud && cloud.stack
+			cloudList.length
 				? el(
 					"div",
 					{ className: "wpfonts-editor-list" },
-					el(FamilyButton, {
-						name: cloud.name,
-						stack: cloud.stack,
-						css: cloud.css || "",
-						preconnect: cloud.preconnect || "",
-						licenseNote: cloud.licenseNote || "",
-						current: current,
-						onPick: onPick
+					cloudList.map(function (item) {
+						return el(FamilyButton, {
+							key: item.stack,
+							name: item.name,
+							stack: item.stack,
+							css: item.css || "",
+							preconnect: item.preconnect || "",
+							licenseNote: item.licenseNote || "",
+							current: current,
+							onPick: onPick
+						});
 					})
 				)
 				: el("p", { className: "wpfonts-editor-note" }, i18n.noCloud || "")

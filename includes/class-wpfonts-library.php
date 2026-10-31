@@ -141,43 +141,51 @@ class WPFonts_Library {
 	}
 
 	/**
-	 * One Font Library family when the saved stylesheet opened and named a face.
+	 * One Font Library family for each confirmed wenfeng-* face.
 	 *
-	 * The catalog token stays the slug and the URL key. The CSS font-family is
-	 * the face the stylesheet declares, which is not the same string.
+	 * An rc.6 row with no `faces` list still contributes its single confirmed
+	 * face. The catalog token stays the slug. The CSS font-family is the face
+	 * the stylesheet declares, which is not the same string.
 	 *
 	 * @param array  $settings Public settings.
 	 * @param string $label    Optional display name.
 	 * @return array<int,array{font_family_settings:array}>
 	 */
 	public static function confirmed_cloud_families( array $settings, $label = '' ) {
-		$status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
-		if ( 'ok' !== $status ) {
+		if ( ! class_exists( 'WPFonts_Settings', false ) || ! class_exists( 'WPFonts_Link', false ) ) {
 			return array();
 		}
-		$face = self::plain_family( isset( $settings['css_face'] ) ? $settings['css_face'] : '' );
-		if ( '' === $face || ! class_exists( 'WPFonts_Link', false ) ) {
-			return array();
-		}
-		$token = WPFonts_Link::family( $settings );
-		$slug  = ( '' !== $token && 0 === strpos( $token, 'wenfeng-' ) ) ? $token : 'wpfonts-cloud';
-		$name  = trim( (string) $label );
-		if ( '' === $name ) {
-			$name = $face;
-		}
-		$stack = self::css_stack( $face );
-		if ( '' === $stack ) {
-			return array();
-		}
-		return array(
-			array(
+		$out   = array();
+		$seen  = array();
+		$label = trim( (string) $label );
+		foreach ( WPFonts_Settings::confirmed_faces( $settings ) as $face ) {
+			$token = isset( $face['family'] ) ? (string) $face['family'] : '';
+			if ( '' === $token || isset( $seen[ $token ] ) || 0 !== strpos( $token, 'wenfeng-' ) ) {
+				continue;
+			}
+			$seen[ $token ] = true;
+			$css            = self::plain_family( isset( $face['css_face'] ) ? $face['css_face'] : '' );
+			$stack          = self::css_stack( $css );
+			if ( '' === $stack ) {
+				continue;
+			}
+			$name    = isset( $face['name'] ) ? trim( (string) $face['name'] ) : '';
+			$primary = WPFonts_Link::family( $settings );
+			if ( ( '' === $name || $token === $name || $css === $name ) && '' !== $label && $token === $primary ) {
+				$name = $label;
+			}
+			if ( '' === $name ) {
+				$name = $css;
+			}
+			$out[] = array(
 				'font_family_settings' => array(
 					'name'       => $name,
-					'slug'       => $slug,
+					'slug'       => $token,
 					'fontFamily' => $stack,
 				),
-			),
-		);
+			);
+		}
+		return $out;
 	}
 
 	/**

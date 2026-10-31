@@ -84,26 +84,59 @@
 	var refreshBtn = document.getElementById("wpfonts-catalog-refresh");
 	var loaded = [];
 	var refreshing = false;
+	var selected = {};
+	var holds = document.getElementById("wpfonts-family-holds");
 
 	function trim(value) {
 		return (value || "").replace(/^\s+|\s+$/g, "");
 	}
 
-	function familyValue() {
-		return trim(family.value).toLowerCase();
+	function rememberSelected() {
+		var nodes = document.querySelectorAll('input[name="wpfonts_settings[families][]"]');
+		var i;
+		for (i = 0; i < nodes.length; i++) {
+			if (nodes[i].type === "hidden" || nodes[i].checked) {
+				selected[nodes[i].value] = true;
+			}
+		}
+	}
+
+	function syncHolds() {
+		if (!holds) {
+			return;
+		}
+		holds.textContent = "";
+		var visible = {};
+		var boxes = list.querySelectorAll('input[type="checkbox"]');
+		var i;
+		for (i = 0; i < boxes.length; i++) {
+			visible[boxes[i].value] = true;
+		}
+		var token;
+		for (token in selected) {
+			if (!Object.prototype.hasOwnProperty.call(selected, token) || !selected[token] || visible[token]) {
+				continue;
+			}
+			var input = document.createElement("input");
+			input.type = "hidden";
+			input.name = "wpfonts_settings[families][]";
+			input.value = token;
+			holds.appendChild(input);
+		}
 	}
 
 	function paint() {
-		var current = familyValue();
-		var radios = list.querySelectorAll('input[name="wpfonts_catalog_pick"]');
-		for (var i = 0; i < radios.length; i++) {
-			var on = radios[i].value === current;
-			radios[i].checked = on;
-			var label = radios[i].closest ? radios[i].closest(".choice") : null;
+		var boxes = list.querySelectorAll('input[type="checkbox"]');
+		var i;
+		for (i = 0; i < boxes.length; i++) {
+			var on = !!selected[boxes[i].value];
+			boxes[i].checked = on;
+			var label = boxes[i].closest ? boxes[i].closest(".choice") : null;
 			if (label) {
 				label.classList.toggle("is-on", on);
 			}
 		}
+		syncHolds();
 	}
 
 	function setStatus(text, show) {
@@ -126,19 +159,18 @@
 			return;
 		}
 		list.hidden = false;
-		var current = familyValue();
 		for (var i = 0; i < rows.length; i++) {
 			var row = rows[i];
 			if (!row || !row.fontFamily) {
 				continue;
 			}
 			var label = document.createElement("label");
-			label.className = "choice" + (row.fontFamily === current ? " is-on" : "");
+			label.className = "choice" + (selected[row.fontFamily] ? " is-on" : "");
 			var input = document.createElement("input");
-			input.type = "radio";
-			input.name = "wpfonts_catalog_pick";
+			input.type = "checkbox";
+			input.name = "wpfonts_settings[families][]";
 			input.value = row.fontFamily;
-			input.checked = row.fontFamily === current;
+			input.checked = !!selected[row.fontFamily];
 			var text = document.createElement("span");
 			var title = document.createElement("span");
 			title.className = "t";
@@ -155,6 +187,7 @@
 		if (scope) {
 			scope.hidden = !fromLoadedPage;
 		}
+		syncHolds();
 	}
 
 	function filterLoaded(query) {
@@ -258,14 +291,20 @@
 
 	list.addEventListener("change", function (event) {
 		var target = event.target;
-		if (!target || target.name !== "wpfonts_catalog_pick") {
+		if (!target || target.name !== "wpfonts_settings[families][]") {
 			return;
 		}
-		family.value = target.value;
+		if (target.checked) {
+			selected[target.value] = true;
+		} else {
+			delete selected[target.value];
+		}
 		paint();
 	});
 
-	family.addEventListener("input", paint);
+	family.addEventListener("input", function () {
+		paint();
+	});
 
 	if (search) {
 		search.addEventListener("keydown", function (event) {
@@ -349,5 +388,6 @@
 	}
 
 	readLoaded();
+	rememberSelected();
 	paint();
 })();

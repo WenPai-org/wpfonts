@@ -333,9 +333,64 @@ class WPFonts_Packages {
 			if ( empty( $package['enabled'] ) ) {
 				continue;
 			}
+			$health = self::health( $package );
+			if ( 'missing_css' === $health['code'] || 'no_woff2' === $health['code'] ) {
+				continue;
+			}
 			$url = $base . $package['id'] . '/local.css';
 			wp_enqueue_style( 'wpfonts-local-' . $package['id'], $url, array(), (string) $package['installed_at'] );
 		}
+	}
+
+	/**
+	 * Why a package would not load, in one Chinese sentence.
+	 *
+	 * unknown means the uploads directory could not be read. That is not
+	 * reported as a broken package. A healthy package returns an empty reason.
+	 *
+	 * @param array $package Package row.
+	 * @return array{code:string,reason:string}
+	 */
+	public static function health( array $package ) {
+		$enabled = ! empty( $package['enabled'] );
+		$id      = isset( $package['id'] ) ? self::clean_id( $package['id'] ) : '';
+		$unknown = array(
+			'code'   => 'unknown',
+			'reason' => '',
+		);
+		if ( '' === $id || ! function_exists( 'wp_upload_dir' ) ) {
+			return $unknown;
+		}
+		$uploads = wp_upload_dir();
+		if ( ! is_array( $uploads ) || ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
+			return $unknown;
+		}
+		$root = rtrim( (string) $uploads['basedir'], '/\\' ) . '/wpfonts/packages';
+		$dir  = $root . '/' . $id;
+		$path = $dir . '/local.css';
+		if ( function_exists( 'wp_normalize_path' ) ) {
+			$root = wp_normalize_path( $root );
+			$dir  = wp_normalize_path( $dir );
+			$path = wp_normalize_path( $path );
+		}
+		if ( 0 !== strpos( $path, $root . '/' ) ) {
+			return $unknown;
+		}
+		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
+			return self::health_result( 'missing_css', $enabled );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local package CSS. WP_Filesystem may prompt for FTP.
+		$raw = file_get_contents( $path );
+		if ( ! is_string( $raw ) || '' === $raw ) {
+			return self::health_result( 'missing_css', $enabled );
+		}
+		if ( ! self::css_has_usable_woff2( $raw, $dir, $uploads, $id ) ) {
+			return self::health_result( 'no_woff2', $enabled );
+		}
+		return array(
+			'code'   => 'ok',
+			'reason' => '',
+		);
 	}
 
 	/**
@@ -353,6 +408,10 @@ class WPFonts_Packages {
 		}
 		$base = trailingslashit( $uploads['baseurl'] ) . 'wpfonts/packages/';
 		foreach ( self::all() as $package ) {
+			$health = self::health( $package );
+			if ( 'missing_css' === $health['code'] || 'no_woff2' === $health['code'] ) {
+				continue;
+			}
 			$url = $base . $package['id'] . '/local.css';
 			wp_enqueue_style( 'wpfonts-preview-' . $package['id'], $url, array(), (string) $package['installed_at'] );
 		}
@@ -539,6 +598,79 @@ class WPFonts_Packages {
 		}
 		update_option( self::OPTION, $next, true );
 		return true;
+	}
+
+	/**
+	 * Chinese reason for a package that cannot load.
+	 *
+	 * @param string $code    missing_css or no_woff2.
+	 * @param bool   $enabled Whether the package is switched on.
+	 * @return array{code:string,reason:string}
+	 */
+	private static function health_result( $code, $enabled ) {
+		if ( 'missing_css' === $code ) {
+			$reason = $enabled
+				? __( '已启用，但不会加载：找不到 local.css。', 'wpfonts' )
+				: __( '找不到 local.css，启用后也不会加载。', 'wpfonts' );
+		} else {
+			$reason = $enabled
+				? __( '已启用，但不会加载：样式里没有可用的 woff2。', 'wpfonts' )
+				: __( '样式里没有可用的 woff2，启用后也不会加载。', 'wpfonts' );
+		}
+		return array(
+			'code'   => $code,
+			'reason' => $reason,
+		);
+	}
+
+	/**
+	 * Whether local.css names at least one woff2 the browser can request.
+	 *
+	 * An absolute woff2 outside this package counts, so a rewritten remote
+	 * URL is not called missing. A URL inside this package counts only when
+	 * the file is on disk.
+	 *
+	 * @param string $css     local.css text.
+	 * @param string $dir     Package directory.
+	 * @param array  $uploads wp_upload_dir() result.
+	 * @param string $id      Package id.
+	 * @return bool
+	 */
+	private static function css_has_usable_woff2( $css, $dir, array $uploads, $id ) {
+		if ( ! preg_match_all( '/@font-face\s*\{([^}]*)\}/i', (string) $css, $blocks ) ) {
+			return false;
+		}
+		$baseurl = '';
+		if ( ! empty( $uploads['baseurl'] ) ) {
+			$baseurl = rtrim( (string) $uploads['baseurl'], '/' ) . '/wpfonts/packages/' . $id;
+		}
+		foreach ( $blocks[1] as $body ) {
+			if ( ! preg_match_all( '/url\(\s*([\'"]?)([^\'")]+)\1\s*\)/i', $body, $urls ) ) {
+				continue;
+			}
+			foreach ( $urls[2] as $url ) {
+				$url = trim( (string) $url );
+				if ( ! preg_match( '/\.woff2(?:$|[?#])/i', $url ) ) {
+					continue;
+				}
+				if ( preg_match( '#^https?://#i', $url ) ) {
+					if ( '' !== $baseurl && 0 === strpos( $url, $baseurl . '/' ) ) {
+						$rel = substr( $url, strlen( $baseurl ) + 1 );
+						$rel = preg_replace( '/[?#].*$/', '', (string) $rel );
+						if ( self::is_safe_rel( (string) $rel ) && is_file( $dir . '/' . $rel ) ) {
+							return true;
+						}
+						continue;
+					}
+					return true;
+				}
+				$rel = self::resolve_rel( '', $url );
+				if ( '' !== $rel && is_file( $dir . '/' . $rel ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/**

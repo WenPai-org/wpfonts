@@ -179,11 +179,30 @@ class WPFonts_Link {
 	}
 
 	/**
+	 * Public CSS for one wenfeng-* family. The project path is not used.
+	 *
+	 * @param array  $settings Settings row. Supplies the region when $subset is empty.
+	 * @param string $family   Catalog token.
+	 * @param string $subset   Subset id. Empty uses the settings subset.
+	 * @return string
+	 */
+	public static function family_stylesheet_url( array $settings, $family, $subset = '' ) {
+		$token = self::token( $family, 80 );
+		if ( '' === $token || 0 !== strpos( $token, 'wenfeng-' ) ) {
+			return '';
+		}
+		$host   = self::host( isset( $settings['region'] ) ? $settings['region'] : 'cn' );
+		$subset = self::subset( '' !== (string) $subset ? $subset : ( isset( $settings['subset'] ) ? $settings['subset'] : 'zh-common' ) );
+		return 'https://' . $host . '/api/css?family=' . rawurlencode( $token ) . '&subset=' . rawurlencode( $subset );
+	}
+
+	/**
 	 * Stylesheet URLs to print when the CDN is on and the key check passed.
 	 *
-	 * Only the saved project or family is returned. Other wenfeng-* tokens found
-	 * in content are not added: the catalog token is not the CSS face name, and
-	 * some tokens 404 for the active subset. A recorded miss returns nothing.
+	 * The saved project or primary family is returned when that address is
+	 * confirmed. Each additional confirmed wenfeng-* face adds its own public
+	 * CSS URL. Tokens found only in post content are not added. A recorded
+	 * miss returns nothing for that face.
 	 *
 	 * @param array  $settings Saved public settings.
 	 * @param string $html     Post content, or empty.
@@ -200,11 +219,22 @@ class WPFonts_Link {
 		}
 
 		unset( $html, $globals );
+		$urls    = array();
 		$primary = self::embed_url( $settings );
-		if ( '' === $primary ) {
-			return array();
+		if ( '' !== $primary ) {
+			$urls[] = $primary;
 		}
-		return array( $primary );
+		if ( class_exists( 'WPFonts_Settings', false ) ) {
+			foreach ( WPFonts_Settings::confirmed_faces( $settings ) as $face ) {
+				$subset = isset( $face['subset'] ) ? (string) $face['subset'] : '';
+				$url    = self::family_stylesheet_url( $settings, $face['family'], $subset );
+				if ( '' === $url || ! self::is_allowlisted( $url ) || in_array( $url, $urls, true ) ) {
+					continue;
+				}
+				$urls[] = $url;
+			}
+		}
+		return $urls;
 	}
 
 	/**
@@ -282,7 +312,28 @@ class WPFonts_Link {
 	 * @return array{status:string,face:string}
 	 */
 	public static function probe_stylesheet( array $settings ) {
-		$url = self::stylesheet_url( $settings );
+		return self::probe_url( self::stylesheet_url( $settings ) );
+	}
+
+	/**
+	 * Read one family stylesheet. Does not use the project path.
+	 *
+	 * @param array  $settings Public settings.
+	 * @param string $family   wenfeng-* token.
+	 * @param string $subset   Subset id.
+	 * @return array{status:string,face:string}
+	 */
+	public static function probe_family( array $settings, $family, $subset = '' ) {
+		return self::probe_url( self::family_stylesheet_url( $settings, $family, $subset ) );
+	}
+
+	/**
+	 * GET one allowlisted stylesheet.
+	 *
+	 * @param string $url Absolute URL.
+	 * @return array{status:string,face:string}
+	 */
+	private static function probe_url( $url ) {
 		if ( ! self::is_allowlisted( $url ) || ! function_exists( 'wp_remote_get' ) ) {
 			return array(
 				'status' => 'unchecked',

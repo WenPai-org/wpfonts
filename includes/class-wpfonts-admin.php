@@ -28,6 +28,8 @@ class WPFonts_Admin {
 		add_action( 'admin_post_wpfonts_install_package', array( __CLASS__, 'install_package' ) );
 		add_action( 'admin_post_wpfonts_package_toggle', array( __CLASS__, 'toggle_package' ) );
 		add_action( 'admin_post_wpfonts_package_delete', array( __CLASS__, 'delete_package' ) );
+		add_action( 'admin_post_wpfonts_export', array( __CLASS__, 'export_migration' ) );
+		add_action( 'admin_post_wpfonts_import', array( __CLASS__, 'import_migration' ) );
 		add_filter( 'plugin_action_links_' . WPFONTS_BASENAME, array( __CLASS__, 'action_links' ) );
 		add_filter( 'gettext', array( __CLASS__, 'saved_label' ), 10, 3 );
 	}
@@ -487,7 +489,7 @@ class WPFonts_Admin {
 		echo '<input type="hidden" name="wpfonts_settings[surface]" value="' . esc_attr( $mode ) . '">';
 		echo '<section class="card">';
 
-		self::status_row( 'ok', 'info', __( '系统字体', 'wpfonts' ), __( '默认使用这项，不依赖文风云。', 'wpfonts' ), 'ok', __( '可用', 'wpfonts' ) );
+		self::render_system_fonts( $settings );
 
 		echo '<div class="simple-row">';
 		echo '<span class="tile accent">';
@@ -533,7 +535,7 @@ class WPFonts_Admin {
 	private static function render_tools( array $settings, $state, $has_key ) {
 		Wenpai_Admin_Shell::page_head(
 			__( '工具', 'wpfonts' ),
-			__( '检查文风 API Key 是否可用，并预览将加载的样式链接。插件不负责上传或切分字体。', 'wpfonts' )
+			__( '检查文风 API Key，预览样式链接，并导出或导入不含密钥的字体记录。插件不负责上传或切分字体。', 'wpfonts' )
 		);
 		echo '<div class="wenpai-stack">';
 		self::render_state_banner( $state );
@@ -570,6 +572,8 @@ class WPFonts_Admin {
 		self::render_link_preview( $settings, $state, $has_key, false );
 		echo '</section>';
 
+		self::render_migration( $settings );
+
 		echo '<section class="card">';
 		echo '<h2 class="card-title">' . esc_html__( '插件不切字', 'wpfonts' ) . '</h2>';
 		echo '<p class="card-sub">' . esc_html__( '切分字体仍在文风完成，插件不切字。', 'wpfonts' ) . '</p>';
@@ -590,12 +594,16 @@ class WPFonts_Admin {
 		);
 		echo '<div class="wenpai-stack">';
 		self::help_card(
+			__( '编辑器与排版', 'wpfonts' ),
+			__( '侧栏里的「文派字库」只改当前区块。已启用的文风字体包和已确认的文风云会进入全站样式，可在外观 → 样式 → 排版里选用。', 'wpfonts' )
+		);
+		self::help_card(
 			__( '系统字体', 'wpfonts' ),
 			__( '无需填写。字体库里的「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」仍然可用，前台不会因此请求远程字体。', 'wpfonts' )
 		);
 		self::help_card(
 			__( '文风云', 'wpfonts' ),
-			__( '默认关闭。开启并保存后，前台只增加一条样式链接。服务器只有 cn.windfonts.com、hk.windfonts.com 和 en.windfonts.com。网页中不会出现 API Key。', 'wpfonts' )
+			__( '默认关闭。开启并保存后，每条已确认的文风云字体各加一条样式链接。服务器只有 cn.windfonts.com、hk.windfonts.com 和 en.windfonts.com。网页中不会出现 API Key。', 'wpfonts' )
 		);
 		self::help_card(
 			__( '文风字体包', 'wpfonts' ),
@@ -707,6 +715,110 @@ class WPFonts_Admin {
 		echo '<div class="d">' . esc_html( $desc ) . '</div>';
 		echo '</div><div class="r"><span class="pill ' . esc_attr( $pill ) . '">' . esc_html( $label ) . '</span></div>';
 		echo '</div>';
+	}
+
+	/**
+	 * CDN switch. Hidden 0 keeps a save while the box is off.
+	 *
+	 * @param bool $on Whether CDN is enabled.
+	 * @return void
+	 */
+	/**
+	 * System collection toggles. Default on. Unchecked languages are not registered.
+	 *
+	 * @param array $settings Public settings.
+	 * @return void
+	 */
+	private static function render_system_fonts( array $settings ) {
+		$choices = array(
+			'cn' => __( '系统 · 中文', 'wpfonts' ),
+			'en' => __( '系统 · 英文', 'wpfonts' ),
+			'jp' => __( '系统 · 日文', 'wpfonts' ),
+			'kr' => __( '系统 · 韩文', 'wpfonts' ),
+		);
+		echo '<div class="field">';
+		echo '<div class="field-label">' . esc_html__( '系统字体', 'wpfonts' ) . '</div>';
+		echo '<div class="field-ctl">';
+		echo '<p class="field-help">' . esc_html__( '默认都开启。取消勾选后，这一组不再出现在字体库。不依赖文风云。', 'wpfonts' ) . '</p>';
+		echo '<input type="hidden" name="wpfonts_settings[system_form]" value="1">';
+		echo '<div class="chk-grid">';
+		foreach ( $choices as $code => $label ) {
+			$key = 'system_' . $code;
+			$on  = ! isset( $settings[ $key ] ) || ! empty( $settings[ $key ] );
+			echo '<label><input type="checkbox" name="wpfonts_settings[' . esc_attr( $key ) . ']" value="1"' . checked( $on, true, false ) . '> ' . esc_html( $label ) . '</label>';
+		}
+		echo '</div></div></div>';
+	}
+
+	/**
+	 * Tools export and import. Secrets stay out of the file.
+	 *
+	 * The cards follow the WPSSS tools export: admin-post, a JSON download,
+	 * and a line that says the key is not in the file.
+	 *
+	 * @param array $settings Public settings.
+	 * @return void
+	 */
+	private static function render_migration( array $settings ) {
+		unset( $settings );
+		$note   = self::query_key( 'wpfonts_xfer', '' );
+		$detail = '';
+		if ( function_exists( 'get_current_user_id' ) && function_exists( 'get_transient' ) ) {
+			$user = (int) get_current_user_id();
+			if ( $user > 0 ) {
+				$stored = get_transient( 'wpfonts_xfer_' . $user );
+				if ( is_string( $stored ) ) {
+					$detail = $stored;
+					delete_transient( 'wpfonts_xfer_' . $user );
+				}
+			}
+		}
+		if ( 'imported' === $note ) {
+			self::notice( 'ok', '' !== $detail ? $detail : __( '已导入。密钥没有写入本站。', 'wpfonts' ) );
+		} elseif ( 'refused' === $note ) {
+			self::notice( 'bad', __( '文件里有密钥，已拒绝导入。密钥不会写入本站。', 'wpfonts' ) );
+		} elseif ( 'invalid' === $note ) {
+			self::notice( 'bad', __( '这份文件不能导入。请使用本页导出的 JSON。', 'wpfonts' ) );
+		} elseif ( 'empty' === $note ) {
+			self::notice( 'warn', __( '没有读到文件。', 'wpfonts' ) );
+		}
+
+		echo '<section class="card">';
+		echo '<div class="card-head"><span class="tile">';
+		self::icon( 'download' );
+		echo '</span><div>';
+		echo '<h2 class="card-title">' . esc_html__( '导出', 'wpfonts' ) . '</h2>';
+		echo '<p class="card-sub">' . esc_html__( '下载不含 API Key 的 JSON，便于在另一站点恢复已启用的文风字体包和已确认的文风云。', 'wpfonts' ) . '</p>';
+		echo '</div></div>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="wpfonts_export">';
+		wp_nonce_field( 'wpfonts_export' );
+		echo '<div class="card-foot start">';
+		echo '<span class="meta">' . esc_html__( 'API Key 不会出现在文件中。', 'wpfonts' ) . '</span>';
+		echo '<button class="btn btn-secondary" type="submit">' . esc_html__( '导出 JSON', 'wpfonts' ) . '</button>';
+		echo '</div></form></section>';
+
+		echo '<section class="card">';
+		echo '<div class="card-head"><span class="tile warn">';
+		self::icon( 'info' );
+		echo '</span><div>';
+		echo '<h2 class="card-title">' . esc_html__( '导入', 'wpfonts' ) . '</h2>';
+		echo '<p class="card-sub">' . esc_html__( '写入已启用的字体包记录和已确认的文风云。本站没有对应文件的字体包会跳过。带密钥的文件会被拒绝。', 'wpfonts' ) . '</p>';
+		echo '</div></div>';
+		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="wpfonts_import">';
+		wp_nonce_field( 'wpfonts_import' );
+		echo '<div class="field"><label class="field-label" for="wpfonts-import-file">' . esc_html__( 'JSON 文件', 'wpfonts' ) . '</label>';
+		echo '<div class="field-ctl">';
+		echo '<input type="file" id="wpfonts-import-file" name="wpfonts_import" accept="application/json,.json">';
+		echo '</div></div>';
+		echo '<div class="wenpai-gate">';
+		echo '<label><input type="checkbox" name="wpfonts_import_ack" value="1"> ' . esc_html__( '我确认用这份文件更新已启用的字体包，并覆盖已确认的文风云列表。', 'wpfonts' ) . '</label>';
+		echo '</div>';
+		echo '<div class="card-foot start">';
+		echo '<span class="meta">' . esc_html__( '未勾选不能点。密钥不会写入。', 'wpfonts' ) . '</span>';
+		echo '<button type="submit" class="btn btn-secondary" data-wenpai-need-apply disabled>' . esc_html__( '导入 JSON', 'wpfonts' ) . '</button>';
+		echo '</div></form></section>';
 	}
 
 	/**
@@ -909,13 +1021,36 @@ class WPFonts_Admin {
 		$fonts    = ( ! empty( $result['ok'] ) && isset( $result['fonts'] ) && is_array( $result['fonts'] ) ) ? $result['fonts'] : array();
 		$failed   = empty( $result['ok'] );
 		$family   = isset( $settings['family'] ) ? (string) $settings['family'] : '';
+		$selected = array();
+		foreach ( WPFonts_Settings::saved_faces( $settings ) as $face ) {
+			$selected[] = $face['family'];
+		}
+		if ( '' !== $family && 0 === strpos( $family, 'wenfeng-' ) && ! in_array( $family, $selected, true ) ) {
+			$selected[] = $family;
+		}
+		$visible = array();
+		foreach ( $fonts as $font ) {
+			if ( isset( $font['fontFamily'] ) ) {
+				$visible[] = (string) $font['fontFamily'];
+			}
+		}
 
 		echo '<div class="field" id="wpfonts-catalog-field"';
 		self::cdn_depends();
 		echo '>';
 		echo '<div class="field-label" id="wpfonts-catalog-label">' . esc_html__( '选用字体', 'wpfonts' ) . '</div>';
 		echo '<div class="field-ctl">';
+		echo '<input type="hidden" name="wpfonts_settings[families_form]" value="1">';
+		echo '<div id="wpfonts-family-holds">';
+		foreach ( $selected as $token ) {
+			if ( in_array( $token, $visible, true ) ) {
+				continue;
+			}
+			echo '<input type="hidden" name="wpfonts_settings[families][]" value="' . esc_attr( $token ) . '">';
+		}
+		echo '</div>';
 		echo '<p class="field-help">' . esc_html__( '从文风目录挑选，或手动填写字体名。选中的名字会写进公开样式地址。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '可以勾选多个已确认的文风云。取消勾选并保存后，只从全站样式去掉这一项。', 'wpfonts' ) . '</p>';
 		echo '<p class="hint" id="wpfonts-catalog-note">' . esc_html( $messages['note'] ) . '</p>';
 		echo '<p><button type="button" class="btn btn-secondary" id="wpfonts-catalog-refresh">' . esc_html( $messages['refresh'] ) . '</button></p>';
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
@@ -927,16 +1062,16 @@ class WPFonts_Admin {
 		} else {
 			echo '<p class="hint" id="wpfonts-catalog-status" hidden>' . esc_html( $messages['loading'] ) . '</p>';
 		}
-		echo '<div id="wpfonts-catalog-list" class="choice-cards wpfonts-catalog-list" role="radiogroup" aria-labelledby="wpfonts-catalog-label"';
+		echo '<div id="wpfonts-catalog-list" class="choice-cards wpfonts-catalog-list" role="group" aria-labelledby="wpfonts-catalog-label"';
 		if ( $failed || array() === $fonts ) {
 			echo ' hidden';
 		}
 		echo '>';
 		foreach ( $fonts as $font ) {
 			$id = $font['fontFamily'];
-			$on = ( $family === $id );
+			$on = in_array( $id, $selected, true );
 			echo '<label class="choice' . ( $on ? ' is-on' : '' ) . '">';
-			echo '<input type="radio" name="wpfonts_catalog_pick" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
+			echo '<input type="checkbox" name="wpfonts_settings[families][]" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
 			echo '<span><span class="t">' . esc_html( $font['name'] ) . '</span><span class="d">' . esc_html( $id ) . '</span></span>';
 			echo '</label>';
 		}
@@ -1337,6 +1472,10 @@ class WPFonts_Admin {
 		self::icon( 'download' );
 		echo '</span><div>';
 		echo '<div class="t">' . esc_html( $package['name'] ) . '</div>';
+		$health = WPFonts_Packages::health( $package );
+		if ( '' !== $health['reason'] ) {
+			echo '<p class="d">' . esc_html( $health['reason'] ) . '</p>';
+		}
 		echo '</div><div class="r">';
 		echo '<span class="pill ' . esc_attr( $on ? 'ok' : 'mute' ) . '">' . esc_html( $on ? __( '使用中', 'wpfonts' ) : __( '已停用', 'wpfonts' ) ) . '</span>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
@@ -1371,11 +1510,16 @@ class WPFonts_Admin {
 	 */
 	private static function render_package_preview( array $package ) {
 		$family = isset( $package['family'] ) ? (string) $package['family'] : '';
-		$ready  = '' !== $family && self::package_css_ready( $package['id'] );
+		$health = WPFonts_Packages::health( $package );
+		$ready  = '' !== $family && 'ok' === $health['code'];
 		echo '<div class="wpfonts-preview">';
 		echo '<p class="meta">' . esc_html__( '预览', 'wpfonts' ) . '</p>';
+		if ( 'unknown' === $health['code'] ) {
+			$ready = '' !== $family && self::package_css_ready( $package['id'] );
+		}
 		if ( ! $ready ) {
-			echo '<p class="meta">' . esc_html__( '预览暂时不可用。', 'wpfonts' ) . '</p>';
+			$reason = ( '' !== $health['reason'] ) ? $health['reason'] : __( '预览暂时不可用。', 'wpfonts' );
+			echo '<p class="meta">' . esc_html( $reason ) . '</p>';
 			echo '</div>';
 			return;
 		}
@@ -1472,6 +1616,94 @@ class WPFonts_Admin {
 			WPFonts_Packages::delete( $id );
 		}
 		wp_safe_redirect( self::page_url( array( 'tab' => 'packages' ) ) );
+		exit;
+	}
+
+	/**
+	 * Download enabled package metadata and confirmed cloud faces.
+	 *
+	 * The API key is not part of the document.
+	 *
+	 * @return void
+	 */
+	public static function export_migration() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( '你没有权限做这件事。', 'wpfonts' ) );
+		}
+		check_admin_referer( 'wpfonts_export' );
+		$payload = WPFonts_Transfer::export_json();
+		if ( '' === $payload ) {
+			wp_safe_redirect(
+				self::page_url(
+					array(
+						'tab'          => 'tools',
+						'wpfonts_xfer' => 'invalid',
+					)
+				)
+			);
+			exit;
+		}
+		nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="wpfonts-migration.json"' );
+		echo $payload; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON file download. Secret fields are stripped before encode.
+		exit;
+	}
+
+	/**
+	 * Import a migration file. A file that contains a key is refused.
+	 *
+	 * @return void
+	 */
+	public static function import_migration() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( '你没有权限做这件事。', 'wpfonts' ) );
+		}
+		check_admin_referer( 'wpfonts_import' );
+		$ack = isset( $_POST['wpfonts_import_ack'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['wpfonts_import_ack'] ) );
+		if ( ! $ack ) {
+			wp_safe_redirect(
+				self::page_url(
+					array(
+						'tab'          => 'tools',
+						'wpfonts_xfer' => 'invalid',
+					)
+				)
+			);
+			exit;
+		}
+		$file = array();
+		if ( isset( $_FILES['wpfonts_import'] ) && is_array( $_FILES['wpfonts_import'] ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The upload is read as JSON and then validated.
+			$file = wp_unslash( $_FILES['wpfonts_import'] );
+		}
+		$tmp  = isset( $file['tmp_name'] ) ? (string) $file['tmp_name'] : '';
+		$err  = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+		$size = isset( $file['size'] ) ? (int) $file['size'] : 0;
+		$code = 'empty';
+		if ( UPLOAD_ERR_OK === $err && '' !== $tmp && $size > 0 && $size <= 524288 && is_uploaded_file( $tmp ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- One uploaded JSON file, size-capped above.
+			$raw    = file_get_contents( $tmp );
+			$result = WPFonts_Transfer::import_json( is_string( $raw ) ? $raw : '' );
+			$code   = isset( $result['code'] ) ? (string) $result['code'] : 'invalid';
+			if ( 'imported' === $code && isset( $result['message'] ) && function_exists( 'get_current_user_id' ) && function_exists( 'set_transient' ) ) {
+				$user = (int) get_current_user_id();
+				if ( $user > 0 ) {
+					set_transient( 'wpfonts_xfer_' . $user, (string) $result['message'], 60 );
+				}
+			}
+		}
+		if ( ! in_array( $code, array( 'imported', 'refused', 'invalid', 'empty' ), true ) ) {
+			$code = 'invalid';
+		}
+		wp_safe_redirect(
+			self::page_url(
+				array(
+					'tab'          => 'tools',
+					'wpfonts_xfer' => $code,
+				)
+			)
+		);
 		exit;
 	}
 }

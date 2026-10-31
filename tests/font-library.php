@@ -333,7 +333,35 @@ $assert( false !== strpos( $editor_src, "'packages'    => __( 'Windfonts', 'wpfo
 $assert( false !== strpos( $editor_src, '还没有启用的文风字体包。' ), 'inspector empty package copy drifted' );
 $assert( false !== strpos( $editor_src, 'confirmed_cloud_families' ), 'editor still applies raw catalog tokens' );
 $assert( false === strpos( $editor_js, 'wenfeng-' ), 'editor script builds a CSS stack from the catalog token' );
-$assert( false !== strpos( $editor_src, '选一个字体，用在当前区块。已启用的字体会出现在全站样式里。' ), 'editor intro drifted' );
+$assert( false !== strpos( $editor_src, '侧栏里的选择只改当前区块。' ), 'editor intro drifted' );
+
+$two = $cloud_settings;
+$two['faces'] = array(
+	array(
+		'family'   => 'wenfeng-ibmps',
+		'name'     => 'IBM Plex 无衬线简体中文',
+		'css_face' => 'windfonts-ibmps',
+		'subset'   => 'zh-common',
+	),
+	array(
+		'family'   => 'wenfeng-hcwjt',
+		'name'     => '汇文楷体',
+		'css_face' => 'windfonts-hcwjt',
+		'subset'   => 'zh-common',
+	),
+);
+$many = WPFonts_Library::confirmed_cloud_families( $two, 'IBM Plex 无衬线简体中文' );
+$assert( 2 === count( $many ), 'confirmed cloud list dropped a second face' );
+$assert( 'wenfeng-ibmps' === $many[0]['font_family_settings']['slug'], 'first cloud slug drifted' );
+$assert( 'wenfeng-hcwjt' === $many[1]['font_family_settings']['slug'], 'second cloud slug drifted' );
+$assert( '"windfonts-hcwjt", sans-serif' === $many[1]['font_family_settings']['fontFamily'], 'second cloud stack used the catalog token' );
+$kept_only = $two;
+$kept_only['faces'] = array( $two['faces'][0] );
+$kept_only['css_face'] = 'windfonts-ibmps';
+$kept_only['family'] = 'wenfeng-ibmps';
+$after_remove = WPFonts_Library::confirmed_cloud_families( $kept_only, '' );
+$assert( 1 === count( $after_remove ), 'removing a face left it in the cloud list' );
+$assert( 'wenfeng-ibmps' === $after_remove[0]['font_family_settings']['slug'], 'the remaining face was not the one kept' );
 
 $hooked = false;
 foreach ( $GLOBALS['wpfonts_actions'] as $action ) {

@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WPFonts
  * Plugin URI: https://wpcy.com/wpfonts
- * Description: 中文、英文、日文、韩文系统字体。文风云默认关闭，开启后前台只加载一条文风服务器上的样式。
- * Version: 2.0.0-rc.6
+ * Description: 中文、英文、日文、韩文系统字体。文风云默认关闭，开启后每条已确认的文风云字体各加载一条样式。
+ * Version: 2.0.0-rc.7
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: WPFonts.com
@@ -17,8 +17,9 @@
  * System font stacks stay on when the CDN is off. The CDN client is a
  * release candidate: it prints an allowlisted stylesheet link and does not
  * delete Global Styles or uploaded fonts on uninstall. Enabled packages and
- * a confirmed cloud face are copied into the user Global Styles post. Theme
- * files on disk are left alone.
+ * confirmed cloud faces are copied into the user Global Styles post. Theme
+ * files on disk are left alone. Unchecked system-font languages are not
+ * registered.
  *
  * @package WPFonts
  */
@@ -27,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPFONTS_VERSION', '2.0.0-rc.6' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.7' );
 define( 'WPFONTS_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPFONTS_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPFONTS_BASENAME', plugin_basename( __FILE__ ) );
@@ -42,6 +43,7 @@ require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-embed.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-library.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-global-styles.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-editor.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-transfer.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-admin.php';
 
 register_activation_hook( __FILE__, array( 'WPFonts_Catalog', 'activate' ) );
@@ -102,25 +104,33 @@ function wp_fonts_register_collections() {
 			'name'        => __( '系统 · 中文', 'wpfonts' ),
 			'description' => __( '设备上已有的中文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'chinese.json',
+			'system'      => 'cn',
 		),
 		'wp-fonts-stacks-en' => array(
 			'name'        => __( '系统 · 英文', 'wpfonts' ),
 			'description' => __( '设备上已有的西文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'english.json',
+			'system'      => 'en',
 		),
 		'wp-fonts-stacks-jp' => array(
 			'name'        => __( '系统 · 日文', 'wpfonts' ),
 			'description' => __( '设备上已有的日文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'japanese.json',
+			'system'      => 'jp',
 		),
 		'wp-fonts-stacks-kr' => array(
 			'name'        => __( '系统 · 韩文', 'wpfonts' ),
 			'description' => __( '设备上已有的韩文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'korean.json',
+			'system'      => 'kr',
 		),
 	);
 
 	foreach ( $collections as $slug => $collection ) {
+		$system = isset( $collection['system'] ) ? (string) $collection['system'] : '';
+		if ( '' !== $system && class_exists( 'WPFonts_Settings', false ) && ! WPFonts_Settings::system_enabled( $system ) ) {
+			continue;
+		}
 		$result = wp_register_font_collection(
 			$slug,
 			array(

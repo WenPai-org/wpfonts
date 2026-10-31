@@ -54,7 +54,7 @@ class WPFonts_Editor {
 		);
 
 		$settings = class_exists( 'WPFonts_Settings', false ) ? WPFonts_Settings::get() : array();
-		$cloud    = self::editor_cloud( $settings );
+		$cloud    = self::editor_cloud_list( $settings );
 		wp_localize_script(
 			'wpfonts-editor',
 			'wpfontsEditor',
@@ -63,7 +63,7 @@ class WPFonts_Editor {
 				'cloud'    => $cloud,
 				'i18n'     => array(
 					'title'       => __( '文派字库', 'wpfonts' ),
-					'intro'       => __( '选一个字体，用在当前区块。已启用的字体会出现在全站样式里。', 'wpfonts' ),
+					'intro'       => __( '侧栏里的选择只改当前区块。', 'wpfonts' ),
 					'packages'    => __( 'Windfonts', 'wpfonts' ),
 					'cloud'       => __( '文风云', 'wpfonts' ),
 					'noPackages'  => __( '还没有启用的文风字体包。', 'wpfonts' ),
@@ -92,41 +92,52 @@ class WPFonts_Editor {
 		if ( ! class_exists( 'WPFonts_Settings', false ) || ! class_exists( 'WPFonts_Link', false ) ) {
 			return;
 		}
-		$url = WPFonts_Link::embed_url( WPFonts_Settings::get() );
-		if ( '' === $url ) {
-			return;
+		$urls  = WPFonts_Link::front_stylesheets( WPFonts_Settings::get() );
+		$total = count( $urls );
+		for ( $index = 0; $index < $total; $index++ ) {
+			$handle = ( 0 === $index ) ? 'wpfonts-cdn-editor' : 'wpfonts-cdn-editor-' . $index;
+			wp_enqueue_style( $handle, $urls[ $index ], array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
 		}
-		wp_enqueue_style( 'wpfonts-cdn-editor', $url, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
 	}
 
 	/**
-	 * The one confirmed 文风云 face, or null when the stylesheet has not opened.
+	 * Confirmed 文风云 faces for the inspector.
+	 *
+	 * The list is the saved confirmation. Opening the panel does not search
+	 * the catalog or call Windfonts.
 	 *
 	 * @param array $settings Public settings.
-	 * @return array{name:string,stack:string,css:string,preconnect:string,licenseNote:string}|null
+	 * @return array<int,array{name:string,stack:string,css:string,preconnect:string,licenseNote:string}>
 	 */
-	private static function editor_cloud( array $settings ) {
-		if ( ! class_exists( 'WPFonts_Library', false ) || ! class_exists( 'WPFonts_Link', false ) ) {
-			return null;
+	private static function editor_cloud_list( array $settings ) {
+		if ( ! class_exists( 'WPFonts_Library', false ) || ! class_exists( 'WPFonts_Link', false ) || ! class_exists( 'WPFonts_Settings', false ) ) {
+			return array();
 		}
 		$label    = WPFonts_Library::catalog_label( $settings );
 		$families = WPFonts_Library::confirmed_cloud_families( $settings, $label );
-		if ( array() === $families ) {
-			return null;
+		$faces    = WPFonts_Settings::confirmed_faces( $settings );
+		$by       = array();
+		foreach ( $faces as $face ) {
+			$by[ $face['family'] ] = $face;
 		}
-		$row = $families[0]['font_family_settings'];
-		$url = '';
-		if ( isset( $settings['css_status'] ) && 'ok' === $settings['css_status'] ) {
-			$built = WPFonts_Link::stylesheet_url( $settings );
-			$url   = WPFonts_Link::is_allowlisted( $built ) ? $built : '';
+		$out = array();
+		foreach ( $families as $definition ) {
+			$row  = $definition['font_family_settings'];
+			$slug = isset( $row['slug'] ) ? (string) $row['slug'] : '';
+			$url  = '';
+			if ( isset( $by[ $slug ] ) ) {
+				$built = WPFonts_Link::family_stylesheet_url( $settings, $slug, $by[ $slug ]['subset'] );
+				$url   = WPFonts_Link::is_allowlisted( $built ) ? $built : '';
+			}
+			$out[] = array(
+				'name'        => $row['name'],
+				'stack'       => $row['fontFamily'],
+				'css'         => $url,
+				'preconnect'  => WPFonts_Link::preconnect_origin( $url ),
+				'licenseNote' => WPFonts_Link::CDN_LICENSE_NOTE,
+			);
 		}
-		return array(
-			'name'        => $row['name'],
-			'stack'       => $row['fontFamily'],
-			'css'         => $url,
-			'preconnect'  => WPFonts_Link::preconnect_origin( $url ),
-			'licenseNote' => WPFonts_Link::CDN_LICENSE_NOTE,
-		);
+		return $out;
 	}
 }
 

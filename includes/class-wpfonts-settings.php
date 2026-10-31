@@ -28,7 +28,26 @@ class WPFonts_Settings {
 	private static $writing = false;
 
 	/**
-	 * Default public settings. CDN is off.
+	 * How many confirmed cloud faces one site can save.
+	 *
+	 * @var int
+	 */
+	const MAX_FACES = 12;
+
+	/**
+	 * System font collection codes. Each one can be turned off in settings.
+	 *
+	 * @return string[]
+	 */
+	public static function system_codes() {
+		return array( 'cn', 'en', 'jp', 'kr' );
+	}
+
+	/**
+	 * Default public settings. CDN is off. System collections stay on.
+	 *
+	 * `faces` is absent until a save writes it. An rc.6 row is still one
+	 * family, css_status, and css_face.
 	 *
 	 * @return array
 	 */
@@ -43,6 +62,10 @@ class WPFonts_Settings {
 			'key_checked'  => 0,
 			'css_status'   => '',
 			'css_face'     => '',
+			'system_cn'    => 1,
+			'system_en'    => 1,
+			'system_jp'    => 1,
+			'system_kr'    => 1,
 		);
 	}
 
@@ -72,7 +95,135 @@ class WPFonts_Settings {
 		}
 		$settings['css_status'] = $css_status;
 		$settings['css_face']   = WPFonts_Link::face_name( isset( $settings['css_face'] ) ? $settings['css_face'] : '' );
+		foreach ( self::system_codes() as $code ) {
+			$key              = 'system_' . $code;
+			$settings[ $key ] = empty( $settings[ $key ] ) ? 0 : 1;
+		}
+		if ( array_key_exists( 'faces', $saved ) ) {
+			$settings['faces'] = self::clean_stored_faces( $saved['faces'] );
+		} else {
+			unset( $settings['faces'] );
+		}
 		return $settings;
+	}
+
+	/**
+	 * Whether a system collection should be registered. Missing keys stay on.
+	 *
+	 * @param string $code cn, en, jp, or kr.
+	 * @return bool
+	 */
+	public static function system_enabled( $code ) {
+		$code = (string) $code;
+		if ( ! in_array( $code, self::system_codes(), true ) ) {
+			return false;
+		}
+		$settings = self::get();
+		$key      = 'system_' . $code;
+		if ( ! array_key_exists( $key, $settings ) ) {
+			return true;
+		}
+		return ! empty( $settings[ $key ] );
+	}
+
+	/**
+	 * Stored cloud faces, including a single rc.6 face when `faces` was never written.
+	 *
+	 * An empty `faces` array is explicit: the legacy family is not put back.
+	 * Rows without a CSS face are kept so a selection survives until a probe.
+	 *
+	 * @param array $settings Public settings.
+	 * @return array<int,array{family:string,name:string,css_face:string,subset:string}>
+	 */
+	public static function saved_faces( array $settings ) {
+		if ( array_key_exists( 'faces', $settings ) ) {
+			return self::clean_stored_faces( $settings['faces'] );
+		}
+		$legacy = self::legacy_face( $settings );
+		return ( null === $legacy ) ? array() : array( $legacy );
+	}
+
+	/**
+	 * Faces that may be listed and loaded.
+	 *
+	 * When cdn_enabled or key_status is missing, that gate is skipped so a
+	 * partial row from rc.6 still counts. A present key must be valid, and a
+	 * present switch must be on.
+	 *
+	 * @param array $settings Public settings.
+	 * @return array<int,array{family:string,name:string,css_face:string,subset:string}>
+	 */
+	public static function confirmed_faces( array $settings ) {
+		if ( array_key_exists( 'cdn_enabled', $settings ) && empty( $settings['cdn_enabled'] ) ) {
+			return array();
+		}
+		if ( array_key_exists( 'key_status', $settings ) && 'valid' !== (string) $settings['key_status'] ) {
+			return array();
+		}
+		$out = array();
+		foreach ( self::saved_faces( $settings ) as $face ) {
+			if ( '' !== $face['css_face'] ) {
+				$out[] = $face;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Stable signature for Global Styles. Order does not matter.
+	 *
+	 * @param mixed $settings Settings row.
+	 * @return string
+	 */
+	public static function faces_signature( $settings ) {
+		if ( ! is_array( $settings ) || ! array_key_exists( 'faces', $settings ) ) {
+			return '';
+		}
+		$parts = array();
+		foreach ( self::clean_stored_faces( $settings['faces'] ) as $face ) {
+			$parts[] = $face['family'] . '|' . $face['css_face'] . '|' . $face['subset'];
+		}
+		sort( $parts );
+		return implode( "\n", $parts );
+	}
+
+	/**
+	 * One stored face, or null when the family is not wenfeng-*.
+	 *
+	 * @param mixed $row         Raw row.
+	 * @param bool  $require_css True when a CSS face is required.
+	 * @return array{family:string,name:string,css_face:string,subset:string}|null
+	 */
+	public static function normalize_face( $row, $require_css = false ) {
+		if ( ! is_array( $row ) || ! class_exists( 'WPFonts_Link', false ) ) {
+			return null;
+		}
+		$family = WPFonts_Link::token( isset( $row['family'] ) ? $row['family'] : '', 80 );
+		if ( '' === $family || 0 !== strpos( $family, 'wenfeng-' ) ) {
+			return null;
+		}
+		$css = WPFonts_Link::face_name( isset( $row['css_face'] ) ? $row['css_face'] : '' );
+		if ( $require_css && '' === $css ) {
+			return null;
+		}
+		$name = isset( $row['name'] ) ? (string) $row['name'] : '';
+		$name = preg_replace( '/[\x00-\x1F\x7F<>]/', '', $name );
+		if ( ! is_string( $name ) ) {
+			$name = '';
+		}
+		$name = trim( $name );
+		if ( function_exists( 'mb_substr' ) ) {
+			$name = mb_substr( $name, 0, 80 );
+		} elseif ( strlen( $name ) > 80 ) {
+			$name = substr( $name, 0, 80 );
+		}
+		$subset = isset( $row['subset'] ) ? $row['subset'] : 'zh-common';
+		return array(
+			'family'   => $family,
+			'name'     => $name,
+			'css_face' => $css,
+			'subset'   => WPFonts_Link::subset( $subset ),
+		);
 	}
 
 	/**
@@ -240,8 +391,24 @@ class WPFonts_Settings {
 	 * @return array
 	 */
 	public static function refresh_css( array $settings ) {
-		$settings = array_merge( self::defaults(), $settings );
-		if ( empty( $settings['cdn_enabled'] ) || 'valid' !== (string) $settings['key_status'] || ! WPFonts_Link::has_target( $settings ) ) {
+		$had_faces = array_key_exists( 'faces', $settings );
+		$faces     = ( $had_faces && is_array( $settings['faces'] ) ) ? $settings['faces'] : null;
+		$settings  = array_merge( self::defaults(), $settings );
+		if ( null === $faces ) {
+			unset( $settings['faces'] );
+		} else {
+			$settings['faces'] = $faces;
+		}
+		$can_probe = ! empty( $settings['cdn_enabled'] ) && 'valid' === (string) $settings['key_status'];
+		if ( ! $can_probe ) {
+			$settings['css_status'] = '';
+			$settings['css_face']   = '';
+			return $settings;
+		}
+		if ( array_key_exists( 'faces', $settings ) ) {
+			$settings['faces'] = self::probe_face_list( $settings );
+		}
+		if ( ! WPFonts_Link::has_target( $settings ) ) {
 			$settings['css_status'] = '';
 			$settings['css_face']   = '';
 			return $settings;
@@ -278,6 +445,15 @@ class WPFonts_Settings {
 		$css_status               = isset( $input['css_status'] ) ? (string) $input['css_status'] : '';
 		$settings['css_status']   = in_array( $css_status, array( '', 'ok', 'missing', 'unchecked' ), true ) ? $css_status : '';
 		$settings['css_face']     = WPFonts_Link::face_name( isset( $input['css_face'] ) ? $input['css_face'] : '' );
+		foreach ( self::system_codes() as $code ) {
+			$key = 'system_' . $code;
+			if ( array_key_exists( $key, $input ) ) {
+				$settings[ $key ] = empty( $input[ $key ] ) ? 0 : 1;
+			}
+		}
+		if ( array_key_exists( 'faces', $input ) ) {
+			$settings['faces'] = self::clean_stored_faces( $input['faces'] );
+		}
 		return $settings;
 	}
 
@@ -310,6 +486,8 @@ class WPFonts_Settings {
 				}
 			}
 		}
+
+		$next = self::apply_form_lists( $prev, $next, $input );
 
 		if ( '' === $key ) {
 			$next['key_status']  = '';
@@ -391,5 +569,206 @@ class WPFonts_Settings {
 		}
 		delete_transient( $key );
 		return $note;
+	}
+
+	/**
+	 * Copy system toggles and the requested cloud faces onto a form save.
+	 *
+	 * The API key is not read here. A form that does not include the face
+	 * picker keeps the stored list, including an rc.6 row that has no `faces` key.
+	 *
+	 * @param array $prev  Saved public settings.
+	 * @param array $next  Sanitized public fields.
+	 * @param array $input Raw form input.
+	 * @return array
+	 */
+	private static function apply_form_lists( array $prev, array $next, array $input ) {
+		foreach ( self::system_codes() as $code ) {
+			$key = 'system_' . $code;
+			if ( ! empty( $input['system_form'] ) ) {
+				$next[ $key ] = ( isset( $input[ $key ] ) && '1' === (string) $input[ $key ] ) ? 1 : 0;
+			} else {
+				$next[ $key ] = empty( $prev[ $key ] ) ? 0 : 1;
+			}
+		}
+		if ( ! empty( $input['families_form'] ) ) {
+			$tokens   = self::requested_tokens( $input, isset( $next['family'] ) ? $next['family'] : '' );
+			$previous = self::saved_faces( $prev );
+			$by       = array();
+			foreach ( $previous as $face ) {
+				$by[ $face['family'] ] = $face;
+			}
+			$faces = array();
+			foreach ( $tokens as $token ) {
+				if ( isset( $by[ $token ] ) ) {
+					$row           = $by[ $token ];
+					$row['subset'] = $next['subset'];
+					if ( $by[ $token ]['subset'] !== $next['subset'] ) {
+						$row['css_face'] = '';
+					}
+					$faces[] = $row;
+					continue;
+				}
+				$faces[] = array(
+					'family'   => $token,
+					'name'     => self::catalog_name( $token ),
+					'css_face' => '',
+					'subset'   => $next['subset'],
+				);
+			}
+			$next['faces'] = $faces;
+		} elseif ( array_key_exists( 'faces', $prev ) ) {
+			$next['faces'] = $prev['faces'];
+		}
+		return $next;
+	}
+
+	/**
+	 * wenfeng-* tokens from the checkboxes and the manual field, in order.
+	 *
+	 * @param array  $input  Form input.
+	 * @param string $family Manual family field.
+	 * @return string[]
+	 */
+	private static function requested_tokens( array $input, $family ) {
+		$raw = array();
+		if ( isset( $input['families'] ) && is_array( $input['families'] ) ) {
+			$raw = $input['families'];
+		}
+		$raw[] = $family;
+		$out   = array();
+		foreach ( $raw as $value ) {
+			$token = WPFonts_Link::token( $value, 80 );
+			if ( '' === $token || 0 !== strpos( $token, 'wenfeng-' ) || in_array( $token, $out, true ) ) {
+				continue;
+			}
+			$out[] = $token;
+			if ( count( $out ) >= self::MAX_FACES ) {
+				break;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Probe each requested face. A miss is dropped. A timeout keeps a prior confirmation.
+	 *
+	 * @param array $settings Public settings. Must include faces.
+	 * @return array<int,array{family:string,name:string,css_face:string,subset:string}>
+	 */
+	private static function probe_face_list( array $settings ) {
+		$out   = array();
+		$seen  = array();
+		$rows  = is_array( $settings['faces'] ) ? $settings['faces'] : array();
+		$count = 0;
+		foreach ( $rows as $row ) {
+			$face = self::normalize_face( $row, false );
+			if ( null === $face || isset( $seen[ $face['family'] ] ) ) {
+				continue;
+			}
+			$seen[ $face['family'] ] = true;
+			if ( $count >= self::MAX_FACES ) {
+				break;
+			}
+			++$count;
+			$probe = WPFonts_Link::probe_family( $settings, $face['family'], $face['subset'] );
+			if ( 'ok' === $probe['status'] && '' !== $probe['face'] ) {
+				$face['css_face'] = $probe['face'];
+				$named            = self::catalog_name( $face['family'] );
+				if ( '' !== $named ) {
+					$face['name'] = $named;
+				}
+				if ( '' === $face['name'] ) {
+					$face['name'] = $face['css_face'];
+				}
+				$out[] = $face;
+				continue;
+			}
+			if ( 'unchecked' === $probe['status'] && '' !== $face['css_face'] ) {
+				if ( '' === $face['name'] ) {
+					$face['name'] = $face['css_face'];
+				}
+				$out[] = $face;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Display name from the local catalog snapshot, or empty.
+	 *
+	 * @param string $token wenfeng-* family.
+	 * @return string
+	 */
+	private static function catalog_name( $token ) {
+		if ( ! class_exists( 'WPFonts_Catalog', false ) ) {
+			return '';
+		}
+		foreach ( WPFonts_Catalog::stored_fonts() as $font ) {
+			if ( isset( $font['fontFamily'] ) && $font['fontFamily'] === $token && isset( $font['name'] ) ) {
+				$name = trim( (string) $font['name'] );
+				return $name;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * rc.6 confirmation: one wenfeng-* family whose stylesheet opened.
+	 *
+	 * @param array $settings Public settings.
+	 * @return array{family:string,name:string,css_face:string,subset:string}|null
+	 */
+	private static function legacy_face( array $settings ) {
+		$status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
+		if ( 'ok' !== $status ) {
+			return null;
+		}
+		$face = self::normalize_face(
+			array(
+				'family'   => isset( $settings['family'] ) ? $settings['family'] : '',
+				'name'     => '',
+				'css_face' => isset( $settings['css_face'] ) ? $settings['css_face'] : '',
+				'subset'   => isset( $settings['subset'] ) ? $settings['subset'] : 'zh-common',
+			),
+			true
+		);
+		if ( null === $face ) {
+			return null;
+		}
+		$named = self::catalog_name( $face['family'] );
+		if ( '' !== $named ) {
+			$face['name'] = $named;
+		}
+		if ( '' === $face['name'] ) {
+			$face['name'] = $face['css_face'];
+		}
+		return $face;
+	}
+
+	/**
+	 * Deduped wenfeng-* rows. A CSS face may be empty.
+	 *
+	 * @param mixed $rows Raw list.
+	 * @return array<int,array{family:string,name:string,css_face:string,subset:string}>
+	 */
+	private static function clean_stored_faces( $rows ) {
+		$out  = array();
+		$seen = array();
+		if ( ! is_array( $rows ) ) {
+			return $out;
+		}
+		foreach ( $rows as $row ) {
+			$face = self::normalize_face( $row, false );
+			if ( null === $face || isset( $seen[ $face['family'] ] ) ) {
+				continue;
+			}
+			$seen[ $face['family'] ] = true;
+			$out[]                   = $face;
+			if ( count( $out ) >= self::MAX_FACES ) {
+				break;
+			}
+		}
+		return $out;
 	}
 }
