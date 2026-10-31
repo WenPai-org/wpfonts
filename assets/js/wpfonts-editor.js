@@ -1,11 +1,12 @@
 (function () {
-	if (!window.wp || !wp.plugins || !wp.element || !wp.blockEditor || !wp.components || !wp.data || !wp.blocks) {
+	if (!window.wp || !wp.hooks || !wp.element || !wp.blockEditor || !wp.components || !wp.data || !wp.blocks) {
 		return;
 	}
 
 	var el = wp.element.createElement;
+	var Fragment = wp.element.Fragment;
 	var useState = wp.element.useState;
-	var registerPlugin = wp.plugins.registerPlugin;
+	var addFilter = wp.hooks.addFilter;
 	var InspectorControls = wp.blockEditor.InspectorControls;
 	var PanelBody = wp.components.PanelBody;
 	var Button = wp.components.Button;
@@ -74,13 +75,11 @@
 		);
 	}
 
-	function Panel() {
-		var selected = wp.data.useSelect(function (select) {
-			return select("core/block-editor").getSelectedBlock();
-		}, []);
+	function FamilyPanel(props) {
+		var attributes = props.attributes || {};
 		var current = "";
-		if (selected && selected.attributes && selected.attributes.style && selected.attributes.style.typography) {
-			current = selected.attributes.style.typography.fontFamily || "";
+		if (attributes.style && attributes.style.typography) {
+			current = attributes.style.typography.fontFamily || "";
 		}
 		var noteState = useState("");
 		var note = noteState[0];
@@ -88,18 +87,15 @@
 		var packages = cfg.packages || [];
 		var cloud = cfg.cloud || null;
 
-		function onPick(stack, css, preconnect, note) {
-			if (!selected) {
-				return;
-			}
-			if (!acceptsFont(selected.name)) {
+		function onPick(stack, css, preconnect, licenseNote) {
+			if ("function" !== typeof props.setAttributes || !acceptsFont(props.name)) {
 				setNote(i18n.unsupported || "");
 				return;
 			}
-			var style = Object.assign({}, selected.attributes.style || {});
+			var style = Object.assign({}, attributes.style || {});
 			style.typography = Object.assign({}, style.typography || {}, { fontFamily: stack });
-			wp.data.dispatch("core/block-editor").updateBlockAttributes(selected.clientId, { style: style });
-			ensureCss(css, preconnect, note);
+			props.setAttributes({ style: style });
+			ensureCss(css, preconnect, licenseNote);
 			setNote(i18n.applied || "");
 		}
 
@@ -114,38 +110,50 @@
 		});
 
 		return el(
-			InspectorControls,
-			null,
-			el(
-				PanelBody,
-				{ title: i18n.title || "", initialOpen: true },
-				el("p", { className: "wpfonts-editor-note" }, i18n.intro || ""),
-				note ? el("p", { className: "wpfonts-editor-note" }, note) : null,
-				el("p", { className: "wpfonts-editor-note" }, i18n.packages || ""),
-				packageButtons.length
-					? el("div", { className: "wpfonts-editor-list" }, packageButtons)
-					: el("p", { className: "wpfonts-editor-note" }, i18n.noPackages || ""),
-				el("p", { className: "wpfonts-editor-note" }, i18n.cloud || ""),
-				cloud && cloud.stack
-					? el(
-						"div",
-						{ className: "wpfonts-editor-list" },
-						el(FamilyButton, {
-							name: cloud.name,
-							stack: cloud.stack,
-							css: cloud.css || "",
-							preconnect: cloud.preconnect || "",
-							licenseNote: cloud.licenseNote || "",
-							current: current,
-							onPick: onPick
-						})
-					)
-					: el("p", { className: "wpfonts-editor-note" }, i18n.noCloud || "")
-			)
+			PanelBody,
+			{ title: i18n.title || "", initialOpen: true },
+			el("p", { className: "wpfonts-editor-note" }, i18n.intro || ""),
+			note ? el("p", { className: "wpfonts-editor-note" }, note) : null,
+			el("p", { className: "wpfonts-editor-note" }, i18n.packages || ""),
+			packageButtons.length
+				? el("div", { className: "wpfonts-editor-list" }, packageButtons)
+				: el("p", { className: "wpfonts-editor-note" }, i18n.noPackages || ""),
+			el("p", { className: "wpfonts-editor-note" }, i18n.cloud || ""),
+			cloud && cloud.stack
+				? el(
+					"div",
+					{ className: "wpfonts-editor-list" },
+					el(FamilyButton, {
+						name: cloud.name,
+						stack: cloud.stack,
+						css: cloud.css || "",
+						preconnect: cloud.preconnect || "",
+						licenseNote: cloud.licenseNote || "",
+						current: current,
+						onPick: onPick
+					})
+				)
+				: el("p", { className: "wpfonts-editor-note" }, i18n.noCloud || "")
 		);
 	}
 
-	registerPlugin("wpfonts-families", {
-		render: Panel
-	});
+	function addPanel(BlockEdit) {
+		return function WpfontsBlockEdit(props) {
+			return el(
+				Fragment,
+				null,
+				el(BlockEdit, props),
+				el(InspectorControls, null, el(FamilyPanel, {
+					name: props.name,
+					attributes: props.attributes,
+					setAttributes: props.setAttributes
+				}))
+			);
+		};
+	}
+
+	// InspectorControls only renders inside the block edit context. A plugin
+	// mounted on the editor root has no mayDisplayControls flag, so WordPress
+	// drops the panel.
+	addFilter("editor.BlockEdit", "wpfonts/inspector-panel", addPanel);
 })();

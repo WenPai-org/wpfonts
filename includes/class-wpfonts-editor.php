@@ -30,6 +30,9 @@ class WPFonts_Editor {
 	/**
 	 * Inspector script. Users who cannot edit posts do not receive it.
 	 *
+	 * The script filters editor.BlockEdit. Inspector controls only render
+	 * inside that context.
+	 *
 	 * @return void
 	 */
 	public static function enqueue() {
@@ -45,7 +48,7 @@ class WPFonts_Editor {
 		wp_enqueue_script(
 			'wpfonts-editor',
 			WPFONTS_DIR_URL . 'assets/js/wpfonts-editor.js',
-			array( 'wp-plugins', 'wp-element', 'wp-components', 'wp-data', 'wp-blocks', 'wp-block-editor' ),
+			array( 'wp-hooks', 'wp-element', 'wp-components', 'wp-data', 'wp-blocks', 'wp-block-editor' ),
 			WPFONTS_VERSION,
 			true
 		);
@@ -61,7 +64,7 @@ class WPFonts_Editor {
 				'i18n'     => array(
 					'title'       => __( '文派字库', 'wpfonts' ),
 					'intro'       => __( '选一个字体，用在当前区块。已启用的字体会出现在全站样式里。', 'wpfonts' ),
-					'packages'    => __( '文风字体包', 'wpfonts' ),
+					'packages'    => __( 'Windfonts', 'wpfonts' ),
 					'cloud'       => __( '文风云', 'wpfonts' ),
 					'noPackages'  => __( '还没有启用的文风字体包。', 'wpfonts' ),
 					'noCloud'     => __( '设置里还没有确认能打开的文风字体。', 'wpfonts' ),

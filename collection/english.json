@@ -3,153 +3,131 @@
   "font_families": [
     {
       "font_family_settings": {
-        "fontFamily": "system-ui, sans-serif",
+        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Ubuntu, sans-serif",
         "slug": "en-system-ui",
-        "name": "System UI"
+        "name": "系统界面"
       },
-      "categories": [
-        "sans-serif"
-      ]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
         "fontFamily": "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif",
         "slug": "en-transitional",
-        "name": "Transitional"
+        "name": "过渡衬线"
       },
-      "categories": [
-        "serif"
-      ]
+      "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif",
+        "fontFamily": "'Iowan Old Style', Palatino, 'Palatino Linotype', 'URW Palladio L', P052, serif",
         "slug": "en-old-style",
-        "name": "Old Style"
+        "name": "旧式衬线"
       },
-      "categories": [
-        "serif"
-      ]
+      "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "Seravek, 'Gill Sans Nova', Ubuntu, Calibri, 'DejaVu Sans', source-sans-pro, sans-serif",
+        "fontFamily": "Seravek, 'Gill Sans', 'Gill Sans Nova', Calibri, Ubuntu, 'DejaVu Sans', 'Trebuchet MS', sans-serif",
         "slug": "en-humanist",
-        "name": "Humanist"
+        "name": "人文无衬线"
       },
-      "categories": [
-        "sans-serif"
-      ]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif",
+        "fontFamily": "Avenir, 'Avenir Next', Corbel, 'Century Gothic', 'URW Gothic', sans-serif",
         "slug": "en-geometric-humanist",
-        "name": "Geometric Humanist"
+        "name": "几何无衬线"
       },
-      "categories": [
-        "sans-serif"
-      ]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "Optima, Candara, 'Noto Sans', source-sans-pro, sans-serif",
+        "fontFamily": "Optima, Candara, 'Noto Sans', 'DejaVu Sans', sans-serif",
         "slug": "en-classical-humanist",
-        "name": "Classical Humanist"
+        "name": "古典人文"
       },
-      "categories": [
-        "sans-serif"
-      ]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif",
+        "fontFamily": "'Helvetica Neue', Helvetica, Arial, 'Arial Nova', Roboto, 'Nimbus Sans', 'Liberation Sans', sans-serif",
         "slug": "en-neo-grotesque",
-        "name": "Neo-Grotesque"
+        "name": "现代黑体"
       },
-      "categories": [
-        "sans-serif"
-      ]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Nimbus Mono PS', 'Courier New', monospace",
+        "fontFamily": "'Courier New', Courier, 'Nimbus Mono PS', 'Liberation Mono', monospace",
         "slug": "en-monospace-slab-serif",
-        "name": "Monospace Slab Serif"
+        "name": "等宽衬线"
       },
-      "categories": [
-        "monospace"
-      ]
+      "categories": ["monospace"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace",
+        "fontFamily": "ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace",
         "slug": "en-monospace-code",
-        "name": "Monospace Code"
+        "name": "等宽代码"
       },
-      "categories": [
-        "monospace"
-      ]
+      "categories": ["monospace"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', 'Nimbus Sans Narrow', sans-serif-condensed, sans-serif",
+        "fontFamily": "Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', 'Nimbus Sans Narrow', 'Liberation Sans Narrow', sans-serif",
         "slug": "en-industrial",
-        "name": "Industrial"
+        "name": "窄黑体"
       },
-      "categories": [
-        "sans-serif"
-      ]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "ui-rounded, 'Hiragino Maru Gothic ProN', Quicksand, Comfortaa, Manjari, 'Arial Rounded MT', 'Arial Rounded MT Bold', Calibri, source-sans-pro, sans-serif",
+        "fontFamily": "ui-rounded, 'Hiragino Maru Gothic ProN', 'Arial Rounded MT Bold', 'Arial Rounded MT', sans-serif",
         "slug": "en-rounded-sans",
-        "name": "Rounded Sans"
+        "name": "圆体"
       },
-      "categories": [
-        "sans-serif"
-      ]
+      "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "Rockwell, 'Rockwell Nova', 'Roboto Slab', 'DejaVu Serif', 'Sitka Small', serif",
+        "fontFamily": "Rockwell, 'Rockwell Nova', 'Sitka Small', 'DejaVu Serif', serif",
         "slug": "en-slab-serif",
-        "name": "Slab Serif"
+        "name": "石板衬线"
       },
-      "categories": [
-        "serif"
-      ]
+      "categories": ["serif"]
     },
     {
       "font_family_settings": {
         "fontFamily": "Superclarendon, 'Bookman Old Style', 'URW Bookman', 'URW Bookman L', 'Georgia Pro', Georgia, serif",
         "slug": "en-antique",
-        "name": "Antique"
+        "name": "古典书体"
       },
-      "categories": [
-        "serif"
-      ]
+      "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "Didot, 'Bodoni MT', 'Noto Serif Display', 'URW Palladio L', P052, Sylfaen, serif",
+        "fontFamily": "Didot, 'Bodoni MT', Sylfaen, 'URW Palladio L', P052, serif",
         "slug": "en-didone",
-        "name": "Didone"
+        "name": "迪多尼"
       },
-      "categories": [
-        "serif"
-      ]
+      "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Segoe Print', 'Bradley Hand', Chilanka, TSCu_Comic, casual, cursive",
+        "fontFamily": "'Segoe Print', 'Segoe Script', 'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', cursive",
         "slug": "en-handwritten",
-        "name": "Handwritten"
+        "name": "手写"
       },
-      "categories": [
-        "handwriting"
-      ]
+      "categories": ["handwriting"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Nimbus Roman', 'Liberation Serif', serif",
+        "slug": "en-georgia",
+        "name": "正文衬线"
+      },
+      "categories": ["serif"]
     }
   ]
 }

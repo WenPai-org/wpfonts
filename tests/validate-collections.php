@@ -19,10 +19,10 @@ $prefixes   = array(
 	'korean.json'   => 'kr-',
 );
 $expected_counts = array(
-	'chinese.json'  => 15,
-	'english.json'  => 15,
-	'japanese.json' => 5,
-	'korean.json'   => 5,
+	'chinese.json'  => 17,
+	'english.json'  => 16,
+	'japanese.json' => 8,
+	'korean.json'   => 7,
 );
 
 $assert = static function ( $condition, $message ) use ( &$failures ) {
@@ -66,7 +66,53 @@ foreach ( $files as $file ) {
 	$assert( ( $expected_counts[ $name ] ?? -1 ) === $count, $name . ': expected ' . ( $expected_counts[ $name ] ?? '?' ) . ' families, got ' . $count . '.' );
 }
 
-$assert( 40 === $family_num, 'Expected 40 non-zero font families.' );
+$assert( 48 === $family_num, 'Expected 48 non-zero font families.' );
+
+$kept = array(
+	'cn-system-ui',
+	'cn-traditional-serif',
+	'cn-calligraphic',
+	'cn-humanist',
+	'cn-modern-sans',
+	'cn-formal-script',
+	'cn-ming-style',
+	'cn-ui-sans',
+	'cn-monospace-cjk',
+	'cn-classic-calligraphy',
+	'cn-decorative',
+	'cn-sharp-sans',
+	'cn-song-style',
+	'cn-brand-sans',
+	'cn-compact-sans',
+	'en-system-ui',
+	'en-transitional',
+	'en-old-style',
+	'en-humanist',
+	'en-geometric-humanist',
+	'en-classical-humanist',
+	'en-neo-grotesque',
+	'en-monospace-slab-serif',
+	'en-monospace-code',
+	'en-industrial',
+	'en-rounded-sans',
+	'en-slab-serif',
+	'en-antique',
+	'en-didone',
+	'en-handwritten',
+	'jp-system-ui',
+	'jp-mincho-style',
+	'jp-calligraphic',
+	'jp-monospace',
+	'jp-rounded',
+	'kr-system-ui',
+	'kr-myungjo-style',
+	'kr-handwriting',
+	'kr-monospace',
+	'kr-regional',
+);
+foreach ( $kept as $kept_slug ) {
+	$assert( isset( $all_slugs[ $kept_slug ] ), 'Existing system slug was removed: ' . $kept_slug );
+}
 
 $main = file_get_contents( $root . '/wpfonts.php' );
 foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp', 'wp-fonts-stacks-kr' ) as $collection_slug ) {
@@ -74,8 +120,8 @@ foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp
 }
 $assert( false !== strpos( $main, 'Requires at least: 6.5' ), 'Requires at least 6.5.' );
 $assert( false !== strpos( $main, 'Requires PHP: 7.4' ), 'Requires PHP 7.4.' );
-$assert( false !== strpos( $main, 'Version: 2.0.0-rc.5' ), 'Version header must be 2.0.0-rc.5.' );
-$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.5' )" ), 'Version constant must be 2.0.0-rc.5.' );
+$assert( false !== strpos( $main, 'Version: 2.0.0-rc.6' ), 'Version header must be 2.0.0-rc.6.' );
+$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.6' )" ), 'Version constant must be 2.0.0-rc.6.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
 $assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );
@@ -91,6 +137,18 @@ $assert( ! is_dir( $root . '/lib/updatepulse-updater' ), 'UpdatePulse directory 
 $assert( is_dir( $root . '/lib/wenpai-admin-ui' ), 'wenpai-admin-ui must be vendored.' );
 $assert( '0.3.1' === trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) ), 'Vendored kit VERSION must be 0.3.1 or newer and recorded.' );
 
+$assert( false !== strpos( $main, "add_action( 'init', 'wp_fonts_register_collections', 25 )" ), 'System collections must register after 文风字体.' );
+$assert( false !== strpos( $main, '系统 · 中文' ), 'Chinese system collection was not renamed.' );
+$assert( false !== strpos( $main, '系统 · 英文' ), 'English system collection was not renamed.' );
+$assert( false !== strpos( $main, '系统 · 日文' ), 'Japanese system collection was not renamed.' );
+$assert( false !== strpos( $main, '系统 · 韩文' ), 'Korean system collection was not renamed.' );
+$library = file_get_contents( $root . '/includes/class-wpfonts-library.php' );
+$assert( false !== strpos( $library, "add_action( 'init', array( __CLASS__, 'register' ), 20 )" ), '文风字体 collections must register at priority 20.' );
+$assert( false !== strpos( $library, "__( 'Windfonts', 'wpfonts' )" ), 'Font Library package collection must use the Windfonts label.' );
+$assert( false === strpos( $library, "__( '文风', 'wpfonts' )" ), 'Font Library package collection is still named 文风.' );
+$assert( false !== strpos( $library, "__( '文风云', 'wpfonts' )" ), 'Font Library cloud collection must stay 文风云.' );
+$zh = file_get_contents( $root . '/languages/wpfonts-zh_CN.po' );
+$assert( false !== strpos( $zh, "msgid \"Windfonts\"\nmsgstr \"文风字体\"" ), 'zh_CN must translate Windfonts to 文风字体.' );
 $admin = file_get_contents( $root . '/includes/class-wpfonts-admin.php' );
 $embed = file_get_contents( $root . '/includes/class-wpfonts-embed.php' );
 $assert( false !== strpos( $admin, "'admin_menu'" ), 'Admin screen must register under admin_menu.' );

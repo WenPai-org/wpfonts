@@ -3,7 +3,7 @@
  * Plugin Name: WPFonts
  * Plugin URI: https://wpcy.com/wpfonts
  * Description: 中文、英文、日文、韩文系统字体。文风云默认关闭，开启后前台只加载一条文风服务器上的样式。
- * Version: 2.0.0-rc.5
+ * Version: 2.0.0-rc.6
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: WPFonts.com
@@ -27,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPFONTS_VERSION', '2.0.0-rc.5' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.6' );
 define( 'WPFONTS_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPFONTS_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPFONTS_BASENAME', plugin_basename( __FILE__ ) );
@@ -68,6 +68,9 @@ add_action( 'plugins_loaded', 'wp_fonts_load_textdomain' );
  * stylesheets or font binaries. A registration failure is reported through
  * wpfonts_collection_registration_error and does not alter Global Styles.
  *
+ * Priority 25 runs after WPFonts_Library (priority 20) so 文风字体 and 文风云
+ * appear before these collections in the Font Library.
+ *
  * @return void
  */
 function wp_fonts_register_collections() {
@@ -96,23 +99,23 @@ function wp_fonts_register_collections() {
 
 	$collections = array(
 		'wp-fonts-stacks-cn' => array(
-			'name'        => __( 'Chinese', 'wpfonts' ),
-			'description' => __( 'Cross-platform Chinese system font stacks. Automatically adapt to Windows/macOS/Linux fonts.', 'wpfonts' ),
+			'name'        => __( '系统 · 中文', 'wpfonts' ),
+			'description' => __( '设备上已有的中文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'chinese.json',
 		),
 		'wp-fonts-stacks-en' => array(
-			'name'        => __( 'English', 'wpfonts' ),
-			'description' => __( 'Stacks of modern system fonts, no font files needed. The look will vary on each system.', 'wpfonts' ),
+			'name'        => __( '系统 · 英文', 'wpfonts' ),
+			'description' => __( '设备上已有的西文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'english.json',
 		),
 		'wp-fonts-stacks-jp' => array(
-			'name'        => __( 'Japanese', 'wpfonts' ),
-			'description' => __( 'Japanese system font stacks with optimized kana rendering.', 'wpfonts' ),
+			'name'        => __( '系统 · 日文', 'wpfonts' ),
+			'description' => __( '设备上已有的日文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'japanese.json',
 		),
 		'wp-fonts-stacks-kr' => array(
-			'name'        => __( 'Korean', 'wpfonts' ),
-			'description' => __( 'Hangul-optimized font stacks for Korean content.', 'wpfonts' ),
+			'name'        => __( '系统 · 韩文', 'wpfonts' ),
+			'description' => __( '设备上已有的韩文字体。不下载字体文件。', 'wpfonts' ),
 			'file'        => 'korean.json',
 		),
 	);
@@ -139,7 +142,7 @@ function wp_fonts_register_collections() {
 		}
 	}
 }
-add_action( 'init', 'wp_fonts_register_collections' );
+add_action( 'init', 'wp_fonts_register_collections', 25 );
 
 /**
  * Load Plugin Update Checker only for wp-admin, WP-Cron, and WP-CLI.

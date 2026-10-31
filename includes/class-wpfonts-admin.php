@@ -591,7 +591,7 @@ class WPFonts_Admin {
 		echo '<div class="wenpai-stack">';
 		self::help_card(
 			__( '系统字体', 'wpfonts' ),
-			__( '无需填写。字体库中的中文、英文、日文和韩文系统字体仍然可用，前台不会因此请求远程字体。', 'wpfonts' )
+			__( '无需填写。字体库里的「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」仍然可用，前台不会因此请求远程字体。', 'wpfonts' )
 		);
 		self::help_card(
 			__( '文风云', 'wpfonts' ),

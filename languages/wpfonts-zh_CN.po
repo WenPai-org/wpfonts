@@ -92,3 +92,9 @@ msgstr "韩文"
 #: wpfonts.php:93
 msgid "Hangul-optimized font stacks for Korean content."
 msgstr "针对韩语内容优化的韩文字体堆栈。"
+
+#. Font Library collection and block inspector package group.
+#: includes/class-wpfonts-library.php
+#: includes/class-wpfonts-editor.php
+msgid "Windfonts"
+msgstr "文风字体"
