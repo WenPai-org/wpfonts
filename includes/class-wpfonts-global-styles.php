@@ -1,6 +1,6 @@
 <?php
 /**
- * Copy enabled package families and the confirmed cloud face into user Global Styles.
+ * Copy enabled package families and confirmed cloud faces into user Global Styles.
  *
  * WordPress keeps those choices in the wp_global_styles post for the active
  * theme. This class updates that post only. It does not write files in the
@@ -113,6 +113,9 @@ class WPFonts_Global_Styles {
 			if ( $before !== $after ) {
 				return true;
 			}
+		}
+		if ( class_exists( 'WPFonts_Settings', false ) && WPFonts_Settings::faces_signature( $old ) !== WPFonts_Settings::faces_signature( $updated ) ) {
+			return true;
 		}
 		return false;
 	}
@@ -347,7 +350,7 @@ class WPFonts_Global_Styles {
 	}
 
 	/**
-	 * Families to show now: enabled packages, then the confirmed cloud face.
+	 * Families to show now: enabled packages, then every confirmed cloud face.
 	 *
 	 * @return array<int,array{slug:string,name:string,fontFamily:string}>
 	 */

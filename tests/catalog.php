@@ -627,7 +627,7 @@ $assert( false !== strpos( $admin, '字体目录' ), 'help card title drifted' )
 $assert( false !== strpos( $admin, '目录保存在本站。大约每月自动更新一次，也可在设置里立刻更新。选中后写入字体名；更新失败不会盖掉已有目录。' ), 'help card body drifted' );
 $assert( false !== strpos( $admin, '目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。' ), 'catalog note drifted' );
 $assert( false === strpos( $admin, '去控制台上传' ), 'admin offered a console upload' );
-$assert( false !== strpos( $js, 'family.value = target.value' ), 'picking a font does not write the radio value into the font name field' );
+$assert( false !== strpos( $js, 'selected[target.value] = true' ), 'picking a font does not keep that family in the multi-face selection' );
 $assert( false === strpos( $js, 'normalizedName' ), 'catalog script reads normalizedName' );
 $assert( false !== strpos( $js, 'body.append("refresh", "1")' ), 'refresh button does not post refresh=1' );
 $assert( false !== strpos( $js, 'data-updating' ), 'refresh progress attribute missing' );

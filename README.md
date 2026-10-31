@@ -1,10 +1,10 @@
 # WPFonts
 
-文派字库给 WordPress 字体库加上系统字体，分成「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。文风云默认关闭。开启之后，前台只多一条文风服务器上的样式链接，网页里不会出现 API Key。
+文派字库给 WordPress 字体库加上系统字体，分成「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。文风云默认关闭。开启之后，每条已确认的文风云字体各加一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.6`。系统字体沿用 1.3。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
+这一版是 `2.0.0-rc.7`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
 
-WPFonts 2.0.0-rc.6 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
+WPFonts 2.0.0-rc.7 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP.
 
 Settings → WPFonts has four screens: Overview, Settings, Font packages, and Tools. Help stays in the header. Enabled packages register in the Font Library as 文风字体 (Windfonts in English), using the woff2 files stored at install. That tab, and 文风云, are registered before the system collections. 文风云 is registered only after the saved stylesheet URL has opened; the Font Library name is the face declared in that CSS, not the catalog token. Those same families are copied into the user Global Styles post, so Appearance → Styles lists them under typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only the entries this plugin wrote. A saved URL that returns 404 is not embedded and is not described as loading. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
 
@@ -22,7 +22,17 @@ Settings → WPFonts has four screens: Overview, Settings, Font packages, and To
 
 ## 编辑器
 
-块编辑器里选中区块后，侧栏有「文派字库」。分组名是「文风字体」和「文风云」。可以把已启用的包，或已确认的文风云字体，用在当前区块。不占顶栏。这些字体也会出现在全站样式里。英文界面里这一组写作 Windfonts。
+块编辑器里选中区块后，侧栏有「文派字库」。分组名是「文风字体」和「文风云」。可以把已启用的包，或每一条已确认的文风云字体，用在当前区块。侧栏只改当前区块。打开侧栏不会搜索文风目录。不占顶栏。这些字体也会出现在全站样式里，再到外观 → 样式 → 排版里选用。英文界面里这一组写作 Windfonts。
+
+## 2.0.0-rc.7
+
+- 文风云可以保存多条已确认的 `wenfeng-*`。字体库和侧栏都会列出。从 2.0.0-rc.6 只存了一条的站点，会继续用那一条。去掉一条时，只从全站样式里拿掉这一条。
+- 设置里可以分别关掉「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。默认都开。关掉的那一组不会登记到字体库。
+- 帮助里用两句话写清：侧栏改当前区块；启用的包和已确认的云进入全站样式，再到排版里选用。
+- 字体包页面会写明原因：找不到 `local.css`、样式里没有可用的 woff2，或已经启用但不会加载。读不到上传目录时不把正常的包说成坏了。
+- 工具页可以导出、导入已启用的字体包记录和已确认的文风云。文件里没有 API Key。文件里如果还带着密钥，整份拒绝，不会写入。
+
+工具页的导出沿用文派对象存储（wpsss）工具页的做法：`admin-post` 下载 JSON，卡片上写明密钥不会出现在文件里。导入沿用文派素格（wpslug）的做法：密钥字段丢掉，不写入本站。勾选确认后再导入，和本插件删除字体包时的闸门一样。
 
 ## 选用字体
 
@@ -69,6 +79,7 @@ php tests/health-status.php
 php tests/catalog.php
 php tests/font-library.php
 php tests/global-styles.php
+php tests/phase4.php
 php tests/updater-gate.php
 php lib/wenpai-admin-ui/scripts/wenpai-admin-lint.py --plugin-root .
 ```
