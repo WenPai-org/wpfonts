@@ -4,8 +4,8 @@
   "tag": "字体",
   "tagClass": "",
   "icon": "type",
-  "desc": "向 WordPress 字体库注册中文、英文、日文、韩文系统字体栈。不下载字体，不含 CDN 嵌入。",
-  "landingPage": "/wp-admin/site-editor.php?path=%2Fwp_global_styles",
+  "desc": "系统字体栈，另可选文风 CDN。",
+  "landingPage": "/wp-admin/options-general.php?page=wpfonts",
   "pluginPath": "wpfonts/wpfonts.php",
   "blogname": "文派字库体验站"
 }

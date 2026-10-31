@@ -74,8 +74,8 @@ foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp
 }
 $assert( false !== strpos( $main, 'Requires at least: 6.5' ), 'Requires at least 6.5.' );
 $assert( false !== strpos( $main, 'Requires PHP: 7.4' ), 'Requires PHP 7.4.' );
-$assert( false !== strpos( $main, 'Version: 1.3.0' ), 'Version header must be 1.3.0.' );
-$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '1.3.0' )" ), 'Version constant must be 1.3.0.' );
+$assert( false !== strpos( $main, 'Version: 2.0.0-rc.1' ), 'Version header must be 2.0.0-rc.1.' );
+$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.1' )" ), 'Version constant must be 2.0.0-rc.1.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
 $assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );
@@ -85,12 +85,22 @@ $assert( false !== strpos( $main, '! is_admin()' ), 'Updater must skip non-admin
 $assert( false !== strpos( $main, '! wp_doing_cron()' ), 'Updater must allow WP-Cron.' );
 $assert( false !== strpos( $main, 'WP_CLI' ), 'Updater must allow WP-CLI.' );
 $assert( false === stripos( $main, 'updatepulse' ), 'UpdatePulse reference remains in the main file.' );
-$assert( false === strpos( $main, 'admin_menu' ), 'Phase 0 must not register an admin menu.' );
-$assert( false === strpos( $main, 'wenpai-app' ), 'Phase 0 must not enqueue a wenpai-app shell.' );
-$assert( false === strpos( $main, 'Wenpai_Admin' ), 'Phase 0 must not reference Wenpai_Admin.' );
+$assert( false !== strpos( $main, 'lib/wenpai-admin-ui/php/load.php' ), 'Main file must load the vendored kit.' );
 $assert( false === strpos( $main, 'register_uninstall_hook' ), 'Uninstall must not register a data-deletion hook.' );
 $assert( ! is_dir( $root . '/lib/updatepulse-updater' ), 'UpdatePulse directory must be removed.' );
-$assert( ! is_dir( $root . '/lib/wenpai-admin-ui' ), 'wenpai-admin-ui must not be vendored in Phase 0.' );
+$assert( is_dir( $root . '/lib/wenpai-admin-ui' ), 'wenpai-admin-ui must be vendored.' );
+$assert( '0.3.1' === trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) ), 'Vendored kit VERSION must be 0.3.1 or newer and recorded.' );
+
+$admin = file_get_contents( $root . '/includes/class-wpfonts-admin.php' );
+$embed = file_get_contents( $root . '/includes/class-wpfonts-embed.php' );
+$assert( false !== strpos( $admin, "'admin_menu'" ), 'Admin screen must register under admin_menu.' );
+$assert( false !== strpos( $admin, 'Wenpai_Admin_Shell::open' ), 'Admin screen must open Wenpai_Admin_Shell.' );
+$assert( false !== strpos( $admin, 'wenpai-subnav' ), 'Settings must use the kit subnav.' );
+$assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
+$assert( false === strpos( $embed, 'api_key' ), 'Front embed must not read the API key.' );
+$uninstall = file_get_contents( $root . '/uninstall.php' );
+$assert( false !== strpos( $uninstall, 'wpfonts_api_key' ), 'Uninstall must delete the API key option.' );
+$assert( false === strpos( $uninstall, 'wp_global_styles' ), 'Uninstall must not touch Global Styles.' );
 
 if ( $failures ) {
 	fwrite( STDERR, implode( PHP_EOL, $failures ) . PHP_EOL );

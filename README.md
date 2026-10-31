@@ -1,45 +1,58 @@
 # WPFonts
 
-文派字库 🀄️（WPFonts）向 WordPress 字体库注册中文、英文、日文、韩文的**系统字体栈**。它不打包、不下载字体文件，也不是文风（Windfonts）CDN 客户端。网页字体 / CDN 嵌入是后续可选能力；本版本没有设置页、API Key 或样式表嵌入。
+文派字库给 WordPress 字体库加上中文、英文、日文、韩文的系统字体栈。文风 CDN 默认关着。打开之后，前台只多一条允许主机上的样式，网页里看不到 API Key。
 
-WPFonts adds privacy-friendly Chinese, English, Japanese, Korean, and Latin **system font stacks** to the WordPress Font Library. It does not bundle or fetch font binaries.
+这一版是 `2.0.0-rc.1`。系统字体栈沿用 1.3。CDN 能在本地对上地址和健康检查的判断，CI 里没有一把真 Key，所以还不把这次叫正式版。
 
-## Runtime requirements
+WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts CDN client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
 
-- WordPress 6.5 or later (Font Library collection API)
-- PHP 7.4 or later
-- A block theme for the intended Site Editor / Font Library workflow
+## 后台
 
-## Family slug prefixes
+设置 → 文派字库。三页：概览、设置（简单 / 高级）、工具。帮助在页头，不是第四个页签。
 
-Every font-family `slug` is language-prefixed so collections no longer share generic slugs such as `system-ui` or `humanist`:
+壳来自 `lib/wenpai-admin-ui/`，这一份是 **0.3.1**（和 WPSlug 里同一份）。加载时谁的版本新就用谁，样式句柄固定 `wenpai-admin-ui`。套件仓库的 0.3.2 在这台环境里读不到，所以没有假装钉到 0.3.2。
 
-| Collection file | Prefix | Example |
+## 打开 CDN 之后
+
+- 主机只有 `cn.windfonts.com`、`hk.windfonts.com`、`en.windfonts.com`。
+- 填了项目，就用 `https://主机/p/项目/index.css`。
+- 没填项目，就用 `https://主机/api/css?family=字体短名&subset=子集`。公开样式没有字体短名时会返回 JSON 而不是 CSS，所以没填字体短名、也没填项目时，前台不加这条 link。
+- Key 只在服务器上拿去问 `https://app.windfonts.com/api/key/status`。不进网页，也不进样式地址。
+- Windfonts API Key 和文派许可证不是同一个东西。更新地址仍是 `https://updates.wenpai.net`。
+- 上传字体用 [文风控制台](https://app.windfonts.com)。插件里不上传、不切字。
+- 块主题全局样式、把字体名写进 `theme.json`，这一版不做。
+
+## 运行要求
+
+- WordPress 6.5 或更新
+- PHP 7.4 或更新
+- 字体库那条路径需要块主题
+
+## 字体栈前缀
+
+| 文件 | 前缀 | 例子 |
 | --- | --- | --- |
 | `collection/chinese.json` | `cn-` | `cn-system-ui` |
 | `collection/english.json` | `en-` | `en-humanist` |
 | `collection/japanese.json` | `jp-` | `jp-system-ui` |
 | `collection/korean.json` | `kr-` | `kr-system-ui` |
 
-Japanese and Korean slugs that already ended in `-jp` or `-kr` drop that suffix before the prefix is added (`system-ui-jp` becomes `jp-system-ui`). Existing Global Styles are not migrated or deleted. A site that already installed a 1.2 slug keeps that WordPress-owned record; the Font Library will show the prefixed slug as a separate family.
+1.2 已经存进全局样式的旧 slug 不删、不改。
 
-## Updates
+## 更新
 
-The plugin header `Update URI` stays `https://updates.wenpai.net`. Plugin Update Checker still reads `https://updates.weixiaoduo.com/wpfonts.json`, and only from wp-admin, WP-Cron, or WP-CLI. Front-end page views do not load that library.
+插件头 `Update URI` 仍是 `https://updates.wenpai.net`。更新检查仍读 `https://updates.weixiaoduo.com/wpfonts.json`，而且只在后台、定时任务或 WP-CLI 里加载。
 
-## Development checks
+## 检查
 
 ```bash
 php tests/validate-collections.php
+php tests/link-allowlist.php
+php tests/health-status.php
 php tests/updater-gate.php
-find . -type f -name "*.php" -not -path "./lib/*" -print0 | xargs -0 -n1 php -l
-wp eval-file tests/wp-runtime-smoke.php --path=/path/to/wordpress
+php lib/wenpai-admin-ui/scripts/wenpai-admin-lint.py --plugin-root .
 ```
 
-The runtime smoke test needs WordPress 6.5+ with this plugin active. It checks four collections, 40 language-prefixed families, the authenticated Font Collections REST response, and a `theme.json` font-family round trip.
+卸载只删 `wpfonts_settings` 和 `wpfonts_api_key`。不删全局样式，也不删用户上传的字体。
 
-## Privacy and persistence
-
-Front-end visitors do not contact a font CDN: stacks resolve to fonts already installed on their device. The plugin injects no CSS until WordPress itself persists an administrator-selected family into Global Styles. Deactivation or uninstall does not delete Global Styles or uploaded fonts. There is no uninstall routine.
-
-See `docs/AUDIT_2026-08-09.md` for the supply-chain limits of the custom updater and for follow-ups left to a later phase.
+CDN 关着时，前台不为字体去访问文风。打开之后，访客的浏览器会去要那一条允许主机上的样式。

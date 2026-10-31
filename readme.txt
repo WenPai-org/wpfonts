@@ -4,52 +4,60 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 2.0.0-rc.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Privacy-friendly CJK and Latin system font stacks for the WordPress Font Library.
+System font stacks, plus an optional Windfonts CDN link. Release candidate: CI does not verify a live API key.
 
 == Description ==
 
-WPFonts adds 40 Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. The collections use fonts already installed on each visitor's device.
+WPFonts adds 40 Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device.
 
-The plugin does not inject front-end CSS, download font binaries, contact font CDNs, store settings, or collect personal data. WordPress stores a chosen stack in Global Styles/theme.json only after an authorized user selects it in the Font Library.
+Version 2.0.0-rc.1 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP.
 
-Family slugs are language-prefixed (`cn-`, `en-`, `jp-`, `kr-`) so Chinese and English no longer share generic slugs such as `system-ui`. Installing 1.3 does not rewrite or delete Global Styles created with older slugs.
+The public CSS URL needs a font short name (`family`) or a project slug. Without either, the front stays on system stacks. Hosts are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
-A Windfonts web-font / CDN client is future and optional. Version 1.3 has no settings page, API key, or stylesheet embed.
+The Windfonts API key and the WenPai update license are separate. The plugin header Update URI remains `https://updates.wenpai.net`.
 
-The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views. The plugin header Update URI remains `https://updates.wenpai.net`.
+Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). This version does not rewrite Global Styles or write `wenfeng-*` names into theme.json.
+
+The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views.
 
 == Installation ==
 
 1. Install and activate WPFonts on WordPress 6.5 or later.
-2. Use a block theme and open Appearance > Editor > Styles > Typography > Fonts.
-3. Open a WPFonts collection and install a system stack.
-4. Assign the installed stack through Global Styles.
+2. Use a block theme and open Appearance > Editor > Styles > Typography > Fonts to install a system stack.
+3. Optional: open Settings > 文派字库 to turn on the Windfonts CDN.
 
-On multisite, WPFonts supports either per-site activation or network activation. It creates no site or network options.
+On multisite, activate per site or network-wide. CDN settings are stored per site.
 
 == Frequently Asked Questions ==
 
 = Does WPFonts download or host fonts? =
 
-No. Version 1.3 contains system font stacks only. Rendering varies according to fonts installed on the visitor's device.
+The system stacks do not. When the CDN is on and the key check passed, the visitor's browser requests one allowlisted stylesheet. The plugin does not store that CSS.
 
 = Does deactivation remove typography choices? =
 
-No. Installed Global Styles belong to WordPress. Deactivation removes the collections but does not delete user-created Global Styles or uploaded fonts.
+No. Global Styles belong to WordPress. Deactivation does not delete them. Uninstall deletes only the WPFonts settings and API key.
 
 = Does WPFonts work with classic themes? =
 
-The collections target the WordPress Font Library and Site Editor. A block theme is required for the intended user interface.
+The collections target the WordPress Font Library. The CDN link is a normal front-end stylesheet and does not require a block theme. A block theme is still required for the Font Library screens.
 
-= Is this the Windfonts CDN client? =
+= Is the API key the WenPai license? =
 
-No. This version only registers local system stacks. A web-font / CDN client would be a later, optional feature and is not included here.
+No. They are separate. The update address stays https://updates.wenpai.net.
 
 == Changelog ==
+
+= 2.0.0-rc.1 =
+* Add an opt-in Windfonts CDN client: region, subset, masked API key, optional project slug, and optional font short name.
+* Print only an allowlisted stylesheet link. Do not print the key, and do not embed when the key check has not passed.
+* Add Overview, Settings, and Tools with the vendored wenpai-admin-ui 0.3.1 shell. Help stays in the header.
+* Keep system font stacks working while the CDN is off.
+* This is a release candidate. Automated tests do not call Windfonts with a real key.
 
 = 1.3.0 =
 * Require WordPress 6.5 and PHP 7.4, matching the Font Library collection API.

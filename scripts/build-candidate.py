@@ -12,8 +12,8 @@ from pathlib import Path
 
 PLUGIN_SLUG = "wpfonts"
 MAIN_FILE = "wpfonts.php"
-RUNTIME_ROOTS = ('languages/', 'collection/')
-RUNTIME_FILES = {'wpfonts.php', 'index.php', 'license.txt', 'readme.txt'}
+RUNTIME_ROOTS = ('languages/', 'collection/', 'includes/', 'lib/wenpai-admin-ui/')
+RUNTIME_FILES = {'wpfonts.php', 'index.php', 'license.txt', 'readme.txt', 'uninstall.php'}
 FORBIDDEN_PREFIXES = (
     "lib/plugin-update-checker/",
     "lib/updatepulse-updater/",

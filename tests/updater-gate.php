@@ -24,9 +24,23 @@ $hooks = array();
  * @param int      $priority Priority.
  * @return void
  */
-function add_action( $hook, $callback, $priority = 10 ) {
+function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
 	global $hooks;
+	unset( $accepted_args );
 	$hooks[] = array( $hook, $callback, $priority );
+}
+
+/**
+ * Record filters. The front-end gate does not run them.
+ *
+ * @param string   $hook     Hook name.
+ * @param callable $callback Callback.
+ * @param int      $priority Priority.
+ * @param int      $accepted_args Accepted args.
+ * @return void
+ */
+function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
+	add_action( $hook, $callback, $priority, $accepted_args );
 }
 
 /**
@@ -118,8 +132,18 @@ if ( $loaded || class_exists( '\YahnisElsts\PluginUpdateChecker\v5p3\PucFactory'
 	exit( 1 );
 }
 
-if ( '1.3.0' !== WPFONTS_VERSION ) {
+if ( '2.0.0-rc.1' !== WPFONTS_VERSION ) {
 	fwrite( STDERR, "Unexpected version constant.\n" );
+	exit( 1 );
+}
+
+$src = file_get_contents( dirname( __DIR__ ) . '/wpfonts.php' );
+if ( ! preg_match( '/^ \* Update URI: https:\/\/updates\.wenpai\.net$/m', $src ) ) {
+	fwrite( STDERR, "Update URI changed.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $src, 'https://updates.weixiaoduo.com/wpfonts.json' ) ) {
+	fwrite( STDERR, "Updater metadata URL changed.\n" );
 	exit( 1 );
 }
 

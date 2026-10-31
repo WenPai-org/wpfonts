@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WPFonts
  * Plugin URI: https://wpcy.com/wpfonts
- * Description: Add privacy-friendly system font stacks for Chinese, English, Japanese, and Korean to the WordPress Font Library.
- * Version: 1.3.0
+ * Description: 中文、英文、日文、韩文系统字体栈。文风 CDN 默认关闭，打开后前台只加一条允许主机上的样式。
+ * Version: 2.0.0-rc.1
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: WPFonts.com
@@ -14,8 +14,9 @@
  * Domain Path: /languages
  * Update URI: https://updates.wenpai.net
  *
- * System-stack collections only. This version does not embed a font CDN
- * and does not delete Global Styles or uploaded fonts on uninstall.
+ * System font stacks stay on when the CDN is off. The CDN client is a
+ * release candidate: it prints an allowlisted stylesheet link and does not
+ * delete Global Styles or uploaded fonts on uninstall.
  *
  * @package WPFonts
  */
@@ -24,10 +25,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPFONTS_VERSION', '1.3.0' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.1' );
 define( 'WPFONTS_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPFONTS_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPFONTS_BASENAME', plugin_basename( __FILE__ ) );
+
+require_once WPFONTS_DIR_PATH . 'lib/wenpai-admin-ui/php/load.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-link.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-health.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-settings.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-embed.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-admin.php';
 
 /**
  * Load bundled translations.
