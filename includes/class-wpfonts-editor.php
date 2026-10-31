@@ -3,7 +3,7 @@
  * Thin block-editor panel. It lives in the block inspector, not the admin bar.
  *
  * Picking a family writes that family's CSS stack onto the selected block.
- * Site-wide Global Styles stay on the Font Library install path.
+ * Enabled packages and a confirmed cloud face are also listed in Global Styles.
  *
  * @package WPFonts
  */
@@ -60,7 +60,7 @@ class WPFonts_Editor {
 				'cloud'    => $cloud,
 				'i18n'     => array(
 					'title'       => __( '文派字库', 'wpfonts' ),
-					'intro'       => __( '选一个字体，用在当前区块。全站安装请用字体库。', 'wpfonts' ),
+					'intro'       => __( '选一个字体，用在当前区块。已启用的字体会出现在全站样式里。', 'wpfonts' ),
 					'packages'    => __( '文风字体包', 'wpfonts' ),
 					'cloud'       => __( '文风云', 'wpfonts' ),
 					'noPackages'  => __( '还没有启用的文风字体包。', 'wpfonts' ),

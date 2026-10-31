@@ -607,7 +607,7 @@ class WPFonts_Admin {
 		);
 		echo '<section class="card">';
 		echo '<h2 class="card-title">' . esc_html__( '本版不做', 'wpfonts' ) . '</h2>';
-		echo '<p>' . esc_html__( '插件不切字。全站样式由字体库安装写入，本插件不改主题文件，卸载时也不删除全站样式。', 'wpfonts' ) . '</p>';
+		echo '<p>' . esc_html__( '插件不切字，也不改主题文件。已启用的文风字体包和确认能打开的文风云会出现在全站样式里。卸载时不删除全站样式。', 'wpfonts' ) . '</p>';
 		echo '</section>';
 		echo '</div>';
 	}
@@ -1266,15 +1266,15 @@ class WPFonts_Admin {
 	private static function render_packages() {
 		Wenpai_Admin_Shell::page_head(
 			__( '字体包', 'wpfonts' ),
-			__( '把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。', 'wpfonts' )
+			__( '把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。启用后会出现在全站样式里。', 'wpfonts' )
 		);
 		$note     = self::query_key( 'wpfonts_pkg', '' );
 		$packages = WPFonts_Packages::all();
 		echo '<div class="wenpai-stack">';
 		if ( 'installed' === $note ) {
-			self::notice( 'ok', __( '已安装。前台会加载本站这份字体样式。', 'wpfonts' ) );
+			self::notice( 'ok', __( '已安装。前台会加载本站这份字体样式，也会出现在全站样式里。', 'wpfonts' ) );
 		} elseif ( 'enabled' === $note ) {
-			self::notice( 'ok', __( '前台会加载本站这份字体样式。', 'wpfonts' ) );
+			self::notice( 'ok', __( '前台会加载本站这份字体样式，也会出现在全站样式里。', 'wpfonts' ) );
 		} elseif ( 'failed' === $note ) {
 			self::notice( 'bad', __( '装不上。请用文风已切好的 zip（内含样式和 woff2）。', 'wpfonts' ) );
 		}

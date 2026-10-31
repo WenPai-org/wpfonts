@@ -118,7 +118,7 @@ class WPFonts_Library {
 	public static function packages_collection_args( array $families ) {
 		return array(
 			'name'          => __( '文风字体包', 'wpfonts' ),
-			'description'   => __( '本站已安装的文风字体包。关闭或删除后不再出现。', 'wpfonts' ),
+			'description'   => __( '本站已启用的文风字体包。关闭或删除后，全站样式里也不再出现。', 'wpfonts' ),
 			'font_families' => $families,
 		);
 	}
@@ -132,7 +132,7 @@ class WPFonts_Library {
 	public static function cloud_collection_args( array $families ) {
 		return array(
 			'name'          => __( '文风云', 'wpfonts' ),
-			'description'   => __( '已确认能打开的文风字体。安装后写入全站样式。', 'wpfonts' ),
+			'description'   => __( '已确认能打开的文风字体。会出现在全站样式里。', 'wpfonts' ),
 			'font_families' => $families,
 		);
 	}
