@@ -4,7 +4,7 @@
     {
       "font_family_settings": {
         "fontFamily": "system-ui, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif",
-        "slug": "system-ui",
+        "slug": "cn-system-ui",
         "name": "系统默认"
       },
       "categories": ["sans-serif"]
@@ -12,7 +12,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'SimSun', 'Songti SC', 'Noto Serif CJK SC', serif",
-        "slug": "traditional-serif",
+        "slug": "cn-traditional-serif",
         "name": "传统衬线"
       },
       "categories": ["serif"]
@@ -20,7 +20,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'STKaiti', 'KaiTi', 'BiauKai', cursive",
-        "slug": "calligraphic",
+        "slug": "cn-calligraphic",
         "name": "书法手写"
       },
       "categories": ["handwriting"]
@@ -28,7 +28,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'Microsoft JhengHei', 'PingFang TC', 'Hiragino Sans CNS', 'WenQuanYi Zen Hei', sans-serif",
-        "slug": "humanist",
+        "slug": "cn-humanist",
         "name": "人文无衬线"
       },
       "categories": ["sans-serif"]
@@ -36,7 +36,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'Droid Sans Fallback', 'Source Han Sans', 'Noto Sans CJK SC', sans-serif",
-        "slug": "modern-sans",
+        "slug": "cn-modern-sans",
         "name": "现代黑体"
       },
       "categories": ["sans-serif"]
@@ -44,7 +44,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'FangSong', 'STFangsong', 'AR PL UKai CN', cursive",
-        "slug": "formal-script",
+        "slug": "cn-formal-script",
         "name": "仿宋体"
       },
       "categories": ["serif"]
@@ -52,7 +52,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'NSimSun', 'SimSun-ExtB', 'MingLiU', 'PMingLiU', serif",
-        "slug": "ming-style",
+        "slug": "cn-ming-style",
         "name": "明体"
       },
       "categories": ["serif"]
@@ -60,7 +60,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'Microsoft YaHei UI', 'Segoe UI', 'HarmonyOS Sans SC', sans-serif",
-        "slug": "ui-sans",
+        "slug": "cn-ui-sans",
         "name": "界面无衬线"
       },
       "categories": ["sans-serif"]
@@ -68,7 +68,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'Microsoft YaHei Mono', 'WenQuanYi Micro Hei Mono', 'Sarasa Mono SC', monospace",
-        "slug": "monospace-cjk",
+        "slug": "cn-monospace-cjk",
         "name": "等宽字体"
       },
       "categories": ["monospace"]
@@ -76,7 +76,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'YouYuan', 'DFKai-SB', 'KaiTi_GB2312', cursive",
-        "slug": "classic-calligraphy",
+        "slug": "cn-classic-calligraphy",
         "name": "古典书法"
       },
       "categories": ["handwriting"]
@@ -84,7 +84,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'LiSu', 'STLiti', 'Hanyi Senty Candy', fantasy",
-        "slug": "decorative",
+        "slug": "cn-decorative",
         "name": "艺术字体"
       },
       "categories": ["handwriting"]
@@ -92,7 +92,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'STXihei', 'Microsoft JhengHei UI', 'WenQuanYi Zen Hei Sharp', sans-serif",
-        "slug": "sharp-sans",
+        "slug": "cn-sharp-sans",
         "name": "锐利黑体"
       },
       "categories": ["sans-serif"]
@@ -100,7 +100,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'STSong', 'AR PL UMing CN', 'AR PL UKai HK', serif",
-        "slug": "song-style",
+        "slug": "cn-song-style",
         "name": "宋体变体"
       },
       "categories": ["serif"]
@@ -108,7 +108,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'Alibaba PuHuiTi', 'HarmonyOS Sans SC', 'MiSans', sans-serif",
-        "slug": "brand-sans",
+        "slug": "cn-brand-sans",
         "name": "品牌黑体"
       },
       "categories": ["sans-serif"]
@@ -116,7 +116,7 @@
     {
       "font_family_settings": {
         "fontFamily": "'HYQiHei', 'Source Han Serif SC', 'Adobe Heiti Std', sans-serif",
-        "slug": "compact-sans",
+        "slug": "cn-compact-sans",
         "name": "紧凑黑体"
       },
       "categories": ["sans-serif"]

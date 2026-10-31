@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: WP Fonts\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-22 05:59+0000\n"
-"PO-Revision-Date: 2025-03-22 18:20+0800\n"
+"Project-Id-Version: WPFonts 1.3.0\n"
+"Report-Msgid-Bugs-To: https://wpcy.com/wpfonts\n"
+"POT-Creation-Date: 2026-10-31T04:12:55+00:00\n"
+"PO-Revision-Date: 2026-10-31 12:13+0800\n"
 "Last-Translator: \n"
 "Language-Team: 简体中文\n"
 "Language: zh_CN\n"
@@ -11,82 +11,84 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.5\n"
-"X-Loco-Version: 2.6.11; wp-6.7.2\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpfonts\n"
 
-#. Description of the plugin
-msgid ""
-"Add optimized system font stacks for Chinese, English, Japanese, and Korean "
-"to your WordPress Font Library."
-msgstr ""
-"将针对中文、英文、日文和韩文优化的系统字体堆栈添加到您的 WordPress 字体库。"
+#. Plugin Name of the plugin
+#: wpfonts.php
+msgid "WPFonts"
+msgstr "文派字库"
 
-#: wpfonts.php:35
+#. Plugin URI of the plugin
+#: wpfonts.php
+msgid "https://wpcy.com/wpfonts"
+msgstr "https://wpcy.com/wpfonts"
+
+#. Description of the plugin
+#: wpfonts.php
+msgid ""
+"Add privacy-friendly system font stacks for Chinese, English, Japanese, and "
+"Korean to the WordPress Font Library."
+msgstr "向 WordPress 字体库添加注重隐私的中文、英文、日文和韩文系统字体栈。"
+
+#. Author of the plugin
+#: wpfonts.php
+msgid "WPFonts.com"
+msgstr "文派字库"
+
+#. Author URI of the plugin
+#: wpfonts.php
+msgid "https://wpcy.com/"
+msgstr "https://wpcy.com/"
+
+#: wpfonts.php:59
+msgid "Sans Serif"
+msgstr "无衬线"
+
+#: wpfonts.php:63
+msgid "Serif"
+msgstr "衬线"
+
+#: wpfonts.php:67
+msgid "Monospace"
+msgstr "等距"
+
+#: wpfonts.php:71
+msgid "Handwriting"
+msgstr "手写"
+
+#: wpfonts.php:77
 msgid "Chinese"
 msgstr "中文"
 
-#: wpfonts.php:36
+#: wpfonts.php:78
 msgid ""
 "Cross-platform Chinese system font stacks. Automatically adapt to Windows/"
 "macOS/Linux fonts."
 msgstr "跨平台中文系统字体堆栈。自动适配 Windows/macOS/Linux 字体。"
 
-#: wpfonts.php:43
+#: wpfonts.php:82
 msgid "English"
 msgstr "英文"
 
-#: wpfonts.php:30
-msgid "Handwriting"
-msgstr "手写"
-
-#: wpfonts.php:60
-msgid "Hangul-optimized font stacks for Korean content"
-msgstr "针对韩语内容优化的韩文字体堆栈"
-
-#. URI of the plugin
-msgid "https://wenpai.org/plugins/wpfonts"
-msgstr "https://wenpai.org/plugins/wpfonts"
-
-#. Author URI of the plugin
-msgid "https://wpfonts.com"
-msgstr "https://wpfonts.com"
-
-#: wpfonts.php:51
-msgid "Japanese"
-msgstr "日文"
-
-#: wpfonts.php:52
-msgid "Japanese system font stacks with optimized kana rendering"
-msgstr "具有优化假名渲染的日文系统字体堆栈"
-
-#: wpfonts.php:59
-msgid "Korean"
-msgstr "韩文"
-
-#: wpfonts.php:26
-msgid "Monospace"
-msgstr "等距"
-
-#: wpfonts.php:18
-msgid "Sans Serif"
-msgstr "无衬线"
-
-#: wpfonts.php:22
-msgid "Serif"
-msgstr "衬线"
-
-#: wpfonts.php:44
+#: wpfonts.php:83
 msgid ""
-"Stacks of modern systems fonts, no font files needed. The look will vary on "
+"Stacks of modern system fonts, no font files needed. The look will vary on "
 "each system."
 msgstr "现代系统字体堆栈，无需字体文件。每个操作系统的外观会有所不同。"
 
-#. Name of the plugin
-#| msgid "WP Fonts"
-msgid "WPFonts"
-msgstr "文派字库"
+#: wpfonts.php:87
+msgid "Japanese"
+msgstr "日文"
 
-#. Author of the plugin
-msgid "WPFonts.com"
-msgstr "文派字库"
+#: wpfonts.php:88
+msgid "Japanese system font stacks with optimized kana rendering."
+msgstr "具有优化假名渲染的日文系统字体堆栈。"
+
+#: wpfonts.php:92
+msgid "Korean"
+msgstr "韩文"
+
+#: wpfonts.php:93
+msgid "Hangul-optimized font stacks for Korean content."
+msgstr "针对韩语内容优化的韩文字体堆栈。"
