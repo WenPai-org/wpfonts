@@ -46,6 +46,20 @@ The collections target the WordPress Font Library. The CDN link is a normal fron
 
 == Changelog ==
 
+= 2.0.0 =
+
+Draft notes for the stable release. Plugin version and Stable tag stay at 2.0.0-rc.7 until Feng says ship. These notes assume the 2.0.0-rc.7 behavior below is already in. Install-time package slug and family normalize from a WF prefix to `wenfeng-*` may ship as 2.0.0-rc.8 before Stable tag moves to 2.0.0. If that change lands first, the next code bump is 2.0.0-rc.8.
+
+* Keep two paths. 文风云 prints one allowlisted stylesheet for each confirmed cloud face. 文风字体包 hosts a package the site already downloaded, and serves that package's woff2 from this site. The paths do not depend on each other. The plugin does not upload font files to the Windfonts console, and it does not slice fonts.
+* Store the font directory at uploads/wpfonts/catalog.json. Opening settings does not call app.windfonts.com. WP-Cron refreshes the snapshot about once a month. A failed refresh keeps the previous file. A new install queues one immediate refresh when none exists yet. The saved value is fontFamily (`wenfeng-*`).
+* Register enabled on-site packages in the Font Library as 文风字体 (Windfonts in English) and confirmed cloud faces as 文风云, ahead of the system collections. Settings can turn off 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文. An unchecked language is not registered. Settings screens still say 文风字体包.
+* Add a block inspector panel, 文派字库, for the current block. It lists enabled packages and every confirmed cloud face. It does not add an admin-bar item, and opening it does not search the directory.
+* Copy those families into the user Global Styles post (`wp_global_styles`). Theme files, including theme.json, are not edited. Removing one cloud face, or disabling a package, removes only the entry this plugin wrote. Uninstall does not delete Global Styles.
+* Save more than one confirmed 文风云 face. The Font Library and the block inspector list every confirmed face. A site that stored one face in 2.0.0-rc.6 keeps that face.
+* On the packages screen, say when local.css is missing, when that CSS has no usable woff2, or when an enabled package would not load. An unreadable uploads directory is not described as a broken package.
+* Export and import enabled package metadata and confirmed cloud faces from Tools. The file does not contain the API key. A file that still contains a key is refused.
+* When a confirmed stylesheet is printed, the front also prints the fixed Windfonts license note (`CDN_LICENSE_NOTE`). That sentence is not paraphrased. The API key is not printed in HTML, and it is not included in a settings export.
+
 = 2.0.0-rc.7 =
 * Save more than one confirmed 文风云 face. The Font Library and the block inspector list every confirmed face. A site that stored one face in 2.0.0-rc.6 keeps that face. Removing a face drops only the Global Styles entry this plugin wrote for it.
 * Add settings checkboxes for 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文. They stay on until unchecked. An unchecked language is not registered.
