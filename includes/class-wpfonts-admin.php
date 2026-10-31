@@ -1053,14 +1053,13 @@ class WPFonts_Admin {
 
 		$url = WPFonts_Link::stylesheet_url( $settings );
 		// Text preview only. esc_html() below keeps the browser from loading it.
-		$tag        = '<link rel="stylesheet" href="' . $url . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Not a live tag.
 		$css_status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
 		if ( 'css_missing' === $state || 'missing' === $css_status ) {
 			self::notice( 'bad', __( '这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。', 'wpfonts' ) );
-			echo '<div class="wenpai-code"><code>' . esc_html( $tag ) . '</code></div>';
+			self::echo_embed_code( $url );
 			return;
 		}
-		echo '<div class="wenpai-code"><code>' . esc_html( $tag ) . '</code></div>';
+		self::echo_embed_code( $url );
 		if ( 'ok' === $state && 'ok' === $css_status ) {
 			echo '<p class="hint is-ok">' . esc_html__( '前台会加载这一条。链接中没有 API Key。', 'wpfonts' ) . '</p>';
 		} elseif ( 'ok' === $state ) {
@@ -1085,6 +1084,20 @@ class WPFonts_Admin {
 			);
 			echo '</p>';
 		}
+	}
+
+	/**
+	 * The copyable embed. License comment, preconnect, then the stylesheet.
+	 *
+	 * @param string $url Stylesheet URL.
+	 * @return void
+	 */
+	private static function echo_embed_code( $url ) {
+		$snippet = WPFonts_Link::embed_snippet( $url );
+		if ( '' === $snippet ) {
+			return;
+		}
+		echo '<div class="wenpai-code"><code>' . esc_html( $snippet ) . '</code></div>';
 	}
 
 	/**

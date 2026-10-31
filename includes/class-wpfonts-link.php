@@ -45,6 +45,15 @@ class WPFonts_Link {
 	const KEY_STATUS_URL = 'https://app.windfonts.com/api/key/status';
 
 	/**
+	 * License comment required before every generated CDN link.
+	 *
+	 * Storefront constant WFProto.CDN_LICENSE_NOTE. Do not paraphrase.
+	 *
+	 * @var string
+	 */
+	const CDN_LICENSE_NOTE = '<!-- 此中文网页字体由文风字体（Windfonts）免费提供，您可以自由引用，请务必保留此授权许可标注 https://wenfeng.org/license -->';
+
+	/**
 	 * Console where fonts are uploaded. The plugin does not upload.
 	 *
 	 * @var string
@@ -196,6 +205,46 @@ class WPFonts_Link {
 			return array();
 		}
 		return array( $primary );
+	}
+
+	/**
+	 * Copyable embed: license comment, preconnect, then the stylesheet.
+	 *
+	 * Empty when the URL is not an allowlisted CDN stylesheet. The host is
+	 * taken from that URL, so preconnect cannot point anywhere else.
+	 *
+	 * @param string $url Stylesheet URL.
+	 * @return string
+	 */
+	public static function embed_snippet( $url ) {
+		$origin = self::preconnect_origin( $url );
+		if ( '' === $origin ) {
+			return '';
+		}
+		return self::CDN_LICENSE_NOTE . "\n"
+			. '<link rel="preconnect" href="' . $origin . '" crossorigin>' . "\n"
+			. '<link rel="stylesheet" href="' . $url . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Copyable preview text. The front enqueues this URL.
+	}
+
+	/**
+	 * https origin for an allowlisted stylesheet, or empty.
+	 *
+	 * @param string $url Stylesheet URL.
+	 * @return string
+	 */
+	public static function preconnect_origin( $url ) {
+		if ( ! self::is_allowlisted( $url ) ) {
+			return '';
+		}
+		$parts = parse_url( (string) $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Same shape as is_allowlisted(). The CLI test has no WordPress.
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+		$host = strtolower( (string) $parts['host'] );
+		if ( ! in_array( $host, self::HOSTS, true ) ) {
+			return '';
+		}
+		return 'https://' . $host;
 	}
 
 	/**

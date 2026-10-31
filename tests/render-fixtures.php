@@ -589,6 +589,20 @@ if ( false === strpos( $catalog_html, '前台会加载这一条。' ) ) {
 	fwrite( STDERR, "confirmed ibmps preview lost the healthy hint.\n" );
 	exit( 1 );
 }
+$license = '此中文网页字体由文风字体（Windfonts）免费提供，您可以自由引用，请务必保留此授权许可标注 https://wenfeng.org/license';
+$ok_html = (string) file_get_contents( $out . '/settings-ok.html' );
+foreach ( array( 'settings-catalog' => $catalog_html, 'settings-ok' => $ok_html ) as $name => $html ) {
+	$note_at = strpos( $html, $license );
+	$pre_at  = strpos( $html, 'rel=&quot;preconnect&quot; href=&quot;https://cn.windfonts.com&quot; crossorigin' );
+	if ( false === $pre_at ) {
+		$pre_at = strpos( $html, 'rel="preconnect" href="https://cn.windfonts.com" crossorigin' );
+	}
+	$css_at = strpos( $html, 'family=wenfeng-ibmps&amp;subset=zh-common' );
+	if ( false === $note_at || false === $pre_at || false === $css_at || $note_at > $pre_at || $pre_at > $css_at ) {
+		fwrite( STDERR, $name . " embed is missing the license note before preconnect and the stylesheet.\n" );
+		exit( 1 );
+	}
+}
 if ( false === strpos( $missing_html, '这条地址打不开，前台不会加载。' ) ) {
 	fwrite( STDERR, "missing stylesheet fixture lost the warning.\n" );
 	exit( 1 );

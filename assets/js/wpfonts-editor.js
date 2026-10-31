@@ -20,7 +20,7 @@
 		return !!(typography && (typography.fontFamily || typography.__experimentalFontFamily));
 	}
 
-	function addLink(doc, url) {
+	function addLink(doc, url, preconnect, note) {
 		if (!doc || !doc.head || !url) {
 			return;
 		}
@@ -31,20 +31,31 @@
 				return;
 			}
 		}
+		if (note && note.indexOf("<!--") === 0) {
+			var body = note.replace(/^<!--\s*/, "").replace(/\s*-->$/, "");
+			doc.head.appendChild(doc.createComment(" " + body + " "));
+		}
+		if (preconnect) {
+			var hint = doc.createElement("link");
+			hint.rel = "preconnect";
+			hint.href = preconnect;
+			hint.setAttribute("crossorigin", "");
+			doc.head.appendChild(hint);
+		}
 		var link = doc.createElement("link");
 		link.rel = "stylesheet";
 		link.href = url;
 		doc.head.appendChild(link);
 	}
 
-	function ensureCss(url) {
+	function ensureCss(url, preconnect, note) {
 		if (!url) {
 			return;
 		}
-		addLink(document, url);
+		addLink(document, url, preconnect, note);
 		var iframe = document.querySelector('iframe[name="editor-canvas"]');
 		if (iframe && iframe.contentDocument) {
-			addLink(iframe.contentDocument, url);
+			addLink(iframe.contentDocument, url, preconnect, note);
 		}
 	}
 
@@ -56,7 +67,7 @@
 				className: "wpfonts-editor-family",
 				isPressed: props.current === props.stack,
 				onClick: function () {
-					props.onPick(props.stack, props.css || "");
+					props.onPick(props.stack, props.css || "", props.preconnect || "", props.licenseNote || "");
 				}
 			},
 			props.name
@@ -77,7 +88,7 @@
 		var packages = cfg.packages || [];
 		var cloud = cfg.cloud || null;
 
-		function onPick(stack, css) {
+		function onPick(stack, css, preconnect, note) {
 			if (!selected) {
 				return;
 			}
@@ -88,7 +99,7 @@
 			var style = Object.assign({}, selected.attributes.style || {});
 			style.typography = Object.assign({}, style.typography || {}, { fontFamily: stack });
 			wp.data.dispatch("core/block-editor").updateBlockAttributes(selected.clientId, { style: style });
-			ensureCss(css);
+			ensureCss(css, preconnect, note);
 			setNote(i18n.applied || "");
 		}
 
@@ -123,6 +134,8 @@
 							name: cloud.name,
 							stack: cloud.stack,
 							css: cloud.css || "",
+							preconnect: cloud.preconnect || "",
+							licenseNote: cloud.licenseNote || "",
 							current: current,
 							onPick: onPick
 						})

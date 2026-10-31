@@ -100,7 +100,7 @@ class WPFonts_Editor {
 	 * The one confirmed 文风云 face, or null when the stylesheet has not opened.
 	 *
 	 * @param array $settings Public settings.
-	 * @return array{name:string,stack:string,css:string}|null
+	 * @return array{name:string,stack:string,css:string,preconnect:string,licenseNote:string}|null
 	 */
 	private static function editor_cloud( array $settings ) {
 		if ( ! class_exists( 'WPFonts_Library', false ) || ! class_exists( 'WPFonts_Link', false ) ) {
@@ -118,9 +118,11 @@ class WPFonts_Editor {
 			$url   = WPFonts_Link::is_allowlisted( $built ) ? $built : '';
 		}
 		return array(
-			'name'  => $row['name'],
-			'stack' => $row['fontFamily'],
-			'css'   => $url,
+			'name'        => $row['name'],
+			'stack'       => $row['fontFamily'],
+			'css'         => $url,
+			'preconnect'  => WPFonts_Link::preconnect_origin( $url ),
+			'licenseNote' => WPFonts_Link::CDN_LICENSE_NOTE,
 		);
 	}
 }
