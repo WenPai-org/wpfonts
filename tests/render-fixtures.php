@@ -346,7 +346,7 @@ $screens = array(
 		),
 	),
 	'settings-error'  => array(
-		'title'   => '设置 · Key 没对上',
+		'title'   => '设置 · Key 无效',
 		'tab'     => 'settings',
 		'mode'    => 'advanced',
 		'options' => array(

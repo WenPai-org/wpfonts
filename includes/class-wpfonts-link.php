@@ -52,13 +52,6 @@ class WPFonts_Link {
 	const CONSOLE_URL = 'https://app.windfonts.com';
 
 	/**
-	 * WenPai plugin updates. Not the Windfonts API key.
-	 *
-	 * @var string
-	 */
-	const LICENSE_URL = 'https://updates.wenpai.net';
-
-	/**
 	 * Keep a region id, or fall back to mainland China.
 	 *
 	 * @param mixed $value Raw region.

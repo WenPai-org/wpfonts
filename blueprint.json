@@ -4,7 +4,7 @@
   "tag": "字体",
   "tagClass": "",
   "icon": "type",
-  "desc": "系统字体栈，另可选文风 CDN。",
+  "desc": "系统字体，另可选文风 CDN。",
   "landingPage": "/wp-admin/options-general.php?page=wpfonts",
   "pluginPath": "wpfonts/wpfonts.php",
   "blogname": "文派字库体验站"

@@ -1,8 +1,8 @@
 # WPFonts
 
-文派字库给 WordPress 字体库加上中文、英文、日文、韩文的系统字体栈。文风 CDN 默认关着。打开之后，前台只多一条允许主机上的样式，网页里看不到 API Key。
+文派字库给 WordPress 字体库加上中文、英文、日文、韩文的系统字体。文风 CDN 默认关闭。开启之后，前台只多一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.1`。系统字体栈沿用 1.3。CDN 能在本地对上地址和健康检查的判断，CI 里没有一把真 Key，所以还不把这次叫正式版。
+这一版是 `2.0.0-rc.1`。系统字体沿用 1.3。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
 
 WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts CDN client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
 
@@ -12,15 +12,14 @@ WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 
 壳来自 `lib/wenpai-admin-ui/`，这一份是 **0.3.1**（和 WPSlug 里同一份）。加载时谁的版本新就用谁，样式句柄固定 `wenpai-admin-ui`。套件仓库的 0.3.2 在这台环境里读不到，所以没有假装钉到 0.3.2。
 
-## 打开 CDN 之后
+## 开启 CDN 之后
 
-- 主机只有 `cn.windfonts.com`、`hk.windfonts.com`、`en.windfonts.com`。
-- 填了项目，就用 `https://主机/p/项目/index.css`。
-- 没填项目，就用 `https://主机/api/css?family=字体短名&subset=子集`。公开样式没有字体短名时会返回 JSON 而不是 CSS，所以没填字体短名、也没填项目时，前台不加这条 link。
-- Key 只在服务器上拿去问 `https://app.windfonts.com/api/key/status`。不进网页，也不进样式地址。
-- Windfonts API Key 和文派许可证不是同一个东西。更新地址仍是 `https://updates.wenpai.net`。
-- 上传字体用 [文风控制台](https://app.windfonts.com)。插件里不上传、不切字。
-- 块主题全局样式、把字体名写进 `theme.json`，这一版不做。
+- 服务器只有 `cn.windfonts.com`、`hk.windfonts.com`、`en.windfonts.com`。
+- 填写了项目名，就用 `https://服务器/p/项目名/index.css`。
+- 没有项目名时，使用 `https://服务器/api/css?family=字体名&subset=字符范围`。公开字体地址没有字体名时会返回 JSON 而不是 CSS，所以没填字体名、也没填项目名时，前台不加载这条链接。
+- 文风 API Key 只在服务器上用于请求 `https://app.windfonts.com/api/key/status`。不进入网页，也不进入样式地址。
+- 上传字体请使用 [文风控制台](https://app.windfonts.com)。插件不上传、不切分字体。
+- 块主题全局样式、把字体名写入 `theme.json`，本版不做。
 
 ## 运行要求
 
@@ -41,7 +40,7 @@ WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 
 ## 更新
 
-插件头 `Update URI` 仍是 `https://updates.wenpai.net`。更新检查仍读 `https://updates.weixiaoduo.com/wpfonts.json`，而且只在后台、定时任务或 WP-CLI 里加载。
+插件头里的 Update URI 没有改动。更新检查仍读取 `https://updates.weixiaoduo.com/wpfonts.json`，而且只在后台、定时任务或 WP-CLI 中加载。后台不解释更新来源。
 
 ## 检查
 
@@ -55,4 +54,4 @@ php lib/wenpai-admin-ui/scripts/wenpai-admin-lint.py --plugin-root .
 
 卸载只删 `wpfonts_settings` 和 `wpfonts_api_key`。不删全局样式，也不删用户上传的字体。
 
-CDN 关着时，前台不为字体去访问文风。打开之后，访客的浏览器会去要那一条允许主机上的样式。
+CDN 关闭时，前台不为字体访问文风。开启之后，访客的浏览器会请求那一条文风服务器上的样式。

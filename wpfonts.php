@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WPFonts
  * Plugin URI: https://wpcy.com/wpfonts
- * Description: 中文、英文、日文、韩文系统字体栈。文风 CDN 默认关闭，打开后前台只加一条允许主机上的样式。
+ * Description: 中文、英文、日文、韩文系统字体。文风 CDN 默认关闭，开启后前台只加载一条文风服务器上的样式。
  * Version: 2.0.0-rc.1
  * Requires at least: 6.5
  * Requires PHP: 7.4

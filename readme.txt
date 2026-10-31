@@ -16,9 +16,7 @@ WPFonts adds 40 Chinese, English, Japanese, and Korean system font stacks to the
 
 Version 2.0.0-rc.1 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP.
 
-The public CSS URL needs a font short name (`family`) or a project slug. Without either, the front stays on system stacks. Hosts are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
-
-The Windfonts API key and the WenPai update license are separate. The plugin header Update URI remains `https://updates.wenpai.net`.
+The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
 Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). This version does not rewrite Global Styles or write `wenfeng-*` names into theme.json.
 
@@ -45,10 +43,6 @@ No. Global Styles belong to WordPress. Deactivation does not delete them. Uninst
 = Does WPFonts work with classic themes? =
 
 The collections target the WordPress Font Library. The CDN link is a normal front-end stylesheet and does not require a block theme. A block theme is still required for the Font Library screens.
-
-= Is the API key the WenPai license? =
-
-No. They are separate. The update address stays https://updates.wenpai.net.
 
 == Changelog ==
 
