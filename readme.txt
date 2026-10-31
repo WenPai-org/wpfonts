@@ -18,7 +18,7 @@ Version 2.0.0-rc.8 can print one allowlisted Windfonts stylesheet for each confi
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
-Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled on-site packages appear in the Font Library as 文风字体 (Windfonts in English), ahead of the system collections. 文风云 is unchanged. A confirmed catalog face appears there too, and both are copied into user Global Styles. Settings still call the installable packages 文风字体包. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
+Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled on-site packages appear in the Font Library as 文风字体 (Windfonts in English), ahead of the system collections. Installing a package records `wenfeng-*` when the zip names `WF-*`, `windfonts-*`, or `wenfeng-*`, and rewrites that name into `local.css`. A zip that does not name a catalog family keeps its file name. Packages already installed are left in place. 文风云 is unchanged. A confirmed catalog face appears there too, and both are copied into user Global Styles. Settings still call the installable packages 文风字体包. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
 
 The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views.
 
@@ -46,8 +46,23 @@ The collections target the WordPress Font Library. The CDN link is a normal fron
 
 == Changelog ==
 
+= 2.0.0 =
+
+Draft notes for the stable release. Plugin version, WPFONTS_VERSION, and Stable tag stay at 2.0.0-rc.8 until Feng says ship. These notes describe behavior already in 2.0.0-rc.8. Nothing is tagged 2.0.0.
+
+* Keep two paths. 文风云 prints one allowlisted stylesheet for each confirmed cloud face. 文风字体包 hosts a package the site already downloaded, and serves that package's woff2 from this site. The paths do not depend on each other. The plugin does not upload font files to the Windfonts console, and it does not slice fonts.
+* Store the font directory at uploads/wpfonts/catalog.json. Opening settings does not call app.windfonts.com. WP-Cron refreshes the snapshot about once a month. A failed refresh keeps the previous file. A new install queues one immediate refresh when none exists yet. The saved value is fontFamily (`wenfeng-*`).
+* On install, align the package id, the Font Library slug, and the Global Styles slug to `wenfeng-*` when metadata or the first @font-face names `WF-*`, `windfonts-*`, or `wenfeng-*`. `WF-*` and `windfonts-*` become that same short name. A name that is already `wenfeng-*` stays, lowercased. `local.css` is rewritten so font-family matches. woff2 file names are not renamed. When neither source names a catalog family, the zip file name is kept, and the Font Library slug keeps the `wpfonts-pkg-` prefix. The name on the screen can stay the metadata label or the zip file name. Packages already installed are left in place.
+* Register enabled on-site packages in the Font Library as 文风字体 (Windfonts in English) and confirmed cloud faces as 文风云, ahead of the system collections. Settings can turn off 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文. An unchecked language is not registered. Settings screens still say 文风字体包.
+* Add a block inspector panel, 文派字库, for the current block. It lists enabled packages and every confirmed cloud face. It does not add an admin-bar item, and opening it does not search the directory.
+* Copy those families into the user Global Styles post (`wp_global_styles`). Theme files, including theme.json, are not edited. Removing one cloud face, or disabling a package, removes only the entry this plugin wrote. Uninstall does not delete Global Styles.
+* Save more than one confirmed 文风云 face. The Font Library and the block inspector list every confirmed face. A site that stored one face in 2.0.0-rc.6 keeps that face.
+* On the packages screen, say when local.css is missing, when that CSS has no usable woff2, or when an enabled package would not load. An unreadable uploads directory is not described as a broken package.
+* Export and import enabled package metadata and confirmed cloud faces from Tools. The file does not contain the API key. A file that still contains a key is refused.
+* When a confirmed stylesheet is printed, the front also prints the fixed Windfonts license note (`CDN_LICENSE_NOTE`). That sentence is not paraphrased. The API key is not printed in HTML, and it is not included in a settings export.
+
 = 2.0.0-rc.8 =
-* Installing a 文风字体包 uses wenfeng-{short} as the package id, the Font Library slug, and the Global Styles slug when the zip says so. A legacy font-family of WF-Xxx or windfonts-Xxx is recorded as that same short name, and local.css is updated to match. The name on the packages screen can stay the human name. woff2 file names are left as they are. The plugin still does not slice fonts.
+* Installing a 文风字体包 uses wenfeng-{short} as the package id, the Font Library slug, and the Global Styles slug when metadata or the first @font-face names WF-*, windfonts-*, or wenfeng-*. WF-* and windfonts-* become that same short name, and local.css is rewritten so font-family matches. A name that is already wenfeng-* stays, lowercased. woff2 file names are left as they are. When neither source names a catalog family, the zip file name is kept and the Font Library slug keeps the wpfonts-pkg- prefix. Packages already installed are not renamed. The plugin still does not slice fonts.
 
 = 2.0.0-rc.7 =
 * Save more than one confirmed 文风云 face. The Font Library and the block inspector list every confirmed face. A site that stored one face in 2.0.0-rc.6 keeps that face. Removing a face drops only the Global Styles entry this plugin wrote for it.
