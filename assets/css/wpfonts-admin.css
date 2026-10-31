@@ -45,6 +45,14 @@
 	line-height: 1.6;
 }
 
+.wenpai-app #wpfonts-catalog-note {
+	margin-top: var(--wenpai-space-2);
+}
+
+.wenpai-app #wpfonts-catalog-refresh {
+	margin-top: var(--wenpai-space-2);
+}
+
 .wenpai-app #wpfonts-catalog-search {
 	margin-top: var(--wenpai-space-3);
 }

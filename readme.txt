@@ -4,7 +4,7 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 2.0.0-rc.2
+Stable tag: 2.0.0-rc.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ System font stacks, plus an optional Windfonts CDN link. Release candidate: CI d
 
 WPFonts adds 40 Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device.
 
-Version 2.0.0-rc.2 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings can pick a fontFamily from the read-only directory at app.windfonts.com.
+Version 2.0.0-rc.3 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick a fontFamily from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory.
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
@@ -38,13 +38,18 @@ The system stacks do not. When the CDN is on and the key check passed, the visit
 
 = Does deactivation remove typography choices? =
 
-No. Global Styles belong to WordPress. Deactivation does not delete them. Uninstall deletes only the WPFonts settings and API key.
+No. Global Styles belong to WordPress. Deactivation does not delete them. Uninstall deletes the WPFonts settings, API key, package list, and the catalog snapshot at uploads/wpfonts/catalog.json. It does not delete installed font package files.
 
 = Does WPFonts work with classic themes? =
 
 The collections target the WordPress Font Library. The CDN link is a normal front-end stylesheet and does not require a block theme. A block theme is still required for the Font Library screens.
 
 == Changelog ==
+
+= 2.0.0-rc.3 =
+* Store the font directory at wp-content/uploads/wpfonts/catalog.json. The settings screen reads that file and does not call app.windfonts.com on a normal render.
+* Refresh the snapshot about once a month with WP-Cron (custom monthly schedule, 30 days). The settings button can refresh it sooner, with a 60 second cooldown.
+* A failed refresh keeps the previous snapshot. The saved value is still fontFamily (wenfeng-*).
 
 = 2.0.0-rc.2 =
 * Pick a font from the read-only app.windfonts.com directory. The saved value is fontFamily. A failed read keeps the manual field and does not wipe a cached page.

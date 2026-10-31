@@ -3,7 +3,7 @@
  * Plugin Name: WPFonts
  * Plugin URI: https://wpcy.com/wpfonts
  * Description: 中文、英文、日文、韩文系统字体。文风云默认关闭，开启后前台只加载一条文风服务器上的样式。
- * Version: 2.0.0-rc.2
+ * Version: 2.0.0-rc.3
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: WPFonts.com
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPFONTS_VERSION', '2.0.0-rc.2' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.3' );
 define( 'WPFONTS_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPFONTS_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPFONTS_BASENAME', plugin_basename( __FILE__ ) );
@@ -38,6 +38,12 @@ require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-catalog.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-packages.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-embed.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-admin.php';
+
+register_activation_hook( __FILE__, array( 'WPFonts_Catalog', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'WPFonts_Catalog', 'deactivate' ) );
+add_filter( 'cron_schedules', array( 'WPFonts_Catalog', 'cron_schedules' ) ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- Interval is WPFonts_Catalog::MONTH_INTERVAL (2592000 seconds, about 30 days) in cron_schedules().
+add_action( WPFonts_Catalog::CRON_HOOK, array( 'WPFonts_Catalog', 'run_cron' ) );
+add_action( 'init', array( 'WPFonts_Catalog', 'ensure_schedule' ) );
 
 /**
  * Load bundled translations.

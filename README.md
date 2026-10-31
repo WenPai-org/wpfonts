@@ -2,9 +2,9 @@
 
 文派字库给 WordPress 字体库加上中文、英文、日文、韩文的系统字体。文风云默认关闭。开启之后，前台只多一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.2`。系统字体沿用 1.3。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
+这一版是 `2.0.0-rc.3`。系统字体沿用 1.3。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
 
-WPFonts 2.0.0-rc.2 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
+WPFonts 2.0.0-rc.3 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
 
 ## 后台
 
@@ -18,7 +18,7 @@ WPFonts 2.0.0-rc.2 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 
 ## 选用字体
 
-设置页从 `https://app.windfonts.com/api/fonts` 读目录，只在后台请求。选中后写入 `fontFamily`。目录失败时仍可手填字体名，已有缓存不会被失败结果盖掉。字符范围四档写在选项上。项目名收在「项目与白名单」里，域名白名单到文风控制台配置。
+设置页只读本站这份目录：`wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。文件形如 `{ "updated_at": unix, "fonts": [ { "name", "fontFamily" } ] }`。WP-Cron 使用自定义 `monthly` 间隔（约 30 天）拉取 `https://app.windfonts.com/api/fonts` 的全部分页并写成这一份快照。站长也可以点「更新字体目录」立刻更新，两次之间至少隔 60 秒。选中后写入 `fontFamily`（`wenfeng-*`）。更新失败不会盖掉已有快照。没有快照时仍可手填字体名。页面上的说明是：目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。字符范围四档写在选项上。项目名收在「项目与白名单」里，域名白名单到文风控制台配置。旧的按页 transient 不再读取。
 
 ## 开启文风云之后
 
@@ -61,6 +61,6 @@ php tests/updater-gate.php
 php lib/wenpai-admin-ui/scripts/wenpai-admin-lint.py --plugin-root .
 ```
 
-卸载只删 `wpfonts_settings` 和 `wpfonts_api_key`。不删全局样式，也不删用户上传的字体。
+卸载删除 `wpfonts_settings`、`wpfonts_api_key`、`wpfonts_packages`，以及 `uploads/wpfonts/catalog.json`。不删全局样式，也不删已安装的文风字体包。
 
 CDN 关闭时，前台不为字体访问文风。开启之后，访客的浏览器会请求那一条文风服务器上的样式。

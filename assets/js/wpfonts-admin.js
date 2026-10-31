@@ -78,7 +78,12 @@
 	var loadingText = root.getAttribute("data-loading") || "";
 	var failText = root.getAttribute("data-fail") || "";
 	var emptyText = root.getAttribute("data-empty") || "";
+	var updatingText = root.getAttribute("data-updating") || "";
+	var updatedText = root.getAttribute("data-updated") || "";
+	var staleText = root.getAttribute("data-stale") || "";
+	var refreshBtn = document.getElementById("wpfonts-catalog-refresh");
 	var loaded = [];
+	var refreshing = false;
 
 	function trim(value) {
 		return (value || "").replace(/^\s+|\s+$/g, "");
@@ -191,6 +196,64 @@
 				fontFamily: input.value
 			});
 		}
+	}
+
+	function finishRefresh(message, fonts) {
+		refreshing = false;
+		if (refreshBtn) {
+			refreshBtn.disabled = false;
+		}
+		if (fonts && fonts.length) {
+			loaded = fonts;
+		}
+		var query = search ? trim(search.value) : "";
+		var view = query ? filterLoaded(query) : loaded;
+		render(view, !!query && view.length > 0);
+		if (!loaded.length) {
+			list.hidden = true;
+		}
+		setStatus(message, !!message);
+	}
+
+	if (refreshBtn) {
+		refreshBtn.addEventListener("click", function (event) {
+			event.preventDefault();
+			if (refreshing) {
+				return;
+			}
+			refreshing = true;
+			refreshBtn.disabled = true;
+			setStatus(updatingText, true);
+			if (!cfg.ajaxUrl || !cfg.nonce || !window.fetch || !window.FormData) {
+				finishRefresh(loaded.length ? staleText : failText, null);
+				return;
+			}
+			var body = new window.FormData();
+			body.append("action", "wpfonts_catalog");
+			body.append("_ajax_nonce", cfg.nonce);
+			body.append("refresh", "1");
+			window.fetch(cfg.ajaxUrl, {
+				method: "POST",
+				credentials: "same-origin",
+				body: body
+			}).then(function (response) {
+				return response.json();
+			}).then(function (payload) {
+				var data = payload && payload.data ? payload.data : {};
+				var fonts = data && data.fonts;
+				if (payload && payload.success && fonts && fonts.length) {
+					finishRefresh(data.message || updatedText, fonts);
+					return;
+				}
+				if (fonts && fonts.length) {
+					finishRefresh(data.message || staleText, fonts);
+					return;
+				}
+				finishRefresh(loaded.length ? (data.message || staleText) : ((data && data.message) || failText), null);
+			}).catch(function () {
+				finishRefresh(loaded.length ? staleText : failText, null);
+			});
+		});
 	}
 
 	list.addEventListener("change", function (event) {
