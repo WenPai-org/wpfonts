@@ -111,6 +111,24 @@ function path_join( $base, $path ) {
 	return rtrim( $base, '/' ) . '/' . ltrim( $path, '/' );
 }
 
+/**
+ * @param string   $file     Plugin file.
+ * @param callable $callback Callback.
+ * @return void
+ */
+function register_activation_hook( $file, $callback ) {
+	add_action( 'activate_' . plugin_basename( $file ), $callback );
+}
+
+/**
+ * @param string   $file     Plugin file.
+ * @param callable $callback Callback.
+ * @return void
+ */
+function register_deactivation_hook( $file, $callback ) {
+	add_action( 'deactivate_' . plugin_basename( $file ), $callback );
+}
+
 require dirname( __DIR__ ) . '/wpfonts.php';
 
 if ( ! function_exists( 'wp_fonts_initialize_update_checker' ) ) {
@@ -132,7 +150,7 @@ if ( $loaded || class_exists( '\YahnisElsts\PluginUpdateChecker\v5p3\PucFactory'
 	exit( 1 );
 }
 
-if ( '2.0.0-rc.2' !== WPFONTS_VERSION ) {
+if ( '2.0.0-rc.3' !== WPFONTS_VERSION ) {
 	fwrite( STDERR, "Unexpected version constant.\n" );
 	exit( 1 );
 }

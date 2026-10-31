@@ -161,7 +161,9 @@ class WPFonts_Admin {
 	}
 
 	/**
-	 * Catalog search for the settings screen. Not registered for logged-out users.
+	 * Catalog search or a manual snapshot refresh. Not registered for logged-out users.
+	 *
+	 * Search reads the local snapshot. Only the refresh flag calls the directory.
 	 *
 	 * @return void
 	 */
@@ -175,14 +177,18 @@ class WPFonts_Admin {
 			);
 		}
 		check_ajax_referer( 'wpfonts_catalog' );
+		$refresh = isset( $_POST['refresh'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['refresh'] ) );
+		if ( $refresh ) {
+			self::send_refresh_result( WPFonts_Catalog::refresh( true ) );
+		}
 		$page   = isset( $_POST['page'] ) ? absint( wp_unslash( $_POST['page'] ) ) : 1;
 		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
-		$force  = isset( $_POST['refresh'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['refresh'] ) );
-		$result = WPFonts_Catalog::read( $page, $search, $force );
+		$result = WPFonts_Catalog::read( $page, $search );
 		if ( empty( $result['ok'] ) ) {
 			wp_send_json_error(
 				array(
 					'message' => self::catalog_messages()['fail'],
+					'fonts'   => array(),
 				)
 			);
 		}
@@ -192,7 +198,34 @@ class WPFonts_Admin {
 				'page'      => $result['page'],
 				'pageTotal' => $result['pageTotal'],
 				'total'     => $result['total'],
-				'cached'    => ! empty( $result['cached'] ),
+				'cached'    => true,
+			)
+		);
+	}
+
+	/**
+	 * JSON for the settings button. A failed refresh still returns the old rows.
+	 *
+	 * @param array $result Refresh result.
+	 * @return void
+	 */
+	private static function send_refresh_result( array $result ) {
+		$messages = self::catalog_messages();
+		$fonts    = ( isset( $result['fonts'] ) && is_array( $result['fonts'] ) ) ? $result['fonts'] : array();
+		$fresh    = ! empty( $result['ok'] ) && empty( $result['stale'] ) && empty( $result['cooling'] );
+		if ( $fresh ) {
+			wp_send_json_success(
+				array(
+					'message'    => $messages['updated'],
+					'fonts'      => $fonts,
+					'updated_at' => isset( $result['updated_at'] ) ? (int) $result['updated_at'] : 0,
+				)
+			);
+		}
+		wp_send_json_error(
+			array(
+				'message' => array() === $fonts ? $messages['fail'] : $messages['stale'],
+				'fonts'   => $fonts,
 			)
 		);
 	}
@@ -776,16 +809,21 @@ class WPFonts_Admin {
 	}
 
 	/**
-	 * Catalog status lines.
+	 * Catalog status lines. The new strings are the Foundry copy for this screen.
 	 *
-	 * @return array{loading:string, fail:string, empty:string, loaded:string}
+	 * @return array{loading:string,fail:string,empty:string,loaded:string,updating:string,updated:string,stale:string,note:string,refresh:string}
 	 */
 	private static function catalog_messages() {
 		return array(
-			'loading' => __( '正在加载字体目录…', 'wpfonts' ),
-			'fail'    => __( '暂时读不到字体目录。你可以手动填写字体名，稍后再试。', 'wpfonts' ),
-			'empty'   => __( '没有匹配的字体。改个词，或手动填写。', 'wpfonts' ),
-			'loaded'  => __( '结果来自已加载页', 'wpfonts' ),
+			'loading'  => __( '正在加载字体目录…', 'wpfonts' ),
+			'fail'     => __( '暂时读不到字体目录。你可以手动填写字体名，稍后再试。', 'wpfonts' ),
+			'empty'    => __( '没有匹配的字体。改个词，或手动填写。', 'wpfonts' ),
+			'loaded'   => __( '结果来自已加载页', 'wpfonts' ),
+			'updating' => __( '正在更新字体目录…', 'wpfonts' ),
+			'updated'  => __( '字体目录已更新。', 'wpfonts' ),
+			'stale'    => __( '暂时更新不了，仍显示上次保存的目录。稍后再试。', 'wpfonts' ),
+			'note'     => __( '目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。', 'wpfonts' ),
+			'refresh'  => __( '更新字体目录', 'wpfonts' ),
 		);
 	}
 
@@ -870,8 +908,10 @@ class WPFonts_Admin {
 		echo '<div class="field-label" id="wpfonts-catalog-label">' . esc_html__( '选用字体', 'wpfonts' ) . '</div>';
 		echo '<div class="field-ctl">';
 		echo '<p class="field-help">' . esc_html__( '从文风目录挑选，或手动填写字体名。选中的名字会写进公开样式地址。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint" id="wpfonts-catalog-note">' . esc_html( $messages['note'] ) . '</p>';
+		echo '<p><button type="button" class="btn btn-secondary" id="wpfonts-catalog-refresh">' . esc_html( $messages['refresh'] ) . '</button></p>';
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
-		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '">';
+		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '">';
 		if ( $failed ) {
 			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['fail'] ) . '</p>';
 		} elseif ( array() === $fonts ) {
