@@ -4,7 +4,7 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 2.0.0-rc.1
+Stable tag: 2.0.0-rc.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ System font stacks, plus an optional Windfonts CDN link. Release candidate: CI d
 
 WPFonts adds 40 Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device.
 
-Version 2.0.0-rc.1 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP.
+Version 2.0.0-rc.2 can also print one allowlisted Windfonts stylesheet on the front. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings can pick a fontFamily from the read-only directory at app.windfonts.com.
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
@@ -45,6 +45,11 @@ No. Global Styles belong to WordPress. Deactivation does not delete them. Uninst
 The collections target the WordPress Font Library. The CDN link is a normal front-end stylesheet and does not require a block theme. A block theme is still required for the Font Library screens.
 
 == Changelog ==
+
+= 2.0.0-rc.2 =
+* Pick a font from the read-only app.windfonts.com directory. The saved value is fontFamily. A failed read keeps the manual field and does not wipe a cached page.
+* Explain the four character-range choices on the settings screen. The plugin still does not slice fonts.
+* Move the project name into a collapsed section with a link to the Windfonts console. Domain allowlists stay in that console.
 
 = 2.0.0-rc.1 =
 * Add an opt-in Windfonts CDN client: region, subset, masked API key, optional project slug, and optional font short name.

@@ -44,3 +44,51 @@
 	font-size: 18px;
 	line-height: 1.6;
 }
+
+.wenpai-app #wpfonts-catalog-search {
+	margin-top: var(--wenpai-space-3);
+}
+
+.wenpai-app .wpfonts-catalog-list,
+.wenpai-app .wpfonts-subset-list {
+	grid-template-columns: 1fr;
+	margin-top: var(--wenpai-space-3);
+}
+
+.wenpai-app .wpfonts-catalog-list {
+	max-height: 320px;
+	overflow: auto;
+}
+
+.wenpai-app .wpfonts-catalog-list .choice .d,
+.wenpai-app .wpfonts-subset-list .choice .d {
+	overflow-wrap: anywhere;
+}
+
+.wenpai-app #wpfonts-project-wrap {
+	border-top: 1px solid var(--wenpai-line-soft);
+	margin-top: var(--wenpai-space-3);
+	padding-top: var(--wenpai-space-3);
+}
+
+.wenpai-app #wpfonts-project > summary {
+	display: flex;
+	align-items: center;
+	gap: var(--wenpai-space-2);
+	color: var(--wenpai-ink);
+	font-size: var(--wenpai-text-body);
+}
+
+.wenpai-app #wpfonts-project > summary::before {
+	content: "";
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 5px 0 5px 6px;
+	border-color: transparent transparent transparent currentColor;
+}
+
+.wenpai-app #wpfonts-project[open] > summary::before {
+	border-width: 6px 5px 0 5px;
+	border-color: currentColor transparent transparent transparent;
+}

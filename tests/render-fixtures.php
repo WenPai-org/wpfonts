@@ -13,6 +13,7 @@ if ( defined( 'ABSPATH' ) ) {
 }
 
 define( 'ABSPATH', __DIR__ . '/' );
+define( 'WPFONTS_FIXTURE', true );
 
 $GLOBALS['fixture_options'] = array();
 
@@ -203,6 +204,18 @@ function wp_unslash( $value ) {
 }
 
 /**
+ * Fixture stand-in for wp_json_encode().
+ *
+ * @param mixed $data Data.
+ * @param int   $options Options.
+ * @param int   $depth Depth.
+ * @return string|false
+ */
+function wp_json_encode( $data, $options = 0, $depth = 512 ) {
+	return json_encode( $data, $options | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT, $depth );
+}
+
+/**
  * @param string $path Path.
  * @return string
  */
@@ -267,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.1' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.2' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -276,6 +289,7 @@ require $root . '/lib/wenpai-admin-ui/php/load.php';
 require $root . '/includes/class-wpfonts-link.php';
 require $root . '/includes/class-wpfonts-health.php';
 require $root . '/includes/class-wpfonts-settings.php';
+require $root . '/includes/class-wpfonts-catalog.php';
 require $root . '/includes/class-wpfonts-packages.php';
 require $root . '/includes/class-wpfonts-embed.php';
 require $root . '/includes/class-wpfonts-admin.php';
@@ -298,16 +312,58 @@ function wpfonts_fixture_document( $title, $body ) {
 }
 
 /**
+ * A short directory page for settings fixtures.
+ *
+ * @return array
+ */
+function wpfonts_sample_catalog() {
+	return array(
+		'ok'        => true,
+		'fonts'     => array(
+			array(
+				'name'       => '钟齐志莽行书',
+				'fontFamily' => 'wenfeng-zhi-mang-xing',
+			),
+			array(
+				'name'       => '寒蝉无机体',
+				'fontFamily' => 'wenfeng-hcwjt',
+			),
+			array(
+				'name'       => '975 圆体',
+				'fontFamily' => 'wenfeng-975yt',
+			),
+			array(
+				'name'       => 'Aleo',
+				'fontFamily' => 'wenfeng-aleo',
+			),
+			array(
+				'name'       => 'Alibaba Sans Thai',
+				'fontFamily' => 'wenfeng-alibabasansthai',
+			),
+			array(
+				'name'       => 'Alibaba Sans Viet',
+				'fontFamily' => 'wenfeng-alibabasansviet',
+			),
+		),
+		'page'      => 1,
+		'pageTotal' => 43,
+		'total'     => 853,
+	);
+}
+
+/**
  * Render one screen.
  *
- * @param array  $options Options.
- * @param string $tab Tab.
- * @param string $mode Mode.
+ * @param array      $options Options.
+ * @param string     $tab Tab.
+ * @param string     $mode Mode.
+ * @param array|null $catalog Catalog payload, or null for the sample page.
  * @return string
  */
-function wpfonts_render_screen( array $options, $tab, $mode ) {
-	$GLOBALS['fixture_options'] = $options;
-	$_GET                       = array(
+function wpfonts_render_screen( array $options, $tab, $mode, $catalog = null ) {
+	$GLOBALS['fixture_options']         = $options;
+	$GLOBALS['wpfonts_catalog_fixture'] = is_array( $catalog ) ? $catalog : wpfonts_sample_catalog();
+	$_GET                               = array(
 		'page' => 'wpfonts',
 		'tab'  => $tab,
 		'mode' => $mode,
@@ -440,12 +496,59 @@ $screens = array(
 			),
 		),
 	),
+	'settings-catalog' => array(
+		'title'   => '设置 · 选用字体',
+		'tab'     => 'settings',
+		'mode'    => 'advanced',
+		'options' => array(
+			'wpfonts_settings' => array_merge(
+				$public,
+				array(
+					'cdn_enabled' => 1,
+					'family'      => 'wenfeng-zhi-mang-xing',
+					'subset'      => 'zh-common',
+					'key_status'  => 'valid',
+					'key_checked' => 1700000000,
+				)
+			),
+			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
+		),
+		'catalog' => wpfonts_sample_catalog(),
+	),
+	'settings-catalog-fail' => array(
+		'title'   => '设置 · 目录读不到',
+		'tab'     => 'settings',
+		'mode'    => 'advanced',
+		'options' => array(
+			'wpfonts_settings' => array_merge(
+				$public,
+				array(
+					'cdn_enabled' => 1,
+					'family'      => 'wenfeng-ibmps',
+					'subset'      => 'zh-common',
+					'key_status'  => 'valid',
+					'key_checked' => 1700000000,
+				)
+			),
+			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
+		),
+		'catalog' => array(
+			'ok'    => false,
+			'fonts' => array(),
+			'code'  => 0,
+		),
+	),
 );
 
 foreach ( $screens as $name => $screen ) {
 	$html = wpfonts_fixture_document(
 		$screen['title'],
-		wpfonts_render_screen( $screen['options'], $screen['tab'], $screen['mode'] )
+		wpfonts_render_screen(
+			$screen['options'],
+			$screen['tab'],
+			$screen['mode'],
+			isset( $screen['catalog'] ) ? $screen['catalog'] : null
+		)
 	);
 	$path = $out . '/' . $name . '.html';
 	file_put_contents( $path, $html );

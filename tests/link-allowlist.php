@@ -105,8 +105,14 @@ $assert( 1 === $simple['cdn_enabled'], 'simple save did not enable CDN' );
 $assert( 'en' === $simple['region'], 'simple save dropped region' );
 $assert( 'full' === $simple['subset'], 'simple save dropped subset' );
 $assert( 'studio' === $simple['project_slug'], 'simple save overwrote the project' );
-$assert( 'wenfeng-ibmps' === $simple['family'], 'simple save overwrote the family' );
+$assert( 'other-font' === $simple['family'], 'simple save ignored the font name field' );
 $assert( 'valid' === $simple['key_status'], 'posted key_status was trusted' );
+
+$without_family = $input;
+unset( $without_family['family'] );
+$kept = WPFonts_Link::merge_public( $prev, $without_family, 'simple' );
+$assert( 'wenfeng-ibmps' === $kept['family'], 'simple save without a family field cleared it' );
+$assert( 'studio' === $kept['project_slug'], 'simple save without a family field overwrote the project' );
 
 $advanced = WPFonts_Link::merge_public( $prev, $input, 'advanced' );
 $assert( 'hacked' === $advanced['project_slug'], 'advanced save kept the old project' );
