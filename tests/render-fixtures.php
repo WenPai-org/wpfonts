@@ -611,3 +611,16 @@ if ( false !== strpos( $missing_html, '前台会加载这一条。' ) ) {
 	fwrite( STDERR, "missing stylesheet fixture still says the front will load it.\n" );
 	exit( 1 );
 }
+$packages_html = (string) file_get_contents( $out . '/packages-one.html' );
+if ( false !== strpos( $packages_html, 'confirm(' ) || false !== strpos( $packages_html, 'onclick=' ) ) {
+	fwrite( STDERR, "packages fixture still asks the browser to confirm delete.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, 'wenpai-gate' ) || false === strpos( $packages_html, 'data-wenpai-need-apply' ) || false === strpos( $packages_html, 'disabled' ) ) {
+	fwrite( STDERR, "packages fixture is missing the delete gate.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, '删除后本站不再提供这份字体。我已核对。' ) ) {
+	fwrite( STDERR, "packages fixture lost the delete gate copy.\n" );
+	exit( 1 );
+}

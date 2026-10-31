@@ -1281,11 +1281,9 @@ class WPFonts_Admin {
 		if ( array() === $packages ) {
 			self::render_install_zone( true );
 		} else {
-			echo '<section class="card">';
 			foreach ( $packages as $package ) {
 				self::render_package_row( $package );
 			}
-			echo '</section>';
 			self::render_install_zone( false );
 		}
 		echo '</div>';
@@ -1333,6 +1331,7 @@ class WPFonts_Admin {
 	 */
 	private static function render_package_row( array $package ) {
 		$on = ! empty( $package['enabled'] );
+		echo '<section class="card">';
 		echo '<div class="simple-row">';
 		echo '<span class="tile ' . esc_attr( $on ? 'ok' : '' ) . '">';
 		self::icon( 'download' );
@@ -1347,16 +1346,21 @@ class WPFonts_Admin {
 		echo '<input type="hidden" name="enabled" value="' . esc_attr( $on ? '0' : '1' ) . '">';
 		echo '<button type="submit" class="btn btn-secondary">' . esc_html( $on ? __( '停用', 'wpfonts' ) : __( '启用', 'wpfonts' ) ) . '</button>';
 		echo '</form>';
-		$confirm = esc_js( __( '删除后本站不再提供这份字体。确定删除？', 'wpfonts' ) );
+		echo '</div></div>';
+		self::render_package_preview( $package );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_package_delete' );
 		echo '<input type="hidden" name="action" value="wpfonts_package_delete">';
 		echo '<input type="hidden" name="id" value="' . esc_attr( $package['id'] ) . '">';
-		// $confirm is escaped with esc_js() for the confirm() string.
-		echo '<button type="submit" class="btn btn-danger" onclick="return confirm(\'' . $confirm . '\');">' . esc_html__( '删除', 'wpfonts' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<div class="wenpai-gate">';
+		echo '<label><input type="checkbox" name="wpfonts_delete_ack" value="1"> ' . esc_html__( '删除后本站不再提供这份字体。我已核对。', 'wpfonts' ) . '</label>';
+		echo '</div>';
+		echo '<div class="card-foot start">';
+		echo '<span class="meta">' . esc_html__( '未勾选不能点。', 'wpfonts' ) . '</span>';
+		echo '<button type="submit" class="btn btn-danger" data-wenpai-need-apply disabled>' . esc_html__( '删除', 'wpfonts' ) . '</button>';
+		echo '</div>';
 		echo '</form>';
-		echo '</div></div>';
-		self::render_package_preview( $package );
+		echo '</section>';
 	}
 
 	/**
@@ -1453,7 +1457,7 @@ class WPFonts_Admin {
 	}
 
 	/**
-	 * Delete a package after the confirmation box is checked.
+	 * Delete a package. The screen checkbox must be posted with the nonce.
 	 *
 	 * @return void
 	 */
@@ -1462,8 +1466,11 @@ class WPFonts_Admin {
 			wp_die( esc_html__( '你没有权限做这件事。', 'wpfonts' ) );
 		}
 		check_admin_referer( 'wpfonts_package_delete' );
-		$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
-		WPFonts_Packages::delete( $id );
+		$ack = isset( $_POST['wpfonts_delete_ack'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['wpfonts_delete_ack'] ) );
+		if ( $ack ) {
+			$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+			WPFonts_Packages::delete( $id );
+		}
 		wp_safe_redirect( self::page_url( array( 'tab' => 'packages' ) ) );
 		exit;
 	}
