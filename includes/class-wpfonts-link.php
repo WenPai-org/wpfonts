@@ -255,6 +255,9 @@ class WPFonts_Link {
 		if ( 'advanced' === $surface ) {
 			$next['project_slug'] = self::token( isset( $input['project_slug'] ) ? $input['project_slug'] : '', 64 );
 			$next['family']       = self::token( isset( $input['family'] ) ? $input['family'] : '', 80 );
+		} elseif ( array_key_exists( 'family', $input ) ) {
+			// The font name field is on the simple form. The project name is not.
+			$next['family'] = self::token( $input['family'], 80 );
 		}
 		return $next;
 	}

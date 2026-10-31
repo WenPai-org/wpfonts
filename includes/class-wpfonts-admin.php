@@ -24,6 +24,7 @@ class WPFonts_Admin {
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 		add_action( 'admin_post_wpfonts_recheck', array( __CLASS__, 'recheck' ) );
+		add_action( 'wp_ajax_wpfonts_catalog', array( __CLASS__, 'ajax_catalog' ) );
 		add_action( 'admin_post_wpfonts_install_package', array( __CLASS__, 'install_package' ) );
 		add_action( 'admin_post_wpfonts_package_toggle', array( __CLASS__, 'toggle_package' ) );
 		add_action( 'admin_post_wpfonts_package_delete', array( __CLASS__, 'delete_package' ) );
@@ -95,6 +96,16 @@ class WPFonts_Admin {
 		);
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen selector.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
+		if ( 'settings' === $tab ) {
+			wp_localize_script(
+				'wpfonts-admin',
+				'wpfontsCatalog',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( 'wpfonts_catalog' ),
+				)
+			);
+		}
 		if ( 'packages' === $tab ) {
 			WPFonts_Packages::enqueue_admin_previews();
 		}
@@ -147,6 +158,43 @@ class WPFonts_Admin {
 		WPFonts_Settings::recheck();
 		wp_safe_redirect( self::page_url( array( 'tab' => 'tools' ) ) );
 		exit;
+	}
+
+	/**
+	 * Catalog search for the settings screen. Not registered for logged-out users.
+	 *
+	 * @return void
+	 */
+	public static function ajax_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => self::catalog_messages()['fail'],
+				),
+				403
+			);
+		}
+		check_ajax_referer( 'wpfonts_catalog' );
+		$page   = isset( $_POST['page'] ) ? absint( wp_unslash( $_POST['page'] ) ) : 1;
+		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+		$force  = isset( $_POST['refresh'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['refresh'] ) );
+		$result = WPFonts_Catalog::read( $page, $search, $force );
+		if ( empty( $result['ok'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => self::catalog_messages()['fail'],
+				)
+			);
+		}
+		wp_send_json_success(
+			array(
+				'fonts'     => $result['fonts'],
+				'page'      => $result['page'],
+				'pageTotal' => $result['pageTotal'],
+				'total'     => $result['total'],
+				'cached'    => ! empty( $result['cached'] ),
+			)
+		);
 	}
 
 	/**
@@ -421,11 +469,14 @@ class WPFonts_Admin {
 		echo '</div></div>';
 
 		self::render_region_field( $settings );
+		echo '<div id="wpfonts-font-pick">';
+		self::render_catalog_field( $settings );
+		self::render_family_field( $settings );
+		echo '</div>';
 		self::render_subset_field( $settings );
 		if ( 'advanced' === $mode ) {
 			self::render_key_field( $has_key, $state );
-			self::render_family_field( $settings );
-			self::render_slug_field( $settings );
+			self::render_project_field( $settings );
 		}
 		self::render_link_field( $settings, $state, $has_key );
 
@@ -453,6 +504,7 @@ class WPFonts_Admin {
 		);
 		echo '<div class="wenpai-stack">';
 		self::render_state_banner( $state );
+		self::render_selection_summary( $settings );
 
 		echo '<section class="card">';
 		echo '<div class="card-head"><span class="tile warn">';
@@ -679,24 +731,62 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function render_subset_field( array $settings ) {
-		$choices = array(
-			'zh-common' => __( 'zh-common · 常用汉字（建议）', 'wpfonts' ),
-			'zh'        => __( 'zh · 更多汉字', 'wpfonts' ),
-			'en'        => __( 'en · 英文', 'wpfonts' ),
-			'full'      => __( 'full · 整套', 'wpfonts' ),
-		);
-		echo '<div class="field"';
+		echo '<div class="field" id="wpfonts-subset-field"';
 		self::cdn_depends();
 		echo '>';
-		echo '<label class="field-label" for="wpfonts-subset">' . esc_html__( '字符范围', 'wpfonts' ) . '</label>';
+		echo '<div class="field-label" id="wpfonts-subset-label">' . esc_html__( '字符范围', 'wpfonts' ) . '</div>';
 		echo '<div class="field-ctl">';
-		echo '<select id="wpfonts-subset" name="wpfonts_settings[subset]">';
-		foreach ( $choices as $id => $label ) {
-			echo '<option value="' . esc_attr( $id ) . '"' . selected( $settings['subset'], $id, false ) . '>' . esc_html( $label ) . '</option>';
+		echo '<div class="choice-cards wpfonts-subset-list" role="radiogroup" aria-labelledby="wpfonts-subset-label">';
+		foreach ( self::subset_choices() as $id => $choice ) {
+			$on = $settings['subset'] === $id;
+			echo '<label class="choice' . ( $on ? ' is-on' : '' ) . '">';
+			echo '<input type="radio" name="wpfonts_settings[subset]" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
+			echo '<span><span class="t">' . esc_html( $choice['label'] ) . '</span><span class="d">' . esc_html( $choice['hint'] ) . '</span></span>';
+			echo '</label>';
 		}
-		echo '</select>';
-		echo '<p class="hint">' . esc_html__( '建议使用 zh-common。插件不在这里切分字体。', 'wpfonts' ) . '</p>';
+		echo '</div>';
+		echo '<p class="hint">' . esc_html__( '字符范围决定远程字体包大小。插件不在这里切字。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
+	}
+
+	/**
+	 * Four subset labels. The strings are the product copy for this screen.
+	 *
+	 * @return array<string, array{label:string, hint:string}>
+	 */
+	private static function subset_choices() {
+		return array(
+			'en'        => array(
+				'label' => __( '西文', 'wpfonts' ),
+				'hint'  => __( '体积最小，主要覆盖拉丁字符。', 'wpfonts' ),
+			),
+			'zh-common' => array(
+				'label' => __( '常用中文（推荐）', 'wpfonts' ),
+				'hint'  => __( '日常中文站点够用，体积适中。', 'wpfonts' ),
+			),
+			'zh'        => array(
+				'label' => __( '较全中文', 'wpfonts' ),
+				'hint'  => __( '生僻字更多，体积明显更大。', 'wpfonts' ),
+			),
+			'full'      => array(
+				'label' => __( '全量', 'wpfonts' ),
+				'hint'  => __( '最大包，仅在确实需要时使用。', 'wpfonts' ),
+			),
+		);
+	}
+
+	/**
+	 * Catalog status lines.
+	 *
+	 * @return array{loading:string, fail:string, empty:string, loaded:string}
+	 */
+	private static function catalog_messages() {
+		return array(
+			'loading' => __( '正在加载字体目录…', 'wpfonts' ),
+			'fail'    => __( '暂时读不到字体目录。你可以手动填写字体名，稍后再试。', 'wpfonts' ),
+			'empty'   => __( '没有匹配的字体。改个词，或手动填写。', 'wpfonts' ),
+			'loaded'  => __( '结果来自已加载页', 'wpfonts' ),
+		);
 	}
 
 	/**
@@ -757,8 +847,61 @@ class WPFonts_Admin {
 		echo '<label class="field-label" for="wpfonts-family">' . esc_html__( '字体名', 'wpfonts' ) . '</label>';
 		echo '<div class="field-ctl">';
 		echo '<input type="text" id="wpfonts-family" name="wpfonts_settings[family]" value="' . esc_attr( $settings['family'] ) . '" placeholder="wenfeng-ibmps" autocomplete="off" spellcheck="false">';
-		echo '<p class="hint">' . esc_html__( '公开字体地址需要填写。例如 wenfeng-ibmps。填写了项目名后可以留空。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '也可直接填写，例如 wenfeng-ibmps。填了项目名后，公开地址可以不填字体名。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
+	}
+
+	/**
+	 * Directory picker. Selecting a row writes fontFamily into the font name field.
+	 *
+	 * @param array $settings Public settings.
+	 * @return void
+	 */
+	private static function render_catalog_field( array $settings ) {
+		$messages = self::catalog_messages();
+		$result   = WPFonts_Catalog::read( 1, '' );
+		$fonts    = ( ! empty( $result['ok'] ) && isset( $result['fonts'] ) && is_array( $result['fonts'] ) ) ? $result['fonts'] : array();
+		$failed   = empty( $result['ok'] );
+		$family   = isset( $settings['family'] ) ? (string) $settings['family'] : '';
+
+		echo '<div class="field" id="wpfonts-catalog-field"';
+		self::cdn_depends();
+		echo '>';
+		echo '<div class="field-label" id="wpfonts-catalog-label">' . esc_html__( '选用字体', 'wpfonts' ) . '</div>';
+		echo '<div class="field-ctl">';
+		echo '<p class="field-help">' . esc_html__( '从文风目录挑选，或手动填写字体名。选中的名字会写进公开样式地址。', 'wpfonts' ) . '</p>';
+		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
+		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '">';
+		if ( $failed ) {
+			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['fail'] ) . '</p>';
+		} elseif ( array() === $fonts ) {
+			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['empty'] ) . '</p>';
+		} else {
+			echo '<p class="hint" id="wpfonts-catalog-status" hidden>' . esc_html( $messages['loading'] ) . '</p>';
+		}
+		echo '<div id="wpfonts-catalog-list" class="choice-cards wpfonts-catalog-list" role="radiogroup" aria-labelledby="wpfonts-catalog-label"';
+		if ( $failed || array() === $fonts ) {
+			echo ' hidden';
+		}
+		echo '>';
+		foreach ( $fonts as $font ) {
+			$id = $font['fontFamily'];
+			$on = ( $family === $id );
+			echo '<label class="choice' . ( $on ? ' is-on' : '' ) . '">';
+			echo '<input type="radio" name="wpfonts_catalog_pick" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
+			echo '<span><span class="t">' . esc_html( $font['name'] ) . '</span><span class="d">' . esc_html( $id ) . '</span></span>';
+			echo '</label>';
+		}
+		echo '</div>';
+		echo '<p class="hint" id="wpfonts-catalog-scope" hidden>' . esc_html( $messages['loaded'] ) . '</p>';
+		$json = function_exists( 'wp_json_encode' ) ? wp_json_encode( $fonts ) : false;
+		if ( ! is_string( $json ) ) {
+			$json = '[]';
+		}
+		echo '<script type="application/json" id="wpfonts-catalog-data">';
+		echo $json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_json_encode() hex-encodes tags and quotes.
+		echo '</script>';
+		echo '</div></div></div>';
 	}
 
 	/**
@@ -767,15 +910,54 @@ class WPFonts_Admin {
 	 * @param array $settings Public settings.
 	 * @return void
 	 */
-	private static function render_slug_field( array $settings ) {
-		echo '<div class="field"';
+	private static function render_project_field( array $settings ) {
+		echo '<div id="wpfonts-project-wrap"';
 		self::cdn_depends();
 		echo '>';
+		echo '<details id="wpfonts-project">';
+		echo '<summary>' . esc_html__( '项目与白名单', 'wpfonts' ) . '</summary>';
+		echo '<div class="field">';
 		echo '<label class="field-label" for="wpfonts-slug">' . esc_html__( '项目名', 'wpfonts' ) . '</label>';
 		echo '<div class="field-ctl">';
-		echo '<input type="text" id="wpfonts-slug" name="wpfonts_settings[project_slug]" value="' . esc_attr( $settings['project_slug'] ) . '" placeholder="studio" autocomplete="off" spellcheck="false">';
-		echo '<p class="hint">' . esc_html__( '可以留空。填写后使用该区域的 /p/项目名/index.css。可用网站在文风项目里设置。', 'wpfonts' ) . '</p>';
+		echo '<input type="text" id="wpfonts-slug" name="wpfonts_settings[project_slug]" value="' . esc_attr( $settings['project_slug'] ) . '" autocomplete="off" spellcheck="false">';
+		echo '<p class="hint">' . esc_html__( '选填。填写后前台改用项目样式。域名白名单在文风控制台配置，不在本插件里改。', 'wpfonts' ) . '</p>';
+		echo '<p><a class="btn btn-secondary" href="' . esc_url( WPFonts_Link::CONSOLE_URL ) . '" target="_blank" rel="noopener noreferrer">';
+		echo esc_html__( '打开文风控制台', 'wpfonts' );
+		echo '<span class="screen-reader-text">' . esc_html__( '（在新标签页打开）', 'wpfonts' ) . '</span>';
+		echo '</a></p>';
 		echo '</div></div>';
+		echo '</details></div>';
+	}
+
+	/**
+	 * Read-only chosen font on the tools screen.
+	 *
+	 * @param array $settings Public settings.
+	 * @return void
+	 */
+	private static function render_selection_summary( array $settings ) {
+		$family  = WPFonts_Link::family( $settings );
+		$subset  = WPFonts_Link::subset( isset( $settings['subset'] ) ? $settings['subset'] : '' );
+		$choices = self::subset_choices();
+		$choice  = isset( $choices[ $subset ] ) ? $choices[ $subset ] : $choices['zh-common'];
+		echo '<section class="card" id="wpfonts-selection-summary">';
+		echo '<h2 class="card-title">' . esc_html__( '选用字体', 'wpfonts' ) . '</h2>';
+		echo '<div class="field">';
+		echo '<div class="field-label">' . esc_html__( '字体名', 'wpfonts' ) . '</div>';
+		echo '<div class="field-ctl">';
+		if ( '' === $family ) {
+			echo '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'settings' ) ) ) . '">' . esc_html__( '去设置', 'wpfonts' ) . '</a>';
+		} else {
+			echo '<div class="wenpai-code"><code>' . esc_html( $family ) . '</code></div>';
+		}
+		echo '</div></div>';
+		echo '<div class="field">';
+		echo '<div class="field-label">' . esc_html__( '字符范围', 'wpfonts' ) . '</div>';
+		echo '<div class="field-ctl">';
+		echo '<p>' . esc_html( $choice['label'] ) . '</p>';
+		echo '<p class="hint">' . esc_html( $choice['hint'] ) . '</p>';
+		echo '</div></div>';
+		echo '</section>';
 	}
 
 	/**
@@ -1037,16 +1219,16 @@ class WPFonts_Admin {
 	/**
 	 * One drop zone. Choosing or dropping a zip submits immediately.
 	 *
-	 * @param bool $empty Empty state fills the zone. Otherwise a compact strip.
+	 * @param bool $blank Empty state fills the zone. Otherwise a compact strip.
 	 * @return void
 	 */
-	private static function render_install_zone( $empty ) {
+	private static function render_install_zone( $blank ) {
 		echo '<section class="card" id="wpfonts-install-zone">';
 		echo '<form id="wpfonts-install-form" method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_install_package' );
 		echo '<input type="hidden" name="action" value="wpfonts_install_package">';
 		echo '<input type="file" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip">';
-		if ( $empty ) {
+		if ( $blank ) {
 			echo '<div class="empty">';
 			echo '<span class="tile">';
 			self::icon( 'download' );

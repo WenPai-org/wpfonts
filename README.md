@@ -2,9 +2,9 @@
 
 文派字库给 WordPress 字体库加上中文、英文、日文、韩文的系统字体。文风云默认关闭。开启之后，前台只多一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.1`。系统字体沿用 1.3。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
+这一版是 `2.0.0-rc.2`。系统字体沿用 1.3。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。
 
-WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts CDN client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
+WPFonts 2.0.0-rc.2 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The front prints an allowlisted `<link>` only. It does not upload fonts, slice them, or fetch CSS into PHP.
 
 ## 后台
 
@@ -15,6 +15,10 @@ WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 ## 文风字体包
 
 把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。安装后的文件在 `wp-content/uploads/wpfonts/packages/`，和文风云开关互不影响。
+
+## 选用字体
+
+设置页从 `https://app.windfonts.com/api/fonts` 读目录，只在后台请求。选中后写入 `fontFamily`。目录失败时仍可手填字体名，已有缓存不会被失败结果盖掉。字符范围四档写在选项上。项目名收在「项目与白名单」里，域名白名单到文风控制台配置。
 
 ## 开启文风云之后
 
@@ -52,6 +56,7 @@ WPFonts 2.0.0-rc.1 keeps the 1.3 system font stacks and adds an opt-in Windfonts
 php tests/validate-collections.php
 php tests/link-allowlist.php
 php tests/health-status.php
+php tests/catalog.php
 php tests/updater-gate.php
 php lib/wenpai-admin-ui/scripts/wenpai-admin-lint.py --plugin-root .
 ```

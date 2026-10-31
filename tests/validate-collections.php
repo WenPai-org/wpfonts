@@ -74,8 +74,8 @@ foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp
 }
 $assert( false !== strpos( $main, 'Requires at least: 6.5' ), 'Requires at least 6.5.' );
 $assert( false !== strpos( $main, 'Requires PHP: 7.4' ), 'Requires PHP 7.4.' );
-$assert( false !== strpos( $main, 'Version: 2.0.0-rc.1' ), 'Version header must be 2.0.0-rc.1.' );
-$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.1' )" ), 'Version constant must be 2.0.0-rc.1.' );
+$assert( false !== strpos( $main, 'Version: 2.0.0-rc.2' ), 'Version header must be 2.0.0-rc.2.' );
+$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.2' )" ), 'Version constant must be 2.0.0-rc.2.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
 $assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );
@@ -100,6 +100,26 @@ $assert( false === strpos( $admin, '文派许可证' ), 'Admin UI must not menti
 $assert( false === strpos( $admin, 'updates.wenpai.net' ), 'Admin UI must not explain the update host.' );
 $assert( false === strpos( $admin, 'render_license_card' ), 'License card must stay removed.' );
 $assert( false === strpos( $admin, '去控制台上传' ), 'Admin UI must not offer a console upload button.' );
+$assert( false === strpos( $admin, '文风 CDN' ), 'Admin UI must not say 文风 CDN.' );
+$assert( false === strpos( $admin, '本站字体包' ), 'Admin UI must not say 本站字体包.' );
+$assert( false !== strpos( $admin, '文风云' ), 'Admin UI lost 文风云.' );
+$assert( false !== strpos( $admin, '文风字体包' ), 'Admin UI lost 文风字体包.' );
+$assert( false !== strpos( $admin, '选用字体' ), 'Font picker title is missing.' );
+$assert( false !== strpos( $admin, '从文风目录挑选，或手动填写字体名。选中的名字会写进公开样式地址。' ), 'Font picker description drifted.' );
+$assert( false !== strpos( $admin, '搜索字体名' ), 'Catalog search placeholder drifted.' );
+$assert( false !== strpos( $admin, '正在加载字体目录…' ), 'Catalog loading copy drifted.' );
+$assert( false !== strpos( $admin, '暂时读不到字体目录。你可以手动填写字体名，稍后再试。' ), 'Catalog failure copy drifted.' );
+$assert( false !== strpos( $admin, '没有匹配的字体。改个词，或手动填写。' ), 'Catalog empty copy drifted.' );
+$assert( false !== strpos( $admin, '结果来自已加载页' ), 'Loaded-page note drifted.' );
+$assert( false !== strpos( $admin, '也可直接填写，例如 wenfeng-ibmps。填了项目名后，公开地址可以不填字体名。' ), 'Manual family hint drifted.' );
+$assert( false !== strpos( $admin, '体积最小，主要覆盖拉丁字符。' ), 'Latin subset copy drifted.' );
+$assert( false !== strpos( $admin, '日常中文站点够用，体积适中。' ), 'Common Chinese subset copy drifted.' );
+$assert( false !== strpos( $admin, '生僻字更多，体积明显更大。' ), 'Broader Chinese subset copy drifted.' );
+$assert( false !== strpos( $admin, '最大包，仅在确实需要时使用。' ), 'Full subset copy drifted.' );
+$assert( false !== strpos( $admin, '字符范围决定远程字体包大小。插件不在这里切字。' ), 'Subset hint drifted.' );
+$assert( false !== strpos( $admin, '项目与白名单' ), 'Project disclosure title drifted.' );
+$assert( false !== strpos( $admin, '选填。填写后前台改用项目样式。域名白名单在文风控制台配置，不在本插件里改。' ), 'Project hint drifted.' );
+$assert( false !== strpos( $admin, '打开文风控制台' ), 'Console link label drifted.' );
 $assert( false !== strpos( $admin, '字体包' ), 'Packages tab copy is missing.' );
 $assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
 $assert( false === strpos( $embed, 'api_key' ), 'Front embed must not read the API key.' );
