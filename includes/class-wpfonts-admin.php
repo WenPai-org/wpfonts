@@ -655,7 +655,7 @@ class WPFonts_Admin {
 		self::icon( 'external' );
 		echo '</span><div>';
 		echo '<h2 class="card-title">' . esc_html__( '样式链接', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '只显示计算得到的地址。插件不下载 CSS 正文。', 'wpfonts' ) . '</p>';
+		echo '<p class="card-sub">' . esc_html__( '只显示将要挂上的地址。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 		self::render_link_preview( $settings, $state, $has_key, false );
 		echo '</section>';
@@ -1093,7 +1093,7 @@ class WPFonts_Admin {
 			echo '</label>';
 		}
 		echo '</div>';
-		echo '<p class="hint">' . esc_html__( '字符范围决定远程字体包大小。插件不在这里切字。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '字符范围决定远程样式体积。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 	}
 
@@ -1302,11 +1302,7 @@ class WPFonts_Admin {
 		echo '<label class="field-label" for="wpfonts-slug">' . esc_html__( '项目名', 'wpfonts' ) . '</label>';
 		echo '<div class="field-ctl">';
 		echo '<input type="text" id="wpfonts-slug" name="wpfonts_settings[project_slug]" value="' . esc_attr( $settings['project_slug'] ) . '" autocomplete="off" spellcheck="false">';
-		echo '<p class="hint">' . esc_html__( '选填。填写后前台改用项目样式。域名白名单在文风控制台配置，不在本插件里改。', 'wpfonts' ) . '</p>';
-		echo '<p><a class="btn btn-secondary" href="' . esc_url( WPFonts_Link::CONSOLE_URL ) . '" target="_blank" rel="noopener noreferrer">';
-		echo esc_html__( '打开文风控制台', 'wpfonts' );
-		echo '<span class="screen-reader-text">' . esc_html__( '（在新标签页打开）', 'wpfonts' ) . '</span>';
-		echo '</a></p>';
+		echo '<p class="hint">' . esc_html__( '选填。填写后前台改用项目样式。域名白名单请在文风项目里配置。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 		echo '</details></div>';
 	}

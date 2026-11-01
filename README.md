@@ -58,7 +58,7 @@ wp fonts package list
 
 Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.11`.
 
-- 两条路并存。文风云给每条已确认的字体加一条文风服务器上的样式链接。文风字体包把站长已经下载好的包装到本站，由本站托管 woff2。两条路互不影响。插件不往文风控制台上传字体，也不切字。
+- 两条路并存。文风云给每条已确认的字体加一条文风服务器上的样式链接。文风字体包把站长已经下载好的包装到本站，由本站托管 woff2。两条路互不影响。插件不往文风控制台上传字体。
 - 字体目录写在 `wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。WP-Cron 大约每月更新一次。更新失败会留下上一份。新装站点还没有这份文件时，会排一次马上执行的任务去拉取。选中后写入 `fontFamily`（`wenfeng-*`）。
 - 安装文风字体包时，包 id、字体库和全站样式的短名对齐目录里的 `wenfeng-*`。`WF-*`、`windfonts-*` 会换成同一个短名；已经是 `wenfeng-*` 的只做小写。这个短名会写进 `local.css` 的 `font-family`。woff2 文件名不动，也不重命名字体文件。包内元数据和样式都认不出目录名时，仍用 zip 文件名，字体库 slug 继续用 `wpfonts-pkg-` 前缀。页面上的显示名可以仍是元数据里的中文名，或 zip 文件名。已经装好的旧包不改目录。
 - 已启用的包登记为字体库里的「文风字体」，英文界面写作 Windfonts。已确认的云登记为「文风云」。这两项排在系统字体前面。设置里可以分别关掉「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。关掉的那一组不会登记。设置页仍称这些包为文风字体包。
@@ -93,7 +93,7 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 
 ## 2.0.0-rc.8
 
-- 安装文风字体包时，包 id、字体库和全站样式的短名对齐目录里的 `wenfeng-*`。`WF-*`、`windfonts-*` 会换成同一个短名，并写进 `local.css` 的 `font-family`。已经是 `wenfeng-*` 的只做小写。认不出目录名时仍用 zip 文件名，字体库 slug 继续用 `wpfonts-pkg-` 前缀。已经装好的旧包不改目录。页面上的名字可以仍是原来的字体名。woff2 文件名不动。插件仍然不切字。
+- 安装文风字体包时，包 id、字体库和全站样式的短名对齐目录里的 `wenfeng-*`。`WF-*`、`windfonts-*` 会换成同一个短名，并写进 `local.css` 的 `font-family`。已经是 `wenfeng-*` 的只做小写。认不出目录名时仍用 zip 文件名，字体库 slug 继续用 `wpfonts-pkg-` 前缀。已经装好的旧包不改目录。页面上的名字可以仍是原来的字体名。woff2 文件名不动。
 
 ## 2.0.0-rc.7
 
@@ -117,7 +117,7 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 - 填写了项目名，就用 `https://服务器/p/项目名/index.css`。
 - 没有项目名时，使用 `https://服务器/api/css?family=字体名&subset=字符范围`。公开字体地址没有字体名时会返回 JSON 而不是 CSS，所以没填字体名、也没填项目名时，前台不加载这条链接。
 - 文风 API Key 只在服务器上用于请求 `https://app.windfonts.com/api/key/status`。不进入网页，也不进入样式地址。
-- 插件不切字。已切好的包在「字体包」页安装到本站。
+- 字体包在「字体包」页安装到本站。
 - 已启用的文风字体包，以及确认能打开的文风云，会出现在全站样式里。插件不改主题文件，卸载时也不删除全站样式。
 
 ## 运行要求

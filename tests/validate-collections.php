@@ -174,10 +174,11 @@ $assert( false !== strpos( $admin, '体积最小，主要覆盖拉丁字符。' 
 $assert( false !== strpos( $admin, '日常中文站点够用，体积适中。' ), 'Common Chinese subset copy drifted.' );
 $assert( false !== strpos( $admin, '生僻字更多，体积明显更大。' ), 'Broader Chinese subset copy drifted.' );
 $assert( false !== strpos( $admin, '最大包，仅在确实需要时使用。' ), 'Full subset copy drifted.' );
-$assert( false !== strpos( $admin, '字符范围决定远程字体包大小。插件不在这里切字。' ), 'Subset hint drifted.' );
+$assert( false !== strpos( $admin, '字符范围决定远程样式体积。' ), 'Subset hint drifted.' );
+$assert( false === strpos( $admin, '切字' ), 'Admin still lectures about slicing.' );
 $assert( false !== strpos( $admin, '项目与白名单' ), 'Project disclosure title drifted.' );
-$assert( false !== strpos( $admin, '选填。填写后前台改用项目样式。域名白名单在文风控制台配置，不在本插件里改。' ), 'Project hint drifted.' );
-$assert( false !== strpos( $admin, '打开文风控制台' ), 'Console link label drifted.' );
+$assert( false !== strpos( $admin, '选填。填写后前台改用项目样式。域名白名单请在文风项目里配置。' ), 'Project hint drifted.' );
+$assert( false === strpos( $admin, '打开文风控制台' ), 'Console button is back.' );
 $assert( false !== strpos( $admin, '字体包' ), 'Packages tab copy is missing.' );
 $assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
 $assert( false === strpos( $admin, 'confirm(' ), 'Package delete must not use confirm().' );
