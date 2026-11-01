@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.10' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.11' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -561,6 +561,33 @@ $screens = array(
 			'code'  => 0,
 		),
 	),
+	'settings-simple' => array(
+		'title'   => '设置 · 简单',
+		'tab'     => 'settings',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+		),
+	),
+	'tools-local'     => array(
+		'title'   => '工具 · 字体包',
+		'tab'     => 'tools',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+			'wpfonts_packages' => array(
+				array(
+					'id'           => 'wenfeng-xxzt',
+					'name'         => 'wenfeng-xxzt',
+					'family'       => 'wenfeng-xxzt',
+					'enabled'      => 1,
+					'installed_at' => 1700000000,
+				),
+			),
+		),
+	),
 );
 
 foreach ( $screens as $name => $screen ) {
@@ -625,5 +652,50 @@ if ( false === strpos( $packages_html, 'wenpai-gate' ) || false === strpos( $pac
 }
 if ( false === strpos( $packages_html, '删除后本站不再提供这份字体。我已核对。' ) ) {
 	fwrite( STDERR, "packages fixture lost the delete gate copy.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, '安装本站要用的字体包。启用后可在全站样式里选用。' ) ) {
+	fwrite( STDERR, "packages lede drifted.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $packages_html, '插件不切字' ) || false !== strpos( $packages_html, '切分字体' ) ) {
+	fwrite( STDERR, "packages fixture still lectures about slicing.\n" );
+	exit( 1 );
+}
+$simple_html = (string) file_get_contents( $out . '/settings-simple.html' );
+$fallback_at = strpos( $simple_html, 'wpfonts-cjk_fallback' );
+$body_at     = strpos( $simple_html, 'wpfonts-cjk_body' );
+$heading_at  = strpos( $simple_html, 'wpfonts-cjk_heading' );
+if ( false === $fallback_at || false === $body_at || false === $heading_at || $fallback_at > $body_at || $body_at > $heading_at ) {
+	fwrite( STDERR, "simple settings did not put 中文回退 before 正文 and 标题.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $simple_html, '系统字体默认可用。装好字体包后，可在下面指定中文。文风云默认关。' ) ) {
+	fwrite( STDERR, "simple settings lede drifted.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $simple_html, 'wpfonts-api-key' ) || false !== strpos( $simple_html, 'wpfonts-catalog-refresh' ) || false !== strpos( $simple_html, 'name="wpfonts_settings[region]"' ) ) {
+	fwrite( STDERR, "simple settings still shows advanced cloud fields.\n" );
+	exit( 1 );
+}
+$tools_local = (string) file_get_contents( $out . '/tools-local.html' );
+$diag_at     = strpos( $tools_local, '本站字体包' );
+$cloud_at    = strpos( $tools_local, '这些项用于文风云' );
+if ( false === $diag_at || false === $cloud_at || $diag_at > $cloud_at ) {
+	fwrite( STDERR, "tools did not lead with package diagnostics.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $tools_local, '尚未填写文风 API Key' ) || false !== strpos( $tools_local, '选用字体' ) || false !== strpos( $tools_local, '插件不切字' ) ) {
+	fwrite( STDERR, "tools with packages still looks like a missing key.\n" );
+	exit( 1 );
+}
+$footer_at = strpos( $ok_html, '<footer class="foot">' );
+$footer    = ( false === $footer_at ) ? '' : substr( $ok_html, $footer_at, 500 );
+if ( false === strpos( $footer, '文派字库（WPFonts） · 2.0.0-rc.11' ) || false === strpos( $footer, 'https://wpcy.com/support' ) || false === strpos( $footer, '>反馈' ) ) {
+	fwrite( STDERR, "footer does not match the prototype.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $footer, '>文风' ) ) {
+	fwrite( STDERR, "footer still uses bare 文风.\n" );
 	exit( 1 );
 }

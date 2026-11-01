@@ -575,38 +575,22 @@ class WPFonts_Packages {
 	 */
 	public static function health( array $package ) {
 		$enabled = ! empty( $package['enabled'] );
-		$id      = isset( $package['id'] ) ? self::clean_id( $package['id'] ) : '';
-		$unknown = array(
-			'code'   => 'unknown',
-			'reason' => '',
-		);
-		if ( '' === $id || ! function_exists( 'wp_upload_dir' ) ) {
-			return $unknown;
+		$paths   = self::package_paths( $package );
+		if ( 'unknown' === $paths['state'] ) {
+			return array(
+				'code'   => 'unknown',
+				'reason' => '',
+			);
 		}
-		$uploads = wp_upload_dir();
-		if ( ! is_array( $uploads ) || ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
-			return $unknown;
-		}
-		$root = rtrim( (string) $uploads['basedir'], '/\\' ) . '/wpfonts/packages';
-		$dir  = $root . '/' . $id;
-		$path = $dir . '/local.css';
-		if ( function_exists( 'wp_normalize_path' ) ) {
-			$root = wp_normalize_path( $root );
-			$dir  = wp_normalize_path( $dir );
-			$path = wp_normalize_path( $path );
-		}
-		if ( 0 !== strpos( $path, $root . '/' ) ) {
-			return $unknown;
-		}
-		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
+		if ( 'missing' === $paths['state'] ) {
 			return self::health_result( 'missing_css', $enabled );
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local package CSS. WP_Filesystem may prompt for FTP.
-		$raw = file_get_contents( $path );
+		$raw = file_get_contents( $paths['css'] );
 		if ( ! is_string( $raw ) || '' === $raw ) {
 			return self::health_result( 'missing_css', $enabled );
 		}
-		if ( ! self::css_has_usable_woff2( $raw, $dir, $uploads, $id ) ) {
+		if ( ! self::css_has_usable_woff2( $raw, $paths['dir'], $paths['uploads'], $paths['id'] ) ) {
 			return self::health_result( 'no_woff2', $enabled );
 		}
 		return array(
@@ -616,27 +600,129 @@ class WPFonts_Packages {
 	}
 
 	/**
-	 * Enqueue every package stylesheet on the packages screen, including disabled ones.
+	 * CSS font-family for the packages-screen preview.
+	 *
+	 * local.css wins, including a family that is not the package id. When the
+	 * uploads directory cannot be read, the stored family is used. A missing
+	 * stylesheet returns empty so the screen does not pretend the slug is a face.
+	 *
+	 * @param array $package Package row.
+	 * @return string
+	 */
+	public static function preview_family( array $package ) {
+		$id     = isset( $package['id'] ) ? self::clean_id( $package['id'] ) : '';
+		$stored = isset( $package['family'] ) ? trim( (string) $package['family'] ) : '';
+		$paths  = self::package_paths( $package );
+		if ( 'unknown' === $paths['state'] ) {
+			return $stored;
+		}
+		if ( 'missing' === $paths['state'] ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Same local.css the preview enqueues.
+		$raw = file_get_contents( $paths['css'] );
+		if ( ! is_string( $raw ) || '' === $raw ) {
+			return '';
+		}
+		$from_css = self::family_from_css( $raw );
+		if ( '' !== $from_css ) {
+			return $from_css;
+		}
+		if ( '' !== $stored && 0 !== strcasecmp( $stored, $id ) ) {
+			return $stored;
+		}
+		return '';
+	}
+
+	/**
+	 * Public URL of local.css, or empty when uploads cannot be read.
+	 *
+	 * This is the address the front enqueues for an enabled package. The file
+	 * may still be missing; callers say so separately.
+	 *
+	 * @param array $package Package row.
+	 * @return string
+	 */
+	public static function front_stylesheet_url( array $package ) {
+		$paths = self::package_paths( $package );
+		if ( 'unknown' === $paths['state'] ) {
+			return '';
+		}
+		$base = isset( $paths['uploads']['baseurl'] ) ? (string) $paths['uploads']['baseurl'] : '';
+		if ( '' === $base || '' === $paths['id'] ) {
+			return '';
+		}
+		return rtrim( $base, '/' ) . '/wpfonts/packages/' . $paths['id'] . '/local.css';
+	}
+
+	/**
+	 * Enqueue every readable package stylesheet on the packages screen.
+	 *
+	 * Disabled packs are included so their preview can use the face declared
+	 * in local.css. A missing file is skipped.
 	 *
 	 * @return void
 	 */
 	public static function enqueue_admin_previews() {
-		if ( ! function_exists( 'wp_upload_dir' ) || ! function_exists( 'wp_enqueue_style' ) ) {
+		if ( ! function_exists( 'wp_enqueue_style' ) ) {
 			return;
 		}
-		$uploads = wp_upload_dir();
-		if ( ! empty( $uploads['error'] ) ) {
-			return;
-		}
-		$base = trailingslashit( $uploads['baseurl'] ) . 'wpfonts/packages/';
 		foreach ( self::all() as $package ) {
-			$health = self::health( $package );
-			if ( 'missing_css' === $health['code'] || 'no_woff2' === $health['code'] ) {
+			$paths = self::package_paths( $package );
+			if ( 'ok' !== $paths['state'] ) {
 				continue;
 			}
-			$url = $base . $package['id'] . '/local.css';
+			$url = self::front_stylesheet_url( $package );
+			if ( '' === $url ) {
+				continue;
+			}
 			wp_enqueue_style( 'wpfonts-preview-' . $package['id'], $url, array(), (string) $package['installed_at'] );
 		}
+	}
+
+	/**
+	 * Package directory and local.css, without trusting the option for paths.
+	 *
+	 * @param array $package Package row.
+	 * @return array{state:string,id:string,dir:string,css:string,uploads:array}
+	 */
+	private static function package_paths( array $package ) {
+		$id    = isset( $package['id'] ) ? self::clean_id( $package['id'] ) : '';
+		$empty = array(
+			'state'   => 'unknown',
+			'id'      => $id,
+			'dir'     => '',
+			'css'     => '',
+			'uploads' => array(),
+		);
+		if ( '' === $id || ! function_exists( 'wp_upload_dir' ) ) {
+			return $empty;
+		}
+		$uploads = wp_upload_dir();
+		if ( ! is_array( $uploads ) || ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
+			return $empty;
+		}
+		$root = rtrim( (string) $uploads['basedir'], '/\\' ) . '/wpfonts/packages';
+		$dir  = $root . '/' . $id;
+		$path = $dir . '/local.css';
+		if ( function_exists( 'wp_normalize_path' ) ) {
+			$root = wp_normalize_path( $root );
+			$dir  = wp_normalize_path( $dir );
+			$path = wp_normalize_path( $path );
+		}
+		$root = rtrim( str_replace( '\\', '/', $root ), '/' );
+		$path = str_replace( '\\', '/', $path );
+		if ( 0 !== strpos( $path, $root . '/' ) ) {
+			return $empty;
+		}
+		$state = ( is_file( $path ) && is_readable( $path ) ) ? 'ok' : 'missing';
+		return array(
+			'state'   => $state,
+			'id'      => $id,
+			'dir'     => str_replace( '\\', '/', $dir ),
+			'css'     => $path,
+			'uploads' => $uploads,
+		);
 	}
 
 	/**

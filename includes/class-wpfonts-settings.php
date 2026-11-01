@@ -672,7 +672,11 @@ class WPFonts_Settings {
 		if ( isset( $input['families'] ) && is_array( $input['families'] ) ) {
 			$raw = $input['families'];
 		}
-		$raw[] = $family;
+		// The manual name is only on Advanced. A simple save must not put the
+		// stored token back after the owner cleared the checkboxes.
+		if ( array_key_exists( 'family', $input ) ) {
+			$raw[] = $family;
+		}
 		$out   = array();
 		foreach ( $raw as $value ) {
 			$token = WPFonts_Link::token( $value, 80 );

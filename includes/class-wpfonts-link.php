@@ -61,11 +61,18 @@ class WPFonts_Link {
 	const CONSOLE_URL = 'https://app.windfonts.com';
 
 	/**
-	 * WenFeng site home. Footer link only; not an upload button.
+	 * WenFeng site home. Not an upload button.
 	 *
 	 * @var string
 	 */
 	const SITE_URL = 'https://wenfeng.org';
+
+	/**
+	 * Support page. Footer 反馈 points here.
+	 *
+	 * @var string
+	 */
+	const SUPPORT_URL = 'https://wpcy.com/support';
 
 	/**
 	 * Keep a region id, or fall back to mainland China.
@@ -483,10 +490,12 @@ class WPFonts_Link {
 		if ( ! in_array( $status, array( '', 'valid', 'invalid', 'unreachable' ), true ) ) {
 			$status = '';
 		}
-		$next = array(
+		$region = array_key_exists( 'region', $input ) ? $input['region'] : ( isset( $prev['region'] ) ? $prev['region'] : 'cn' );
+		$subset = array_key_exists( 'subset', $input ) ? $input['subset'] : ( isset( $prev['subset'] ) ? $prev['subset'] : 'zh-common' );
+		$next   = array(
 			'cdn_enabled'  => ( isset( $input['cdn_enabled'] ) && '1' === (string) $input['cdn_enabled'] ) ? 1 : 0,
-			'region'       => self::region( isset( $input['region'] ) ? $input['region'] : '' ),
-			'subset'       => self::subset( isset( $input['subset'] ) ? $input['subset'] : '' ),
+			'region'       => self::region( $region ),
+			'subset'       => self::subset( $subset ),
 			'project_slug' => isset( $prev['project_slug'] ) ? self::token( $prev['project_slug'], 64 ) : '',
 			'family'       => isset( $prev['family'] ) ? self::token( $prev['family'], 80 ) : '',
 			'key_status'   => $status,
@@ -496,7 +505,7 @@ class WPFonts_Link {
 			$next['project_slug'] = self::token( isset( $input['project_slug'] ) ? $input['project_slug'] : '', 64 );
 			$next['family']       = self::token( isset( $input['family'] ) ? $input['family'] : '', 80 );
 		} elseif ( array_key_exists( 'family', $input ) ) {
-			// The font name field is on the simple form. The project name is not.
+			// A posted font name is kept. Simple no longer prints the field.
 			$next['family'] = self::token( $input['family'], 80 );
 		}
 		return $next;

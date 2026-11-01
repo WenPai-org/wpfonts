@@ -120,8 +120,8 @@ foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp
 }
 $assert( false !== strpos( $main, 'Requires at least: 6.5' ), 'Requires at least 6.5.' );
 $assert( false !== strpos( $main, 'Requires PHP: 7.4' ), 'Requires PHP 7.4.' );
-$assert( false !== strpos( $main, 'Version: 2.0.0-rc.10' ), 'Version header must be 2.0.0-rc.10.' );
-$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.10' )" ), 'Version constant must be 2.0.0-rc.10.' );
+$assert( false !== strpos( $main, 'Version: 2.0.0-rc.11' ), 'Version header must be 2.0.0-rc.11.' );
+$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.11' )" ), 'Version constant must be 2.0.0-rc.11.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
 $assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );
@@ -159,7 +159,7 @@ $assert( false === strpos( $admin, 'updates.wenpai.net' ), 'Admin UI must not ex
 $assert( false === strpos( $admin, 'render_license_card' ), 'License card must stay removed.' );
 $assert( false === strpos( $admin, '去控制台上传' ), 'Admin UI must not offer a console upload button.' );
 $assert( false === strpos( $admin, '文风 CDN' ), 'Admin UI must not say 文风 CDN.' );
-$assert( false === strpos( $admin, '本站字体包' ), 'Admin UI must not say 本站字体包.' );
+$assert( false !== strpos( $admin, '本站字体包' ), 'Tools diagnostics heading is missing.' );
 $assert( false !== strpos( $admin, '文风云' ), 'Admin UI lost 文风云.' );
 $assert( false !== strpos( $admin, '文风字体包' ), 'Admin UI lost 文风字体包.' );
 $assert( false !== strpos( $admin, '选用字体' ), 'Font picker title is missing.' );

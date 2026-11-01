@@ -114,6 +114,12 @@ $kept = WPFonts_Link::merge_public( $prev, $without_family, 'simple' );
 $assert( 'wenfeng-ibmps' === $kept['family'], 'simple save without a family field cleared it' );
 $assert( 'studio' === $kept['project_slug'], 'simple save without a family field overwrote the project' );
 
+$power = $input;
+unset( $power['region'], $power['subset'] );
+$kept_power = WPFonts_Link::merge_public( $prev, $power, 'simple' );
+$assert( 'hk' === $kept_power['region'], 'simple save without region reset it' );
+$assert( 'zh' === $kept_power['subset'], 'simple save without subset reset it' );
+
 $broken                 = $base;
 $broken['family']       = 'wenfeng-zhi-mang-xing';
 $broken['subset']       = 'zh-common';

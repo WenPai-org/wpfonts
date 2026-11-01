@@ -289,6 +289,32 @@ $unknown = WPFonts_Packages::health( $package );
 $assert( 'unknown' === $unknown['code'] && '' === $unknown['reason'], 'an unreadable uploads directory was reported as a broken package' );
 $GLOBALS['wpfonts_upload']['error'] = false;
 
+$slug_pack = array(
+	'id'      => 'wenfeng-xxzt',
+	'name'    => 'wenfeng-xxzt',
+	'family'  => 'wenfeng-xxzt',
+	'enabled' => 1,
+);
+$xx_dir    = $upload . '/wpfonts/packages/wenfeng-xxzt';
+if ( ! is_dir( $xx_dir ) && ! mkdir( $xx_dir, 0777, true ) && ! is_dir( $xx_dir ) ) {
+	fwrite( STDERR, "Could not create preview package dir.\n" );
+	exit( 1 );
+}
+file_put_contents(
+	$xx_dir . '/local.css',
+	'@font-face{font-family:"霞鹜新致宋";src:url("face.woff2") format("woff2");}'
+);
+$assert( '霞鹜新致宋' === WPFonts_Packages::preview_family( $slug_pack ), 'preview used the package slug instead of local.css' );
+$front_url = WPFonts_Packages::front_stylesheet_url( $slug_pack );
+$assert( false !== strpos( $front_url, '/wpfonts/packages/wenfeng-xxzt/local.css' ), 'front stylesheet URL drifted: ' . $front_url );
+$gone = array(
+	'id'      => 'wenfeng-missing',
+	'name'    => 'wenfeng-missing',
+	'family'  => 'wenfeng-missing',
+	'enabled' => 1,
+);
+$assert( '' === WPFonts_Packages::preview_family( $gone ), 'a missing stylesheet still previewed the slug' );
+
 $secret = 'wf_phase4_secret_key_value';
 $GLOBALS['wpfonts_options'] = array(
 	'wpfonts_api_key'  => $secret,
@@ -394,6 +420,10 @@ $assert( false !== strpos( $main, 'WPFonts_Settings::system_enabled' ), 'uncheck
 $assert( false === strpos( $editor_js, 'app.windfonts.com' ), 'the inspector calls the Windfonts catalog' );
 $assert( false === strpos( $editor_js, 'admin-ajax.php' ), 'the inspector searches on open' );
 $assert( false === strpos( $admin, '去控制台上传' ), 'admin grew a console upload button' );
+$assert( false !== strpos( $admin, '安装本站要用的字体包。启用后可在全站样式里选用。' ), 'packages lede drifted' );
+$assert( false === strpos( $admin, '插件不切字' ), 'slicing lecture returned' );
+$assert( false !== strpos( $admin, '这些项用于文风云' ), 'cloud tools lost the secondary label' );
+$assert( false !== strpos( $admin, '预览暂时不可用。' ), 'missing preview copy drifted' );
 
 if ( array() !== $failures ) {
 	fwrite( STDERR, implode( "\n", $failures ) . "\n" );

@@ -70,7 +70,7 @@
 	var list = document.getElementById("wpfonts-catalog-list");
 	var status = document.getElementById("wpfonts-catalog-status");
 	var scope = document.getElementById("wpfonts-catalog-scope");
-	if (!root || !list || !family) {
+	if (!root || !list) {
 		return;
 	}
 
@@ -302,9 +302,11 @@
 		paint();
 	});
 
-	family.addEventListener("input", function () {
-		paint();
-	});
+	if (family) {
+		family.addEventListener("input", function () {
+			paint();
+		});
+	}
 
 	if (search) {
 		search.addEventListener("keydown", function (event) {
