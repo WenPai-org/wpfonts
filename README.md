@@ -2,9 +2,9 @@
 
 文派字库给 WordPress 字体库加上系统字体，分成「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。文风云默认关闭。开启之后，每条已确认的文风云字体各加一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.8`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。下面的 `2.0.0` 一节是正式版说明草稿，版本号和 Stable tag 都没有改。
+这一版是 `2.0.0-rc.9`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。下面的 `2.0.0` 一节是正式版说明草稿，版本号和 Stable tag 都没有改。
 
-WPFonts 2.0.0-rc.8 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The `2.0.0` section below is a draft. The version and Stable tag stay at `2.0.0-rc.8`. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP.
+WPFonts 2.0.0-rc.9 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The `2.0.0` section below is a draft. The version and Stable tag stay at `2.0.0-rc.9`. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP.
 
 Settings → WPFonts has four screens: Overview, Settings, Font packages, and Tools. Help stays in the header. Enabled packages register in the Font Library as 文风字体 (Windfonts in English), using the woff2 files stored at install. That tab, and 文风云, are registered before the system collections. 文风云 is registered only after the saved stylesheet URL has opened; the Font Library name is the face declared in that CSS, not the catalog token. Those same families are copied into the user Global Styles post, so Appearance → Styles lists them under typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only the entries this plugin wrote. A saved URL that returns 404 is not embedded and is not described as loading. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
 
@@ -22,15 +22,41 @@ Settings → WPFonts has four screens: Overview, Settings, Font packages, and To
 
 已启用的包会登记到字体库的「文风字体」，排在系统字体前面。英文界面写作 Windfonts。字体文件用的是安装时已经校验过的 woff2。停用或删除后，字体库里不再出现。启用后，字体名会写进全站样式，外观 → 样式里可以直接选用。停用或删除时，只去掉这项，其它全站样式不动。插件不改主题文件，卸载时也不删全站样式。设置页仍称这些包为文风字体包。
 
+安装或替换成功后，WordPress 会发出 `wpfonts_package_installed`。删除时，`wpfonts_package_deleted` 在目录还在、列表里也还留着这个包的时候发出；钩子返回之后才删目录，并从这个列表里去掉。其它插件可以接着处理 `wp-content/uploads/wpfonts/` 里的文件。本插件不把这些文件上传到别处。
+
+参数是一个数组：
+
+| 键 | 含义 |
+| --- | --- |
+| `action` | `install`、`reinstall` 或 `delete` |
+| `slug` | 包的短名，也是目录名 |
+| `package_id` | 列表里的 id。这一版和 `slug` 相同 |
+| `dir` | 包目录的绝对路径。删除钩子触发时，目录还在就可以读。目录本来就不在时为空 |
+| `uploads_rel` | 相对上传目录的路径，例如 `wpfonts/packages/<id>` |
+| `local_css` | `local.css` 的绝对路径。没有这份文件时为空 |
+| `files` | 包内相对路径。能读到目录时会填上；读不到时是空数组。请直接扫描 `dir`，不要假定 `files` 一定有内容 |
+
+再次安装同一个 id 会替换已有的那一份，并记为 `reinstall`。这个动作不会先发删除钩子。替换之后，`dir` 里是新文件。浏览器里上传仍然走原来的上传校验。
+
+命令行不经过浏览器上传，和后台安装、删除走同一条路径：
+
+```bash
+wp fonts package install /path/to/package.zip
+wp fonts package delete <slug-or-id>
+wp fonts package list
+```
+
+`<slug-or-id>` 是包目录名。监听删除钩子时不要再次删除同一个包。
+
 ## 编辑器
 
 块编辑器里选中区块后，侧栏有「文派字库」。分组名是「文风字体」和「文风云」。可以把已启用的包，或每一条已确认的文风云字体，用在当前区块。侧栏只改当前区块。打开侧栏不会搜索文风目录。不占顶栏。这些字体也会出现在全站样式里，再到外观 → 样式 → 排版里选用。英文界面里这一组写作 Windfonts。
 
 ## 2.0.0
 
-正式版说明草稿，还没有打标签，也没有改 Stable tag。插件版本和 `WPFONTS_VERSION` 仍是 `2.0.0-rc.8`。下面按 rc.8 已经有的行为来写。
+正式版说明草稿，还没有打标签，也没有改 Stable tag。插件版本和 `WPFONTS_VERSION` 仍是 `2.0.0-rc.9`。下面按 rc.9 已经有的行为来写。
 
-Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.8`.
+Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.9`.
 
 - 两条路并存。文风云给每条已确认的字体加一条文风服务器上的样式链接。文风字体包把站长已经下载好的包装到本站，由本站托管 woff2。两条路互不影响。插件不往文风控制台上传字体，也不切字。
 - 字体目录写在 `wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。WP-Cron 大约每月更新一次。更新失败会留下上一份。新装站点还没有这份文件时，会排一次马上执行的任务去拉取。选中后写入 `fontFamily`（`wenfeng-*`）。
@@ -42,6 +68,13 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 - 字体包页面会写明原因：找不到 `local.css`、样式里没有可用的 woff2，或已经启用但不会加载。读不到上传目录时，不把正常的包说成坏了。
 - 工具页可以导出、导入已启用的字体包记录和已确认的文风云。文件里没有 API Key。文件里如果还带着密钥，整份拒绝，不会写入。
 - 前台打印已确认的样式链接时，同时打印文风授权说明（`CDN_LICENSE_NOTE`）。这句话不改写。API Key 不进入网页，也不进入导出文件。
+- 字体包装上或替换之后发出 `wpfonts_package_installed`。删除目录之前发出 `wpfonts_package_deleted`，此时目录还在，列表里也还留着这个包。钩子返回后才删目录并去掉列表项。参数见上面的表。`files` 可以是空数组。再次安装同一个 id 会替换，不另存一份。
+- 命令行：`wp fonts package install <zip>`、`wp fonts package delete <slug-or-id>`、`wp fonts package list`。浏览器上传不变。
+
+## 2.0.0-rc.9
+
+- 字体包装上或替换之后发出 `wpfonts_package_installed`。删除目录之前发出 `wpfonts_package_deleted`，此时目录还在，列表里也还留着这个包。钩子返回后才删目录并去掉列表项。`files` 能列目录时填相对路径，否则是空数组；请扫描 `dir`。
+- 命令行可以安装、删除、列出字体包：`wp fonts package install <zip>`、`wp fonts package delete <slug-or-id>`、`wp fonts package list`。和后台走同一条安装、删除路径。浏览器上传不变。再次安装同一个 id 会替换已有的那一份。
 
 ## 2.0.0-rc.8
 
@@ -104,6 +137,7 @@ php tests/font-library.php
 php tests/global-styles.php
 php tests/phase4.php
 php tests/updater-gate.php
+php tests/package-hooks.php
 php lib/wenpai-admin-ui/scripts/wenpai-admin-lint.py --plugin-root .
 ```
 

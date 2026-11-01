@@ -1408,6 +1408,8 @@ class WPFonts_Admin {
 		echo '<div class="wenpai-stack">';
 		if ( 'installed' === $note ) {
 			self::notice( 'ok', __( '已安装。前台会加载本站这份字体样式，也会出现在全站样式里。', 'wpfonts' ) );
+		} elseif ( 'reinstalled' === $note ) {
+			self::notice( 'ok', __( '已替换本站这份字体。前台会加载新的样式。', 'wpfonts' ) );
 		} elseif ( 'enabled' === $note ) {
 			self::notice( 'ok', __( '前台会加载本站这份字体样式，也会出现在全站样式里。', 'wpfonts' ) );
 		} elseif ( 'failed' === $note ) {
@@ -1564,7 +1566,13 @@ class WPFonts_Admin {
 			$file = wp_unslash( $_FILES['wpfonts_package'] );
 		}
 		$result = WPFonts_Packages::install_uploaded_file( $file );
-		$code   = is_wp_error( $result ) ? 'failed' : 'installed';
+		if ( is_wp_error( $result ) ) {
+			$code = 'failed';
+		} elseif ( is_array( $result ) && isset( $result['action'] ) && 'reinstall' === $result['action'] ) {
+			$code = 'reinstalled';
+		} else {
+			$code = 'installed';
+		}
 		wp_safe_redirect(
 			self::page_url(
 				array(
