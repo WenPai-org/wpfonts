@@ -3,7 +3,7 @@
  * Plugin Name: WPFonts
  * Plugin URI: https://wpcy.com/wpfonts
  * Description: 中文、英文、日文、韩文系统字体。文风云默认关闭，开启后每条已确认的文风云字体各加载一条样式。
- * Version: 2.0.0-rc.9
+ * Version: 2.0.0-rc.10
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: WPFonts.com
@@ -19,7 +19,9 @@
  * delete Global Styles or uploaded fonts on uninstall. Enabled packages and
  * confirmed cloud faces are copied into the user Global Styles post. Theme
  * files on disk are left alone. Unchecked system-font languages are not
- * registered.
+ * registered. A Chinese fallback chosen in settings is appended to Latin
+ * stacks by plugin CSS and the global stylesheet filter. That path does not
+ * edit theme.json or the user Global Styles post.
  *
  * @package WPFonts
  */
@@ -28,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPFONTS_VERSION', '2.0.0-rc.9' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.10' );
 define( 'WPFONTS_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPFONTS_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPFONTS_BASENAME', plugin_basename( __FILE__ ) );
@@ -41,6 +43,7 @@ require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-catalog.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-packages.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-embed.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-library.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-cjk.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-global-styles.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-editor.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-transfer.php';

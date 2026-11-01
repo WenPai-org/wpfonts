@@ -66,6 +66,9 @@ class WPFonts_Settings {
 			'system_en'    => 1,
 			'system_jp'    => 1,
 			'system_kr'    => 1,
+			'cjk_fallback' => '',
+			'cjk_body'     => '',
+			'cjk_heading'  => '',
 		);
 	}
 
@@ -103,6 +106,9 @@ class WPFonts_Settings {
 			$settings['faces'] = self::clean_stored_faces( $saved['faces'] );
 		} else {
 			unset( $settings['faces'] );
+		}
+		foreach ( array( 'cjk_fallback', 'cjk_body', 'cjk_heading' ) as $key ) {
+			$settings[ $key ] = self::clean_cjk_choice( isset( $settings[ $key ] ) ? $settings[ $key ] : '' );
 		}
 		return $settings;
 	}
@@ -454,6 +460,9 @@ class WPFonts_Settings {
 		if ( array_key_exists( 'faces', $input ) ) {
 			$settings['faces'] = self::clean_stored_faces( $input['faces'] );
 		}
+		foreach ( array( 'cjk_fallback', 'cjk_body', 'cjk_heading' ) as $key ) {
+			$settings[ $key ] = self::clean_cjk_choice( isset( $input[ $key ] ) ? $input[ $key ] : '' );
+		}
 		return $settings;
 	}
 
@@ -620,7 +629,35 @@ class WPFonts_Settings {
 		} elseif ( array_key_exists( 'faces', $prev ) ) {
 			$next['faces'] = $prev['faces'];
 		}
+		if ( class_exists( 'WPFonts_CJK', false ) ) {
+			$next = WPFonts_CJK::apply_settings( $prev, $next, $input );
+		} else {
+			foreach ( array( 'cjk_fallback', 'cjk_body', 'cjk_heading' ) as $key ) {
+				$next[ $key ] = self::clean_cjk_choice( isset( $prev[ $key ] ) ? $prev[ $key ] : '' );
+			}
+		}
 		return $next;
+	}
+
+	/**
+	 * Stored Chinese assignment, or empty when it is not pkg: or cloud:.
+	 *
+	 * `pkg:{id}` is an enabled package. `cloud:{token}` is a wenfeng-* face.
+	 * The CSS name is resolved later, so a choice can outlive a temporary disable.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	public static function clean_cjk_choice( $value ) {
+		$value = strtolower( trim( (string) $value ) );
+		if ( ! preg_match( '/^(pkg|cloud):([a-z0-9-]{1,120})$/', $value, $matches ) ) {
+			return '';
+		}
+		$id = trim( $matches[2], '-' );
+		if ( '' === $id || strlen( $id ) > 120 ) {
+			return '';
+		}
+		return $matches[1] . ':' . $id;
 	}
 
 	/**

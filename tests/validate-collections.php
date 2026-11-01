@@ -120,8 +120,8 @@ foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp
 }
 $assert( false !== strpos( $main, 'Requires at least: 6.5' ), 'Requires at least 6.5.' );
 $assert( false !== strpos( $main, 'Requires PHP: 7.4' ), 'Requires PHP 7.4.' );
-$assert( false !== strpos( $main, 'Version: 2.0.0-rc.9' ), 'Version header must be 2.0.0-rc.9.' );
-$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.9' )" ), 'Version constant must be 2.0.0-rc.9.' );
+$assert( false !== strpos( $main, 'Version: 2.0.0-rc.10' ), 'Version header must be 2.0.0-rc.10.' );
+$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.10' )" ), 'Version constant must be 2.0.0-rc.10.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
 $assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );

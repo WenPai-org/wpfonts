@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.9' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.10' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -291,6 +291,8 @@ require $root . '/includes/class-wpfonts-health.php';
 require $root . '/includes/class-wpfonts-settings.php';
 require $root . '/includes/class-wpfonts-catalog.php';
 require $root . '/includes/class-wpfonts-packages.php';
+require $root . '/includes/class-wpfonts-library.php';
+require $root . '/includes/class-wpfonts-cjk.php';
 require $root . '/includes/class-wpfonts-embed.php';
 require $root . '/includes/class-wpfonts-transfer.php';
 require $root . '/includes/class-wpfonts-admin.php';

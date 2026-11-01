@@ -440,6 +440,7 @@ class WPFonts_Admin {
 			$embed_ok ? __( '会加载', 'wpfonts' ) : __( '未加载', 'wpfonts' )
 		);
 		self::render_local_row();
+		self::render_cjk_row();
 		echo '</section>';
 		echo '</div>';
 	}
@@ -490,6 +491,7 @@ class WPFonts_Admin {
 		echo '<section class="card">';
 
 		self::render_system_fonts( $settings );
+		self::render_cjk_fields( $settings );
 
 		echo '<div class="simple-row">';
 		echo '<span class="tile accent">';
@@ -596,6 +598,10 @@ class WPFonts_Admin {
 		self::help_card(
 			__( '编辑器与排版', 'wpfonts' ),
 			__( '侧栏里的「文派字库」只改当前区块。已启用的文风字体包和已确认的文风云会进入全站样式，可在外观 → 样式 → 排版里选用。', 'wpfonts' )
+		);
+		self::help_card(
+			__( '中文', 'wpfonts' ),
+			__( '设置里可以指定正文、标题和中文回退。中文回退接在现有西文字体后面，主题里的字体类不用改代码。先启用文风字体包，或确认一条文风云。', 'wpfonts' )
 		);
 		self::help_card(
 			__( '系统字体', 'wpfonts' ),
@@ -748,6 +754,119 @@ class WPFonts_Admin {
 			echo '<label><input type="checkbox" name="wpfonts_settings[' . esc_attr( $key ) . ']" value="1"' . checked( $on, true, false ) . '> ' . esc_html( $label ) . '</label>';
 		}
 		echo '</div></div></div>';
+	}
+
+	/**
+	 * Overview line for the Chinese assignment.
+	 *
+	 * @return void
+	 */
+	private static function render_cjk_row() {
+		$state = array(
+			'on'   => false,
+			'text' => __( '未指定。启用字体包或文风云后，可在设置里选。', 'wpfonts' ),
+		);
+		if ( class_exists( 'WPFonts_CJK', false ) ) {
+			$state = WPFonts_CJK::overview();
+		}
+		self::status_row(
+			! empty( $state['on'] ) ? 'ok' : '',
+			'info',
+			__( '中文', 'wpfonts' ),
+			isset( $state['text'] ) ? (string) $state['text'] : '',
+			! empty( $state['on'] ) ? 'ok' : 'mute',
+			! empty( $state['on'] ) ? __( '使用中', 'wpfonts' ) : __( '未指定', 'wpfonts' )
+		);
+	}
+
+	/**
+	 * Body, heading, and site fallback. Choices are packages and 文风云.
+	 *
+	 * @param array $settings Public settings.
+	 * @return void
+	 */
+	private static function render_cjk_fields( array $settings ) {
+		$choices = class_exists( 'WPFonts_CJK', false ) ? WPFonts_CJK::choices() : array();
+		echo '<div class="field wpfonts-cjk">';
+		echo '<div class="field-label">' . esc_html__( '中文', 'wpfonts' ) . '</div>';
+		echo '<div class="field-ctl">';
+		echo '<input type="hidden" name="wpfonts_settings[cjk_form]" value="1">';
+		echo '<p class="field-help">' . esc_html__( '从已启用的文风字体包，或已确认的文风云里选。留空则这一项不单独指定。', 'wpfonts' ) . '</p>';
+		self::render_cjk_select(
+			'cjk_body',
+			__( '正文', 'wpfonts' ),
+			__( '与中文回退相同', 'wpfonts' ),
+			$settings,
+			$choices
+		);
+		self::render_cjk_select(
+			'cjk_heading',
+			__( '标题', 'wpfonts' ),
+			__( '与中文回退相同', 'wpfonts' ),
+			$settings,
+			$choices
+		);
+		self::render_cjk_select(
+			'cjk_fallback',
+			__( '中文回退', 'wpfonts' ),
+			__( '不使用', 'wpfonts' ),
+			$settings,
+			$choices
+		);
+		echo '<p class="hint">' . esc_html__( '中文回退会接在现有西文字体后面，主题里的字体类也会带上。不改主题文件。', 'wpfonts' ) . '</p>';
+		if ( array() === $choices ) {
+			echo '<p class="hint">' . esc_html__( '还没有可选的字体。请先启用一个文风字体包，或确认一条文风云。', 'wpfonts' ) . '</p>';
+		}
+		echo '</div></div>';
+	}
+
+	/**
+	 * One Chinese assignment select.
+	 *
+	 * @param string $key      Settings key.
+	 * @param string $label    Visible label.
+	 * @param string $blank    Label for the blank option.
+	 * @param array  $settings Public settings.
+	 * @param array  $choices  Choice rows.
+	 * @return void
+	 */
+	private static function render_cjk_select( $key, $label, $blank, array $settings, array $choices ) {
+		$current = isset( $settings[ $key ] ) ? (string) $settings[ $key ] : '';
+		$id      = 'wpfonts-' . $key;
+		echo '<label class="field-label" for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label>';
+		echo '<select id="' . esc_attr( $id ) . '" name="wpfonts_settings[' . esc_attr( $key ) . ']">';
+		echo '<option value=""' . selected( $current, '', false ) . '>' . esc_html( $blank ) . '</option>';
+		$groups = array(
+			'package' => __( '文风字体包', 'wpfonts' ),
+			'cloud'   => __( '文风云', 'wpfonts' ),
+		);
+		$known  = array();
+		foreach ( $groups as $group => $group_label ) {
+			$rows = array();
+			foreach ( $choices as $choice ) {
+				if ( ! is_array( $choice ) || ( isset( $choice['group'] ) ? (string) $choice['group'] : '' ) !== $group ) {
+					continue;
+				}
+				$rows[] = $choice;
+				if ( isset( $choice['value'] ) ) {
+					$known[ (string) $choice['value'] ] = true;
+				}
+			}
+			if ( array() === $rows ) {
+				continue;
+			}
+			echo '<optgroup label="' . esc_attr( $group_label ) . '">';
+			foreach ( $rows as $choice ) {
+				$value = isset( $choice['value'] ) ? (string) $choice['value'] : '';
+				$text  = isset( $choice['label'] ) ? (string) $choice['label'] : $value;
+				echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>' . esc_html( $text ) . '</option>';
+			}
+			echo '</optgroup>';
+		}
+		if ( '' !== $current && ! isset( $known[ $current ] ) ) {
+			echo '<option value="' . esc_attr( $current ) . '" selected>' . esc_html__( '已保存，当前不可用', 'wpfonts' ) . '</option>';
+		}
+		echo '</select>';
 	}
 
 	/**
