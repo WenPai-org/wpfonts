@@ -79,6 +79,14 @@
 	padding-top: var(--wenpai-space-3);
 }
 
+.wenpai-app .wpfonts-cjk label.field-label {
+	margin-top: var(--wenpai-space-3);
+}
+
+.wenpai-app .wpfonts-cjk select {
+	margin-top: var(--wenpai-space-2);
+}
+
 .wenpai-app #wpfonts-project > summary {
 	display: flex;
 	align-items: center;
