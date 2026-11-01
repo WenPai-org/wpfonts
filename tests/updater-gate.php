@@ -150,7 +150,7 @@ if ( $loaded || class_exists( '\YahnisElsts\PluginUpdateChecker\v5p3\PucFactory'
 	exit( 1 );
 }
 
-if ( '2.0.0-rc.8' !== WPFONTS_VERSION ) {
+if ( '2.0.0-rc.9' !== WPFONTS_VERSION ) {
 	fwrite( STDERR, "Unexpected version constant.\n" );
 	exit( 1 );
 }

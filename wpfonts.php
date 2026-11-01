@@ -3,7 +3,7 @@
  * Plugin Name: WPFonts
  * Plugin URI: https://wpcy.com/wpfonts
  * Description: 中文、英文、日文、韩文系统字体。文风云默认关闭，开启后每条已确认的文风云字体各加载一条样式。
- * Version: 2.0.0-rc.8
+ * Version: 2.0.0-rc.9
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: WPFonts.com
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPFONTS_VERSION', '2.0.0-rc.8' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.9' );
 define( 'WPFONTS_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPFONTS_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPFONTS_BASENAME', plugin_basename( __FILE__ ) );
@@ -45,6 +45,10 @@ require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-global-styles.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-editor.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-transfer.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-admin.php';
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-cli.php';
+}
 
 register_activation_hook( __FILE__, array( 'WPFonts_Catalog', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'WPFonts_Catalog', 'deactivate' ) );

@@ -3,6 +3,8 @@
  * Local font packages. The plugin stores a zip the site owner already
  * downloaded. It does not slice fonts. On install, the package id follows
  * the catalog family wenfeng-{short} when the zip says what that short is.
+ * A successful install or replace runs wpfonts_package_installed.
+ * wpfonts_package_deleted runs while the package directory is still present.
  *
  * @package WPFonts
  */
@@ -638,13 +640,14 @@ class WPFonts_Packages {
 	}
 
 	/**
-	 * Install an uploaded zip. Returns true, or a WP_Error on failure.
+	 * Install an uploaded zip from the packages screen.
 	 *
 	 * Caller must verify the nonce and manage_options first. The admin screen
-	 * shows one sentence for every failure.
+	 * shows one sentence for every failure. Browser uploads stay here and still
+	 * require a real HTTP upload. Disk installs use install_local_zip().
 	 *
 	 * @param array $file A $_FILES item. Keys: name, tmp_name, size, error.
-	 * @return true|WP_Error
+	 * @return array|WP_Error Location passed to wpfonts_package_installed, or an error.
 	 */
 	public static function install_uploaded_file( array $file ) {
 		$name = isset( $file['name'] ) ? sanitize_file_name( (string) $file['name'] ) : '';
@@ -660,11 +663,40 @@ class WPFonts_Packages {
 		if ( ! preg_match( '/\.zip$/i', $name ) ) {
 			return new WP_Error( 'wpfonts_package', 'type' );
 		}
+		return self::install_local_zip( $tmp, $name );
+	}
+
+	/**
+	 * Install a zip that is already on disk.
+	 *
+	 * Same unpack, checks, and family normalize as a browser upload.
+	 * is_uploaded_file() is not used. When that package id is already
+	 * installed, the directory is replaced and the action is reinstall.
+	 * The enabled flag is kept. wpfonts_package_installed runs once, after
+	 * the directory and the package list both include the package.
+	 *
+	 * @param string $path Path to the zip. It does not have to be an HTTP upload.
+	 * @param string $name File name used when the zip does not name a catalog family.
+	 * @return array|WP_Error Location passed to wpfonts_package_installed, or an error.
+	 */
+	public static function install_local_zip( $path, $name ) {
+		$path = (string) $path;
+		$name = (string) $name;
+		if ( '' === $path || ! is_file( $path ) || ! is_readable( $path ) ) {
+			return new WP_Error( 'wpfonts_package', 'missing' );
+		}
+		$size = filesize( $path );
+		if ( false === $size || $size < 1 || $size > self::MAX_BYTES ) {
+			return new WP_Error( 'wpfonts_package', 'size' );
+		}
+		if ( ! preg_match( '/\.zip$/i', $name ) ) {
+			return new WP_Error( 'wpfonts_package', 'type' );
+		}
 		if ( ! function_exists( 'wp_upload_dir' ) ) {
 			return new WP_Error( 'wpfonts_package', 'uploads' );
 		}
 		$uploads = wp_upload_dir();
-		if ( ! empty( $uploads['error'] ) ) {
+		if ( ! is_array( $uploads ) || ! empty( $uploads['error'] ) ) {
 			return new WP_Error( 'wpfonts_package', 'uploads' );
 		}
 
@@ -684,56 +716,75 @@ class WPFonts_Packages {
 			return new WP_Error( 'wpfonts_package', 'mkdir' );
 		}
 
-		$unzipped = unzip_file( $tmp, $incoming );
+		$unzipped = unzip_file( $path, $incoming );
 		if ( is_wp_error( $unzipped ) ) {
-			$wp_filesystem->delete( $incoming, true );
+			self::discard_incoming( $incoming );
 			return new WP_Error( 'wpfonts_package', 'unzip' );
 		}
 
 		$rels = self::list_rels( $incoming );
 		if ( count( $rels ) > self::MAX_FILES || ! self::rels_are_safe( $rels ) || ! self::has_woff2( $rels ) ) {
-			$wp_filesystem->delete( $incoming, true );
+			self::discard_incoming( $incoming );
 			return new WP_Error( 'wpfonts_package', 'contents' );
 		}
 		$css_rel = self::locate_stylesheet( $rels );
 		if ( '' === $css_rel ) {
-			$wp_filesystem->delete( $incoming, true );
+			self::discard_incoming( $incoming );
 			return new WP_Error( 'wpfonts_package', 'css' );
 		}
 		$bytes = 0;
 		foreach ( $rels as $rel ) {
 			$bytes += (int) $wp_filesystem->size( $incoming . '/' . $rel );
 			if ( $bytes > self::MAX_BYTES ) {
-				$wp_filesystem->delete( $incoming, true );
+				self::discard_incoming( $incoming );
 				return new WP_Error( 'wpfonts_package', 'size' );
 			}
 		}
 
 		$existing = array();
+		$previous = null;
 		foreach ( self::all() as $package ) {
 			$existing[] = $package['id'];
 		}
 		$raw = $wp_filesystem->get_contents( $incoming . '/' . $css_rel );
 		if ( ! is_string( $raw ) || '' === $raw ) {
-			$wp_filesystem->delete( $incoming, true );
+			self::discard_incoming( $incoming );
 			return new WP_Error( 'wpfonts_package', 'read' );
 		}
-		$meta    = self::metadata_from_directory( $incoming, $rels );
-		$base    = self::package_slug_base( $name, $raw, $meta['token'] );
-		$slug    = self::unique_slug( $base, $existing );
+		$meta = self::metadata_from_directory( $incoming, $rels );
+		$base = self::clean_id( self::package_slug_base( $name, $raw, $meta['token'] ) );
+		if ( '' === $base ) {
+			$base = 'package';
+		}
+		foreach ( self::all() as $package ) {
+			if ( $package['id'] === $base ) {
+				$previous = $package;
+				break;
+			}
+		}
+		if ( is_array( $previous ) ) {
+			$slug   = $base;
+			$action = 'reinstall';
+		} else {
+			$slug   = self::unique_slug( $base, $existing );
+			$action = 'install';
+		}
 		$baseurl = trailingslashit( $uploads['baseurl'] ) . 'wpfonts/packages/' . $slug;
 		if ( '' !== self::catalog_family( $base ) ) {
 			$raw = self::rewrite_family_css( $raw, $slug );
 		}
 		$local = self::rewrite_css( $raw, $css_rel, $baseurl );
 		if ( ! $wp_filesystem->put_contents( $incoming . '/local.css', $local, FS_CHMOD_FILE ) ) {
-			$wp_filesystem->delete( $incoming, true );
+			self::discard_incoming( $incoming );
 			return new WP_Error( 'wpfonts_package', 'write' );
 		}
 
 		$final = $root . '/' . $slug;
+		if ( function_exists( 'wp_normalize_path' ) ) {
+			$final = wp_normalize_path( $final );
+		}
 		if ( ! $wp_filesystem->move( $incoming, $final, true ) ) {
-			$wp_filesystem->delete( $incoming, true );
+			self::discard_incoming( $incoming );
 			return new WP_Error( 'wpfonts_package', 'move' );
 		}
 
@@ -751,16 +802,45 @@ class WPFonts_Packages {
 		if ( '' === $family ) {
 			$family = $display;
 		}
-		$packages   = self::all();
-		$packages[] = array(
+		$enabled = 1;
+		if ( is_array( $previous ) ) {
+			$enabled = empty( $previous['enabled'] ) ? 0 : 1;
+		}
+		$row      = array(
 			'id'           => $slug,
 			'name'         => $display,
 			'family'       => $family,
-			'enabled'      => 1,
+			'enabled'      => $enabled,
 			'installed_at' => time(),
 		);
+		$packages = self::all();
+		$written  = false;
+		if ( 'reinstall' === $action ) {
+			foreach ( $packages as $index => $package ) {
+				if ( $package['id'] === $slug ) {
+					$packages[ $index ] = $row;
+					$written            = true;
+					break;
+				}
+			}
+		}
+		if ( ! $written ) {
+			$packages[] = $row;
+		}
 		update_option( self::OPTION, $packages, true );
-		return true;
+
+		$files   = self::list_rels( $final );
+		$payload = self::package_location( $action, $slug, $final, $files );
+		/**
+		 * Fires after a font package is installed or replaced.
+		 *
+		 * The directory and the package list both include this package.
+		 * `files` may be an empty list. Listeners can read `dir`.
+		 *
+		 * @param array $package Package location. Keys: action, slug, package_id, dir, uploads_rel, local_css, files.
+		 */
+		do_action( 'wpfonts_package_installed', $payload );
+		return $payload;
 	}
 
 	/**
@@ -788,7 +868,33 @@ class WPFonts_Packages {
 	}
 
 	/**
+	 * Package row for a slug or id, or null.
+	 *
+	 * The package id is the directory name under wpfonts/packages.
+	 * A display name is not an id.
+	 *
+	 * @param string $slug_or_id Slug or package id.
+	 * @return array<string, mixed>|null
+	 */
+	public static function find( $slug_or_id ) {
+		$want = self::clean_id( $slug_or_id );
+		if ( '' === $want ) {
+			return null;
+		}
+		foreach ( self::all() as $package ) {
+			if ( $package['id'] === $want ) {
+				return $package;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Remove one package directory and its registry row.
+	 *
+	 * wpfonts_package_deleted runs first, while the directory is still on
+	 * disk and the package list still includes this id. The directory and
+	 * the registry row are removed after that action returns.
 	 *
 	 * @param string $id Package id.
 	 * @return bool
@@ -798,34 +904,119 @@ class WPFonts_Packages {
 		if ( '' === $id || ! function_exists( 'wp_upload_dir' ) ) {
 			return false;
 		}
-		$packages = self::all();
-		$next     = array();
-		$found    = false;
-		foreach ( $packages as $package ) {
+		$found = false;
+		foreach ( self::all() as $package ) {
 			if ( $package['id'] === $id ) {
 				$found = true;
-				continue;
+				break;
 			}
-			$next[] = $package;
 		}
 		if ( ! $found ) {
 			return false;
 		}
+
+		$dir     = '';
+		$files   = array();
 		$uploads = wp_upload_dir();
-		if ( empty( $uploads['error'] ) ) {
-			$root = wp_normalize_path( trailingslashit( $uploads['basedir'] ) . 'wpfonts/packages' );
-			$dir  = wp_normalize_path( $root . '/' . $id );
-			if ( 0 === strpos( $dir, $root . '/' ) && is_dir( $dir ) ) {
-				require_once ABSPATH . 'wp-admin/includes/file.php';
-				WP_Filesystem();
-				global $wp_filesystem;
-				if ( $wp_filesystem ) {
-					$wp_filesystem->delete( $dir, true );
-				}
+		if ( is_array( $uploads ) && empty( $uploads['error'] ) && ! empty( $uploads['basedir'] ) ) {
+			$root = trailingslashit( $uploads['basedir'] ) . 'wpfonts/packages';
+			$try  = $root . '/' . $id;
+			if ( function_exists( 'wp_normalize_path' ) ) {
+				$root = wp_normalize_path( $root );
+				$try  = wp_normalize_path( $try );
 			}
+			$root = rtrim( str_replace( '\\', '/', $root ), '/' );
+			$try  = rtrim( str_replace( '\\', '/', $try ), '/' );
+			if ( 0 === strpos( $try, $root . '/' ) && is_dir( $try ) ) {
+				$dir   = $try;
+				$files = self::list_rels( $dir );
+			}
+		}
+
+		$payload = self::package_location( 'delete', $id, $dir, $files );
+		/**
+		 * Fires before a font package directory and its registry row are removed.
+		 *
+		 * When the directory exists, `dir` is still that absolute path and the
+		 * package list still includes this id. Cleanup runs after this action.
+		 * `files` may be an empty list. Listeners can read `dir`.
+		 *
+		 * @param array $package Package location. Keys: action, slug, package_id, dir, uploads_rel, local_css, files.
+		 */
+		do_action( 'wpfonts_package_deleted', $payload );
+
+		if ( '' !== $dir && is_dir( $dir ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			WP_Filesystem();
+			global $wp_filesystem;
+			if ( $wp_filesystem ) {
+				$wp_filesystem->delete( $dir, true );
+			}
+		}
+
+		$next = array();
+		foreach ( self::all() as $package ) {
+			if ( $package['id'] === $id ) {
+				continue;
+			}
+			$next[] = $package;
 		}
 		update_option( self::OPTION, $next, true );
 		return true;
+	}
+
+	/**
+	 * Location of one package for the install and delete actions.
+	 *
+	 * `files` lists relative paths when the directory can be read. It is an
+	 * empty list otherwise. Listeners can scan `dir` and must not require `files`.
+	 *
+	 * @param string   $action install, reinstall, or delete.
+	 * @param string   $id     Package id.
+	 * @param string   $dir    Absolute directory, or empty when it is already gone.
+	 * @param string[] $files  Relative paths. May be empty.
+	 * @return array{action:string,slug:string,package_id:string,dir:string,uploads_rel:string,local_css:string,files:array}
+	 */
+	private static function package_location( $action, $id, $dir, array $files ) {
+		$dir = rtrim( str_replace( '\\', '/', (string) $dir ), '/' );
+		if ( '' !== $dir && function_exists( 'wp_normalize_path' ) ) {
+			$dir = rtrim( str_replace( '\\', '/', wp_normalize_path( $dir ) ), '/' );
+		}
+		$local_css = '';
+		if ( '' !== $dir && is_file( $dir . '/local.css' ) ) {
+			$local_css = $dir . '/local.css';
+		}
+		$clean = array();
+		foreach ( $files as $rel ) {
+			$rel = str_replace( '\\', '/', (string) $rel );
+			if ( self::is_safe_rel( $rel ) ) {
+				$clean[] = $rel;
+			}
+		}
+		$clean = array_values( array_unique( $clean ) );
+		sort( $clean, SORT_STRING );
+		return array(
+			'action'      => (string) $action,
+			'slug'        => (string) $id,
+			'package_id'  => (string) $id,
+			'dir'         => $dir,
+			'uploads_rel' => 'wpfonts/packages/' . $id,
+			'local_css'   => $local_css,
+			'files'       => $clean,
+		);
+	}
+
+	/**
+	 * Remove a temporary extract directory.
+	 *
+	 * @param string $dir Absolute directory.
+	 * @return void
+	 */
+	private static function discard_incoming( $dir ) {
+		global $wp_filesystem;
+		if ( is_object( $wp_filesystem ) && '' !== (string) $dir ) {
+			$wp_filesystem->delete( $dir, true );
+		}
 	}
 
 	/**
