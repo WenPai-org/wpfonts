@@ -3,6 +3,8 @@
  * Local font packages. The plugin stores a zip the site owner already
  * downloaded. It does not slice fonts. On install, the package id follows
  * the catalog family wenfeng-{short} when the zip says what that short is.
+ * The visible name is 文风· plus the font's own name when metadata, the
+ * catalog, or the leading CSS comment has one. The id is not that label.
  * A successful install or replace runs wpfonts_package_installed.
  * wpfonts_package_deleted runs while the package directory is still present.
  *
@@ -27,7 +29,27 @@ class WPFonts_Packages {
 	const MAX_DEPTH = 8;
 
 	/**
+	 * Prefix for a package title shown in the Font Library and the admin list.
+	 *
+	 * @var string
+	 */
+	const DISPLAY_PREFIX = '文风·';
+
+	/**
+	 * True while a healed package list is being saved.
+	 *
+	 * @var bool
+	 */
+	private static $persisting = false;
+
+	/**
 	 * Saved packages. Paths inside the option are not trusted.
+	 *
+	 * A stored name that is empty, equal to the id, or itself a catalog token
+	 * is replaced from local.css and the catalog. The id and the CSS family
+	 * stay as stored. The list is written back only when a name changes, and
+	 * only from wp-admin, WP-Cron, or WP-CLI. A front-end view still returns
+	 * the healed name.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -36,7 +58,8 @@ class WPFonts_Packages {
 		if ( ! is_array( $saved ) ) {
 			return array();
 		}
-		$out = array();
+		$out   = array();
+		$dirty = false;
 		foreach ( $saved as $row ) {
 			if ( ! is_array( $row ) ) {
 				continue;
@@ -45,13 +68,20 @@ class WPFonts_Packages {
 			if ( '' === $id ) {
 				continue;
 			}
-			$name = self::plain_name( isset( $row['name'] ) ? $row['name'] : $id );
-			if ( '' === $name ) {
-				$name = $id;
+			$stored = self::plain_name( isset( $row['name'] ) ? $row['name'] : '' );
+			if ( '' === $stored ) {
+				$stored = $id;
+			}
+			$name = $stored;
+			if ( self::display_name_needs_heal( $stored, $id ) ) {
+				$name = self::healed_display_name( $id, $stored, self::read_local_css( $id ) );
+				if ( $name !== $stored ) {
+					$dirty = true;
+				}
 			}
 			$family = self::plain_name( isset( $row['family'] ) ? $row['family'] : '' );
 			if ( '' === $family ) {
-				$family = $name;
+				$family = $stored;
 			}
 			$out[] = array(
 				'id'           => $id,
@@ -61,7 +91,33 @@ class WPFonts_Packages {
 				'installed_at' => isset( $row['installed_at'] ) ? (int) $row['installed_at'] : 0,
 			);
 		}
+		if ( $dirty && ! self::$persisting && self::can_store_display_names() && function_exists( 'update_option' ) ) {
+			self::$persisting = true;
+			update_option( self::OPTION, $out, true );
+			self::$persisting = false;
+		}
 		return $out;
+	}
+
+	/**
+	 * Whether this request may save healed package names.
+	 *
+	 * Front-end visitors still receive the healed name from all(). They do
+	 * not write the option. A request without is_admin() may write.
+	 *
+	 * @return bool
+	 */
+	private static function can_store_display_names() {
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return true;
+		}
+		if ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) {
+			return true;
+		}
+		if ( ! function_exists( 'is_admin' ) ) {
+			return true;
+		}
+		return (bool) is_admin();
 	}
 
 	/**
@@ -200,7 +256,7 @@ class WPFonts_Packages {
 	 * Human package name from metadata, or empty.
 	 *
 	 * family, name, and the Chinese name fields are display text. A catalog
-	 * token in one of those fields is skipped.
+	 * token in one of those fields is skipped. The 文风· prefix is applied later.
 	 *
 	 * @param array|string|null $metadata Decoded metadata or a JSON string.
 	 * @return string
@@ -210,7 +266,7 @@ class WPFonts_Packages {
 		if ( null === $data ) {
 			return '';
 		}
-		foreach ( array( 'family', 'name', 'chineseName', 'chinese_name' ) as $key ) {
+		foreach ( array( 'family', 'name', 'chineseName', 'chinese_name', 'chinese' ) as $key ) {
 			if ( ! isset( $data[ $key ] ) || ! is_string( $data[ $key ] ) ) {
 				continue;
 			}
@@ -224,6 +280,170 @@ class WPFonts_Packages {
 			return $name;
 		}
 		return '';
+	}
+
+	/**
+	 * Whether a stored name should be replaced.
+	 *
+	 * Empty, identical to the package id, or itself a wenfeng-*, WF-*, or
+	 * windfonts-* token. A human title is left alone.
+	 *
+	 * @param string $name Stored name.
+	 * @param string $id   Package id.
+	 * @return bool
+	 */
+	public static function display_name_needs_heal( $name, $id ) {
+		$name = self::plain_name( $name );
+		$id   = self::clean_id( $id );
+		if ( '' === $name || $name === $id ) {
+			return true;
+		}
+		return '' !== self::catalog_family( $name );
+	}
+
+	/**
+	 * Visible package title.
+	 *
+	 * Metadata text wins, then the catalog name for this family, then the
+	 * title before " - " in the first CSS comment. A catalog token is never
+	 * used as a title. A human title is prefixed with 文风· when it is not
+	 * already. When nothing human remains, $fallback is returned unchanged.
+	 *
+	 * @param string $metadata_name Human metadata name, or empty.
+	 * @param string $family        Catalog family, usually the package id.
+	 * @param string $css           Stylesheet text.
+	 * @param string $fallback      Package id when no human title exists.
+	 * @return string
+	 */
+	public static function resolve_display_name( $metadata_name, $family, $css, $fallback ) {
+		$meta = self::plain_name( $metadata_name );
+		if ( '' !== $meta && '' === self::catalog_family( $meta ) ) {
+			$named = self::prefix_display_name( $meta );
+			if ( '' !== $named ) {
+				return $named;
+			}
+		}
+		$catalog = self::catalog_display_name( $family );
+		if ( '' !== $catalog ) {
+			$named = self::prefix_display_name( $catalog );
+			if ( '' !== $named ) {
+				return $named;
+			}
+		}
+		$from_css = self::title_from_css( $css );
+		if ( '' !== $from_css ) {
+			$named = self::prefix_display_name( $from_css );
+			if ( '' !== $named ) {
+				return $named;
+			}
+		}
+		$fallback = self::plain_name( $fallback );
+		if ( '' === $fallback ) {
+			return '';
+		}
+		return self::clip_label( $fallback );
+	}
+
+	/**
+	 * Display name for one saved row.
+	 *
+	 * A human name is kept. An empty name, a name equal to the id, or a
+	 * catalog token is replaced with resolve_display_name(). The id is only
+	 * the fallback, and this method does not change it.
+	 *
+	 * @param string $id   Package id.
+	 * @param string $name Stored name.
+	 * @param string $css  local.css text.
+	 * @return string
+	 */
+	public static function healed_display_name( $id, $name, $css ) {
+		$id   = self::clean_id( $id );
+		$name = self::plain_name( $name );
+		if ( '' === $name ) {
+			$name = $id;
+		}
+		if ( ! self::display_name_needs_heal( $name, $id ) ) {
+			return $name;
+		}
+		$next = self::resolve_display_name( '', $id, $css, $id );
+		if ( '' === $next ) {
+			return $id;
+		}
+		return $next;
+	}
+
+	/**
+	 * Catalog name for one wenfeng-* family, or empty.
+	 *
+	 * The match is exact. A nearby short code is not used. A catalog row
+	 * whose name is itself a token is skipped.
+	 *
+	 * @param string $family Catalog family.
+	 * @return string
+	 */
+	public static function catalog_display_name( $family ) {
+		$family = self::catalog_family( $family );
+		if ( '' === $family || ! class_exists( 'WPFonts_Catalog', false ) ) {
+			return '';
+		}
+		$fonts = WPFonts_Catalog::stored_fonts();
+		if ( ! is_array( $fonts ) ) {
+			return '';
+		}
+		foreach ( $fonts as $font ) {
+			if ( ! is_array( $font ) ) {
+				continue;
+			}
+			$token = isset( $font['fontFamily'] ) ? (string) $font['fontFamily'] : '';
+			if ( $token !== $family ) {
+				continue;
+			}
+			$name = self::plain_name( isset( $font['name'] ) ? $font['name'] : '' );
+			if ( '' === $name || '' !== self::catalog_family( $name ) ) {
+				return '';
+			}
+			return self::clip_label( $name );
+		}
+		return '';
+	}
+
+	/**
+	 * Title from the first CSS comment, before " - ".
+	 *
+	 * Slice packages start with a line such as "玄宗体 - Regular (full)".
+	 * A comment without that separator is ignored, as is a title that is
+	 * only a catalog token.
+	 *
+	 * @param string $css CSS text.
+	 * @return string
+	 */
+	public static function title_from_css( $css ) {
+		if ( ! is_string( $css ) || '' === $css ) {
+			return '';
+		}
+		if ( 0 === strncmp( $css, "\xEF\xBB\xBF", 3 ) ) {
+			$css = substr( $css, 3 );
+		}
+		if ( ! preg_match( '/\A\s*\/\*(.*?)\*\//s', $css, $matches ) ) {
+			return '';
+		}
+		$parts = preg_split( '/\R/u', $matches[1], 2 );
+		if ( ! is_array( $parts ) ) {
+			$parts = preg_split( "/\r\n|\r|\n/", $matches[1], 2 );
+		}
+		if ( ! is_array( $parts ) || ! isset( $parts[0] ) ) {
+			return '';
+		}
+		$line = trim( (string) $parts[0], " \t*" );
+		$at   = strpos( $line, ' - ' );
+		if ( false === $at ) {
+			return '';
+		}
+		$title = self::plain_name( trim( substr( $line, 0, $at ) ) );
+		if ( '' === $title || '' !== self::catalog_family( $title ) ) {
+			return '';
+		}
+		return self::clip_label( $title );
 	}
 
 	/**
@@ -788,19 +1008,18 @@ class WPFonts_Packages {
 			return new WP_Error( 'wpfonts_package', 'move' );
 		}
 
-		$display = isset( $meta['name'] ) ? self::plain_name( $meta['name'] ) : '';
-		if ( '' === $display ) {
-			$display = self::plain_name( pathinfo( $name, PATHINFO_FILENAME ) );
-		}
+		$display = self::resolve_display_name(
+			isset( $meta['name'] ) ? $meta['name'] : '',
+			$slug,
+			$local,
+			$slug
+		);
 		if ( '' === $display ) {
 			$display = $slug;
 		}
-		if ( strlen( $display ) > 80 ) {
-			$display = substr( $display, 0, 80 );
-		}
 		$family = self::family_from_css( $local );
 		if ( '' === $family ) {
-			$family = $display;
+			$family = $slug;
 		}
 		$enabled = 1;
 		if ( is_array( $previous ) ) {
@@ -1090,6 +1309,72 @@ class WPFonts_Packages {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Leading bytes of local.css, or empty when the file cannot be read.
+	 *
+	 * Only the opening comment is needed for a display name. The read stays
+	 * inside this package directory.
+	 *
+	 * @param string $id Package id.
+	 * @return string
+	 */
+	private static function read_local_css( $id ) {
+		$id = self::clean_id( $id );
+		if ( '' === $id || ! function_exists( 'wp_upload_dir' ) ) {
+			return '';
+		}
+		$uploads = wp_upload_dir();
+		if ( ! is_array( $uploads ) || ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
+			return '';
+		}
+		$root = rtrim( (string) $uploads['basedir'], '/\\' ) . '/wpfonts/packages';
+		$path = $root . '/' . $id . '/local.css';
+		if ( function_exists( 'wp_normalize_path' ) ) {
+			$root = wp_normalize_path( $root );
+			$path = wp_normalize_path( $path );
+		}
+		if ( 0 !== strpos( $path, $root . '/' ) || ! is_readable( $path ) ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local package CSS. WP_Filesystem may prompt for FTP.
+		$raw = file_get_contents( $path, false, null, 0, 16384 );
+		return is_string( $raw ) ? $raw : '';
+	}
+
+	/**
+	 * Prefix a human title with 文风· unless it already has that prefix.
+	 *
+	 * @param string $name Human title.
+	 * @return string
+	 */
+	private static function prefix_display_name( $name ) {
+		$name = self::clip_label( $name );
+		if ( '' === $name || self::DISPLAY_PREFIX === $name || '' !== self::catalog_family( $name ) ) {
+			return '';
+		}
+		if ( 0 === strpos( $name, self::DISPLAY_PREFIX ) ) {
+			return $name;
+		}
+		return self::clip_label( self::DISPLAY_PREFIX . $name );
+	}
+
+	/**
+	 * Cap a visible label at 80 characters.
+	 *
+	 * @param string $name Raw label.
+	 * @return string
+	 */
+	private static function clip_label( $name ) {
+		$name = self::plain_name( $name );
+		if ( function_exists( 'mb_strlen' ) && function_exists( 'mb_substr' ) && mb_strlen( $name ) > 80 ) {
+			return trim( mb_substr( $name, 0, 80 ) );
+		}
+		if ( strlen( $name ) > 80 ) {
+			return trim( substr( $name, 0, 80 ) );
+		}
+		return $name;
 	}
 
 	/**

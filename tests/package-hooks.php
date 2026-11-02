@@ -363,7 +363,11 @@ if ( is_array( $installed ) ) {
 	$assert( false !== strpos( $css_text, 'WF-Fzss-1.woff2' ), 'woff2 file name was renamed' );
 	$assert( false === strpos( $css_text, 'font-family:"WF-Fzss"' ), 'legacy font-family remained' );
 }
-$assert( 1 === count( WPFonts_Packages::all() ), 'install did not save one package' );
+$installed_rows = WPFonts_Packages::all();
+$assert( 1 === count( $installed_rows ), 'install did not save one package' );
+$assert( '文风·方正书宋' === $installed_rows[0]['name'], 'install display name drifted' );
+$assert( 'wenfeng-fzss' === $installed_rows[0]['id'], 'install id drifted' );
+$assert( 'wenfeng-fzss' === $installed_rows[0]['family'], 'install family drifted' );
 $assert( 1 === count( $GLOBALS['wpfonts_hooks'] ), 'install fired more than once' );
 $assert( 'wpfonts_package_installed' === $GLOBALS['wpfonts_hooks'][0]['hook'], 'install hook name drifted' );
 

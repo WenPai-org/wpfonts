@@ -377,6 +377,58 @@ $after_remove = WPFonts_Library::confirmed_cloud_families( $kept_only, '' );
 $assert( 1 === count( $after_remove ), 'removing a face left it in the cloud list' );
 $assert( 'wenfeng-ibmps' === $after_remove[0]['font_family_settings']['slug'], 'the remaining face was not the one kept' );
 
+$slice = '@font-face{font-family:"wenfeng-xxzt";font-weight:400;src:url("https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/0.woff2") format("woff2");unicode-range:U+4E00;}'
+	. '@font-face{font-family:"wenfeng-xxzt";font-weight:400;src:url("https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/1.woff2") format("woff2");unicode-range:U+4E01;}';
+$xxzt_family = WPFonts_Library::family_definition(
+	array(
+		'id'      => 'wenfeng-xxzt',
+		'name'    => '文风·玄宗体',
+		'family'  => 'wenfeng-xxzt',
+		'enabled' => 1,
+	),
+	$slice
+);
+$assert( is_array( $xxzt_family ), 'xxzt package produced no family' );
+$assert( '文风·玄宗体' === $xxzt_family['font_family_settings']['name'], 'font library did not show the healed name' );
+$assert( 'wenfeng-xxzt' === $xxzt_family['font_family_settings']['slug'], 'font library changed the package slug' );
+$assert( '"wenfeng-xxzt", sans-serif' === $xxzt_family['font_family_settings']['fontFamily'], 'font library changed the css family' );
+$assert( 2 === count( $xxzt_family['font_family_settings']['fontFace'] ), 'unicode-range slices were split into named families' );
+$assert( 'wenfeng-xxzt' === $xxzt_family['font_family_settings']['fontFace'][0]['fontFamily'], 'first slice used its own family' );
+$assert( 'wenfeng-xxzt' === $xxzt_family['font_family_settings']['fontFace'][1]['fontFamily'], 'second slice used its own family' );
+$xxzt_list = WPFonts_Library::package_families(
+	array(
+		array(
+			'id'      => 'wenfeng-xxzt',
+			'name'    => '文风·玄宗体',
+			'family'  => 'wenfeng-xxzt',
+			'enabled' => 1,
+		),
+	),
+	array(
+		'wenfeng-xxzt' => $slice,
+	)
+);
+$assert( 1 === count( $xxzt_list ), 'one package registered more than one family' );
+
+$previous_packages = isset( $GLOBALS['wpfonts_options']['wpfonts_packages'] ) ? $GLOBALS['wpfonts_options']['wpfonts_packages'] : null;
+$GLOBALS['wpfonts_options']['wpfonts_packages'] = array(
+	array(
+		'id'      => 'wenfeng-xxzt',
+		'name'    => '文风·玄宗体',
+		'family'  => 'wenfeng-xxzt',
+		'enabled' => 1,
+	),
+);
+$picked = WPFonts_Library::editor_packages();
+$assert( 1 === count( $picked ), 'editor package picker dropped the healed package' );
+$assert( '文风·玄宗体' === $picked[0]['name'], 'editor package picker did not show the healed name' );
+$assert( 'wenfeng-xxzt' === $picked[0]['family'], 'editor package picker changed the family' );
+if ( null === $previous_packages ) {
+	unset( $GLOBALS['wpfonts_options']['wpfonts_packages'] );
+} else {
+	$GLOBALS['wpfonts_options']['wpfonts_packages'] = $previous_packages;
+}
+
 $hooked = false;
 foreach ( $GLOBALS['wpfonts_actions'] as $action ) {
 	if ( 'init' === $action[0] ) {
