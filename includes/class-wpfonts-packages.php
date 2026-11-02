@@ -410,9 +410,10 @@ class WPFonts_Packages {
 	/**
 	 * Title from the first CSS comment, before " - ".
 	 *
-	 * Slice packages start with a line such as "玄宗体 - Regular (full)".
-	 * A comment without that separator is ignored, as is a title that is
-	 * only a catalog token.
+	 * Slice packages start with a line such as "玄宗体 - Regular (full)"
+	 * or "思源黑体 Regular - Regular (zh-common)". A comment without that
+	 * separator is ignored, as is a title that is only a catalog token.
+	 * A trailing weight or style word is removed when a family name remains.
 	 *
 	 * @param string $css CSS text.
 	 * @return string
@@ -440,10 +441,42 @@ class WPFonts_Packages {
 			return '';
 		}
 		$title = self::plain_name( trim( substr( $line, 0, $at ) ) );
+		$title = self::strip_style_suffix( $title );
 		if ( '' === $title || '' !== self::catalog_family( $title ) ) {
 			return '';
 		}
 		return self::clip_label( $title );
+	}
+
+	/**
+	 * Drop a trailing weight or style word from a CSS comment title.
+	 *
+	 * Only a separate trailing token is removed: Regular, Bold, Light,
+	 * Medium, Heavy, Black, Thin, Italic, Oblique, 常规, 粗体, or 细体.
+	 * The word is kept when it is the whole title, or when it sits inside
+	 * another word. Catalog names do not come through here.
+	 *
+	 * @param string $title Text before " - ".
+	 * @return string
+	 */
+	private static function strip_style_suffix( $title ) {
+		$title = trim( (string) $title );
+		if ( '' === $title ) {
+			return '';
+		}
+		$styles = 'Regular|Bold|Light|Medium|Heavy|Black|Thin|Italic|Oblique|常规|粗体|细体';
+		for ( $i = 0; $i < 4; $i++ ) {
+			$next = preg_replace( '/(?<=\S)\s+(?:' . $styles . ')$/iu', '', $title );
+			if ( ! is_string( $next ) || $next === $title ) {
+				break;
+			}
+			$next = trim( $next );
+			if ( '' === $next ) {
+				break;
+			}
+			$title = $next;
+		}
+		return $title;
 	}
 
 	/**
