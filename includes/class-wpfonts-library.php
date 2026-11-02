@@ -31,6 +31,7 @@ class WPFonts_Library {
 	 * @return void
 	 */
 	public static function init() {
+		add_action( 'init', array( __CLASS__, 'maybe_render_specimen' ), 0 );
 		add_action( 'init', array( __CLASS__, 'register' ), 20 );
 	}
 
@@ -44,9 +45,10 @@ class WPFonts_Library {
 			return;
 		}
 		$packages = class_exists( 'WPFonts_Packages', false ) ? WPFonts_Packages::all() : array();
+		$css_map  = self::css_map( $packages );
 		self::sync_collection(
 			self::PACKAGES_SLUG,
-			self::packages_collection_args( self::package_families( $packages, self::css_map( $packages ) ) )
+			self::describe_packages( self::package_families( $packages, $css_map ), self::css_map_is_sliced( $css_map ) )
 		);
 		$settings = class_exists( 'WPFonts_Settings', false ) ? WPFonts_Settings::get() : array();
 		$label    = self::catalog_label( $settings );
@@ -124,6 +126,24 @@ class WPFonts_Library {
 			'description'   => __( '本站已启用的文风字体包。关闭或删除后，全站样式里也不再出现。', 'wpfonts' ),
 			'font_families' => $families,
 		);
+	}
+
+	/**
+	 * Package collection arguments, plus the slice note when a package collapsed.
+	 *
+	 * The note is only for unicode-range packages. A single file per weight
+	 * keeps the original description.
+	 *
+	 * @param array $families Family definitions.
+	 * @param bool  $sliced   Whether any stylesheet collapsed to fewer faces.
+	 * @return array{name:string,description:string,font_families:array}
+	 */
+	public static function describe_packages( array $families, $sliced ) {
+		$args = self::packages_collection_args( $families );
+		if ( $sliced ) {
+			$args['description'] .= __( '本包按字符切片托管，前台会自动按需加载；字体库里每个字重只显示一条即可。', 'wpfonts' );
+		}
+		return $args;
 	}
 
 	/**
@@ -254,8 +274,19 @@ class WPFonts_Library {
 			'slug'       => self::package_family_slug( $id ),
 			'fontFamily' => $stack,
 		);
-		$faces    = self::faces_from_css( is_string( $css ) ? $css : '', $plain );
+		$preview  = self::family_preview_url( $package );
+		if ( '' !== $preview ) {
+			$settings['preview'] = $preview;
+		}
+		$faces = self::faces_from_css( is_string( $css ) ? $css : '', $plain );
 		if ( array() !== $faces ) {
+			if ( '' !== $preview ) {
+				foreach ( $faces as $index => $face ) {
+					if ( empty( $face['preview'] ) ) {
+						$faces[ $index ]['preview'] = $preview;
+					}
+				}
+			}
 			$settings['fontFace'] = $faces;
 		}
 		return array(
@@ -288,16 +319,82 @@ class WPFonts_Library {
 	}
 
 	/**
-	 * @font-face rules whose src is an absolute woff2 URL.
+	 * One Font Library face per font-weight and font-style.
 	 *
-	 * The fontFamily on each face is the package family, so an install uses the
-	 * same name local.css already serves.
+	 * Unicode-range slices of the same weight stay in local.css. That file is
+	 * what the front and the package screen load. The Font Library list is for
+	 * choosing a weight, so it keeps a single representative file and does not
+	 * copy every slice into the collection. A face without unicode-range wins.
+	 * Otherwise the widest range wins, and a tie keeps the first file.
 	 *
 	 * @param string $css    CSS text.
 	 * @param string $family Canonical family name, unquoted.
 	 * @return array<int,array<string,string>>
 	 */
 	public static function faces_from_css( $css, $family ) {
+		return self::fold_faces( self::parse_faces( $css, $family ) );
+	}
+
+	/**
+	 * Whether this stylesheet has more than one file for the same weight and style.
+	 *
+	 * @param string $css    CSS text.
+	 * @param string $family Family used when the stylesheet does not matter.
+	 * @return bool
+	 */
+	public static function css_is_sliced( $css, $family = 'wpfonts' ) {
+		$raw = self::parse_faces( $css, $family );
+		return count( $raw ) > count( self::fold_faces( $raw ) );
+	}
+
+	/**
+	 * Whether any package stylesheet in the map collapses.
+	 *
+	 * @param array<string,string> $css_by_id Package id => CSS text.
+	 * @return bool
+	 */
+	public static function css_map_is_sliced( array $css_by_id ) {
+		foreach ( $css_by_id as $css ) {
+			if ( self::css_is_sliced( (string) $css ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Whether this installed package's local.css collapses in the Font Library.
+	 *
+	 * @param string $id Package id.
+	 * @return bool
+	 */
+	public static function package_is_sliced( $id ) {
+		$css = self::read_package_css( class_exists( 'WPFonts_Packages', false ) ? WPFonts_Packages::clean_id( $id ) : '' );
+		if ( '' === $css ) {
+			return false;
+		}
+		$family = 'wpfonts';
+		if ( class_exists( 'WPFonts_Packages', false ) ) {
+			$declared = WPFonts_Packages::family_from_css( $css );
+			if ( '' !== self::plain_family( $declared ) ) {
+				$family = $declared;
+			}
+		}
+		return self::css_is_sliced( $css, $family );
+	}
+
+	/**
+	 * @font-face rules whose src is an absolute woff2 URL, before folding.
+	 *
+	 * The fontFamily on each face is the package family, so an install uses the
+	 * same name local.css already serves. `normal` and `bold` become 400 and
+	 * 700 so they share a Font Library row with the numeric weight.
+	 *
+	 * @param string $css    CSS text.
+	 * @param string $family Canonical family name, unquoted.
+	 * @return array<int,array<string,string>>
+	 */
+	private static function parse_faces( $css, $family ) {
 		$family = self::plain_family( $family );
 		$faces  = array();
 		if ( '' === $family || ! is_string( $css ) ) {
@@ -314,6 +411,11 @@ class WPFonts_Library {
 				if ( preg_match( '/^(?:normal|bold|[1-9]00)(?:\s+(?:normal|bold|[1-9]00))?$/', $candidate ) ) {
 					$weight = $candidate;
 				}
+			}
+			if ( 'normal' === $weight ) {
+				$weight = '400';
+			} elseif ( 'bold' === $weight ) {
+				$weight = '700';
 			}
 			if ( preg_match( '/font-style\s*:\s*([^;}]+)/i', $body, $style_match ) ) {
 				$candidate = strtolower( trim( $style_match[1] ) );
@@ -359,6 +461,210 @@ class WPFonts_Library {
 			}
 		}
 		return $faces;
+	}
+
+	/**
+	 * Keep one face for each weight and style.
+	 *
+	 * @param array<int,array<string,string>> $faces Parsed faces.
+	 * @return array<int,array<string,string>>
+	 */
+	private static function fold_faces( array $faces ) {
+		$groups = array();
+		$order  = array();
+		foreach ( $faces as $face ) {
+			if ( ! is_array( $face ) ) {
+				continue;
+			}
+			$weight = isset( $face['fontWeight'] ) ? (string) $face['fontWeight'] : '400';
+			$style  = isset( $face['fontStyle'] ) ? (string) $face['fontStyle'] : 'normal';
+			$key    = $weight . '|' . $style;
+			if ( ! isset( $groups[ $key ] ) ) {
+				$groups[ $key ] = array();
+				$order[]        = $key;
+			}
+			$groups[ $key ][] = $face;
+		}
+		$out = array();
+		foreach ( $order as $key ) {
+			$best      = null;
+			$best_span = -1;
+			foreach ( $groups[ $key ] as $face ) {
+				$span = self::range_span( isset( $face['unicodeRange'] ) ? (string) $face['unicodeRange'] : '' );
+				if ( $span > $best_span ) {
+					$best      = $face;
+					$best_span = $span;
+				}
+			}
+			if ( is_array( $best ) ) {
+				$out[] = $best;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * How many code points a unicode-range covers. Empty means the whole font.
+	 *
+	 * @param string $range unicode-range value, or empty.
+	 * @return int
+	 */
+	private static function range_span( $range ) {
+		$range = trim( (string) $range );
+		if ( '' === $range ) {
+			return 0x110000;
+		}
+		$span = 0;
+		if ( ! preg_match_all( '/U\+([0-9A-Fa-f?]{1,6})(?:-([0-9A-Fa-f?]{1,6}))?/', $range, $parts, PREG_SET_ORDER ) ) {
+			return 1;
+		}
+		foreach ( $parts as $part ) {
+			$start_token = $part[1];
+			$end_token   = ( isset( $part[2] ) && '' !== $part[2] ) ? $part[2] : $start_token;
+			if ( false !== strpos( $start_token, '?' ) || false !== strpos( $end_token, '?' ) ) {
+				$span += 128;
+				continue;
+			}
+			$start = hexdec( $start_token );
+			$end   = hexdec( $end_token );
+			if ( $end < $start ) {
+				$end = $start;
+			}
+			$span += ( $end - $start + 1 );
+		}
+		return $span > 0 ? $span : 1;
+	}
+
+	/**
+	 * Family preview image. A pack https URL wins. Otherwise a same-site SVG.
+	 *
+	 * WordPress sanitizes preview with sanitize_url, which drops data URIs.
+	 * The SVG is drawn from the package display name when the pack has no
+	 * preview of its own. Optional metadata keys are preview, previewUrl,
+	 * and preview_url, in meta.json, metadata.json, or font.json.
+	 *
+	 * @param array $package Package row.
+	 * @return string
+	 */
+	private static function family_preview_url( array $package ) {
+		$id = '';
+		if ( class_exists( 'WPFonts_Packages', false ) && isset( $package['id'] ) ) {
+			$id = WPFonts_Packages::clean_id( $package['id'] );
+		}
+		if ( '' !== $id ) {
+			$packed = WPFonts_Packages::installed_preview_url( $id );
+			if ( '' !== $packed ) {
+				return $packed;
+			}
+		}
+		if ( isset( $package['preview'] ) && class_exists( 'WPFonts_Packages', false ) ) {
+			$given = WPFonts_Packages::clean_preview_url( $package['preview'] );
+			if ( '' !== $given ) {
+				return $given;
+			}
+		}
+		return self::specimen_preview_url( $id );
+	}
+
+	/**
+	 * Stable URL of the generated family specimen.
+	 *
+	 * @param string $id Package id.
+	 * @return string
+	 */
+	public static function specimen_preview_url( $id ) {
+		if ( ! class_exists( 'WPFonts_Packages', false ) ) {
+			return '';
+		}
+		$id = WPFonts_Packages::clean_id( $id );
+		if ( '' === $id ) {
+			return '';
+		}
+		if ( function_exists( 'home_url' ) && function_exists( 'add_query_arg' ) ) {
+			return add_query_arg( 'wpfonts_specimen', $id, home_url( '/' ) );
+		}
+		return 'https://example.test/?wpfonts_specimen=' . rawurlencode( $id );
+	}
+
+	/**
+	 * Print an SVG specimen and stop. Missing packages use a generic label.
+	 *
+	 * The query value is only a package id. The painted text is the stored
+	 * display name, not the raw query.
+	 *
+	 * @return void
+	 */
+	public static function maybe_render_specimen() {
+		if ( ! isset( $_GET['wpfonts_specimen'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public specimen image. The id is cleaned and the text comes from the package list.
+			return;
+		}
+		$raw = $_GET['wpfonts_specimen']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- clean_id() keeps letters, digits, and hyphens.
+		if ( is_array( $raw ) ) {
+			$raw = '';
+		}
+		if ( function_exists( 'wp_unslash' ) ) {
+			$raw = wp_unslash( $raw );
+		}
+		$id    = class_exists( 'WPFonts_Packages', false ) ? WPFonts_Packages::clean_id( $raw ) : '';
+		$label = '文风字体';
+		if ( '' !== $id && class_exists( 'WPFonts_Packages', false ) ) {
+			$package = WPFonts_Packages::find( $id );
+			if ( is_array( $package ) && isset( $package['name'] ) ) {
+				$name = trim( (string) $package['name'] );
+				if ( '' !== $name ) {
+					$label = $name;
+				}
+			}
+		}
+		if ( ! headers_sent() ) {
+			if ( function_exists( 'status_header' ) ) {
+				status_header( 200 );
+			}
+			header( 'Content-Type: image/svg+xml; charset=UTF-8' );
+			header( 'X-Content-Type-Options: nosniff' );
+			header( 'Cache-Control: public, max-age=300' );
+		}
+		echo self::specimen_svg( $label ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- specimen_svg() escapes the label.
+		exit;
+	}
+
+	/**
+	 * SVG of a display name. The browser paints it with a CJK system stack.
+	 *
+	 * This is the fallback when a pack does not ship a preview image. It is
+	 * not the font file, and it does not load woff2.
+	 *
+	 * @param string $label Display name.
+	 * @return string
+	 */
+	public static function specimen_svg( $label ) {
+		$label = trim( (string) $label );
+		$label = preg_replace( '/[\x00-\x1F\x7F]/', '', $label );
+		if ( ! is_string( $label ) || '' === $label ) {
+			$label = '文风字体';
+		}
+		if ( function_exists( 'mb_substr' ) ) {
+			$label = mb_substr( $label, 0, 40 );
+		} elseif ( strlen( $label ) > 120 ) {
+			$label = substr( $label, 0, 120 );
+		}
+		$count = function_exists( 'mb_strlen' ) ? mb_strlen( $label ) : strlen( $label );
+		if ( $count < 1 ) {
+			$count = 1;
+		}
+		$width = $count * 36 + 8;
+		if ( $width < 160 ) {
+			$width = 160;
+		}
+		if ( $width > 720 ) {
+			$width = 720;
+		}
+		$text = htmlspecialchars( $label, ENT_QUOTES | ENT_XML1, 'UTF-8' );
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="' . $width . '" height="48" viewBox="0 0 ' . $width . ' 48" role="img">'
+			. '<title>' . $text . '</title>'
+			. '<text x="0" y="34" fill="#1d2327" font-size="32" font-family="\'PingFang SC\', \'Hiragino Sans GB\', \'Noto Sans CJK SC\', \'Noto Sans SC\', \'Microsoft YaHei\', \'Source Han Sans SC\', sans-serif">'
+			. $text
+			. '</text></svg>';
 	}
 
 	/**

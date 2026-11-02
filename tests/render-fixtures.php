@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.12' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.13' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -596,11 +596,12 @@ $license = '此中文网页字体由文风字体（Windfonts）免费提供，�
 $ok_html = (string) file_get_contents( $out . '/settings-ok.html' );
 foreach ( array( 'settings-catalog' => $catalog_html, 'settings-ok' => $ok_html ) as $name => $html ) {
 	$note_at = strpos( $html, $license );
-	$pre_at  = strpos( $html, 'rel=&quot;preconnect&quot; href=&quot;https://cn.windfonts.com&quot; crossorigin' );
+	$from    = ( false === $note_at ) ? 0 : $note_at;
+	$pre_at  = strpos( $html, 'rel=&quot;preconnect&quot; href=&quot;https://cn.windfonts.com&quot; crossorigin', $from );
 	if ( false === $pre_at ) {
-		$pre_at = strpos( $html, 'rel="preconnect" href="https://cn.windfonts.com" crossorigin' );
+		$pre_at = strpos( $html, 'rel="preconnect" href="https://cn.windfonts.com" crossorigin', $from );
 	}
-	$css_at = strpos( $html, 'family=wenfeng-ibmps&amp;subset=zh-common' );
+	$css_at = strpos( $html, 'family=wenfeng-ibmps&amp;subset=zh-common', $from );
 	if ( false === $note_at || false === $pre_at || false === $css_at || $note_at > $pre_at || $pre_at > $css_at ) {
 		fwrite( STDERR, $name . " embed is missing the license note before preconnect and the stylesheet.\n" );
 		exit( 1 );
@@ -625,5 +626,21 @@ if ( false === strpos( $packages_html, 'wenpai-gate' ) || false === strpos( $pac
 }
 if ( false === strpos( $packages_html, '删除后本站不再提供这份字体。我已核对。' ) ) {
 	fwrite( STDERR, "packages fixture lost the delete gate copy.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, '字形预览' ) || false === strpos( $packages_html, 'data-family="IBM Plex Sans SC"' ) ) {
+	fwrite( STDERR, "package specimen did not use the package font-family.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, 'font-family: &quot;IBM Plex Sans SC&quot;, sans-serif' ) && false === strpos( $packages_html, 'font-family: "IBM Plex Sans SC", sans-serif' ) ) {
+	fwrite( STDERR, "package specimen style did not name the package family.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, '字形预览' ) || false === strpos( $catalog_html, 'data-css-face="windfonts-ibmps"' ) ) {
+	fwrite( STDERR, "catalog checkbox did not preview the confirmed CSS face.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, '链接文字（不加载字体）' ) ) {
+	fwrite( STDERR, "style link preview was not labeled as link text.\n" );
 	exit( 1 );
 }

@@ -629,6 +629,10 @@ $assert( false !== strpos( $admin, '目录保存在本站，大约每月自动�
 $assert( false === strpos( $admin, '去控制台上传' ), 'admin offered a console upload' );
 $assert( false !== strpos( $js, 'selected[target.value] = true' ), 'picking a font does not keep that family in the multi-face selection' );
 $assert( false === strpos( $js, 'normalizedName' ), 'catalog script reads normalizedName' );
+$assert( false !== strpos( $js, 'data-css-face' ), 'catalog script ignores a confirmed CSS face' );
+$assert( false !== strpos( $js, '字形预览' ), 'catalog script does not label glyph preview' );
+$assert( false !== strpos( $admin, '字形预览' ), 'catalog screen does not label glyph preview' );
+$assert( false !== strpos( $admin, '链接文字（不加载字体）' ), 'link preview is not labeled as link text' );
 $assert( false !== strpos( $js, 'body.append("refresh", "1")' ), 'refresh button does not post refresh=1' );
 $assert( false !== strpos( $js, 'data-updating' ), 'refresh progress attribute missing' );
 $assert( false !== strpos( $js, 'data-stale' ), 'stale refresh attribute missing' );

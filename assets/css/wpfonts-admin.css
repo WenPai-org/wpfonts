@@ -38,6 +38,19 @@
 	line-height: 1.7;
 }
 
+.wpfonts-glyph-label {
+	display: block;
+	margin-top: 6px;
+}
+
+.wpfonts-glyph-sample {
+	display: block;
+	margin-top: 2px;
+	font-size: 22px;
+	line-height: 1.5;
+	color: var(--wenpai-ink);
+}
+
 .wpfonts-preview-en,
 .wpfonts-preview-num {
 	margin-top: 8px;

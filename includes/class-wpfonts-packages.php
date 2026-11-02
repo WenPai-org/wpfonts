@@ -791,7 +791,165 @@ class WPFonts_Packages {
 	}
 
 	/**
+	 * font-family declared in an installed local.css, or empty.
+	 *
+	 * @param string $id Package id.
+	 * @return string
+	 */
+	public static function installed_css_family( $id ) {
+		return self::family_from_css( self::read_local_css( $id ) );
+	}
+
+	/**
+	 * https preview image from package metadata, or empty.
+	 *
+	 * Keys, in order: preview, previewUrl, preview_url. A stylesheet or
+	 * script URL is refused. The Font Library uses this instead of the
+	 * generated name specimen when the pack provides one.
+	 *
+	 * @param array|string|null $metadata Decoded metadata or a JSON string.
+	 * @return string
+	 */
+	public static function preview_url_from_metadata( $metadata ) {
+		$data = self::metadata_array( $metadata );
+		if ( null === $data ) {
+			return '';
+		}
+		foreach ( array( 'preview', 'previewUrl', 'preview_url' ) as $key ) {
+			if ( ! isset( $data[ $key ] ) || ! is_string( $data[ $key ] ) ) {
+				continue;
+			}
+			$url = self::clean_preview_url( $data[ $key ] );
+			if ( '' !== $url ) {
+				return $url;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Keep an https preview image URL, or return empty.
+	 *
+	 * @param mixed $url Raw URL.
+	 * @return string
+	 */
+	public static function clean_preview_url( $url ) {
+		$url = trim( (string) $url );
+		if ( strlen( $url ) < 12 || strlen( $url ) > 300 ) {
+			return '';
+		}
+		if ( preg_match( '/[\s<>"\']/', $url ) ) {
+			return '';
+		}
+		if ( preg_match( '/\.(?:css|js|mjs|php|html?)(?:$|\?|#)/i', $url ) ) {
+			return '';
+		}
+		$parts = parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- CLI tests load this file without WordPress.
+		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+		if ( 'https' !== strtolower( (string) $parts['scheme'] ) ) {
+			return '';
+		}
+		if ( ! empty( $parts['user'] ) || ! empty( $parts['pass'] ) ) {
+			return '';
+		}
+		return $url;
+	}
+
+	/**
+	 * Preview image URL stored in an installed package, or empty.
+	 *
+	 * Reads meta.json, metadata.json, and font.json. The shallowest file
+	 * that has a preview URL wins, same order as the install metadata scan.
+	 *
+	 * @param string $id Package id.
+	 * @return string
+	 */
+	public static function installed_preview_url( $id ) {
+		$id = self::clean_id( $id );
+		if ( '' === $id || ! function_exists( 'wp_upload_dir' ) ) {
+			return '';
+		}
+		$uploads = wp_upload_dir();
+		if ( ! is_array( $uploads ) || ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) || ! is_string( $uploads['basedir'] ) ) {
+			return '';
+		}
+		$root = rtrim( $uploads['basedir'], '/\\' ) . '/wpfonts/packages/' . $id;
+		if ( function_exists( 'wp_normalize_path' ) ) {
+			$root = wp_normalize_path( $root );
+		}
+		if ( ! is_dir( $root ) ) {
+			return '';
+		}
+		$rels = self::list_rels( $root );
+		$meta = self::metadata_preview_from_directory( $root, $rels );
+		return $meta;
+	}
+
+	/**
+	 * Preview URL from the same metadata files install already trusts.
+	 *
+	 * @param string   $root Extracted or installed directory.
+	 * @param string[] $rels Relative file paths.
+	 * @return string
+	 */
+	private static function metadata_preview_from_directory( $root, array $rels ) {
+		$root   = rtrim( (string) $root, '/\\' );
+		$ranked = array(
+			'meta.json'     => 0,
+			'metadata.json' => 1,
+			'font.json'     => 2,
+		);
+		$found  = array();
+		foreach ( $rels as $rel ) {
+			$rel = str_replace( '\\', '/', (string) $rel );
+			if ( ! self::is_safe_rel( $rel ) ) {
+				continue;
+			}
+			$base = strtolower( basename( $rel ) );
+			if ( ! isset( $ranked[ $base ] ) ) {
+				continue;
+			}
+			$found[] = array(
+				'rel'   => $rel,
+				'rank'  => $ranked[ $base ],
+				'depth' => substr_count( $rel, '/' ),
+			);
+		}
+		usort(
+			$found,
+			static function ( $left, $right ) {
+				if ( $left['depth'] !== $right['depth'] ) {
+					return $left['depth'] - $right['depth'];
+				}
+				return $left['rank'] - $right['rank'];
+			}
+		);
+		$reads = 0;
+		foreach ( $found as $item ) {
+			if ( 8 <= $reads ) {
+				break;
+			}
+			++$reads;
+			$raw = self::read_metadata_file( $root, $root . '/' . $item['rel'] );
+			if ( '' === $raw ) {
+				continue;
+			}
+			$url = self::preview_url_from_metadata( $raw );
+			if ( '' !== $url ) {
+				return $url;
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * Enqueue enabled local stylesheets. Independent of the CDN switch.
+	 *
+	 * This is the whole local.css, including every unicode-range slice.
+	 * The Font Library list is folded down to one face per weight. Glyphs
+	 * still come from this file.
 	 *
 	 * @return void
 	 */
@@ -870,6 +1028,9 @@ class WPFonts_Packages {
 
 	/**
 	 * Enqueue every package stylesheet on the packages screen, including disabled ones.
+	 *
+	 * The specimen uses the package font-family. The stylesheet is the full
+	 * local.css, so a sliced package still has every glyph the sample needs.
 	 *
 	 * @return void
 	 */
