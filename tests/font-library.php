@@ -71,8 +71,9 @@ function get_option( $name, $default = false ) {
  * @return array
  */
 function wp_upload_dir() {
+	$basedir = isset( $GLOBALS['wpfonts_upload_dir'] ) ? $GLOBALS['wpfonts_upload_dir'] : '';
 	return array(
-		'basedir' => $GLOBALS['wpfonts_upload_dir'],
+		'basedir' => $basedir,
 		'baseurl' => 'https://example.test/wp-content/uploads',
 		'error'   => false,
 	);
@@ -392,9 +393,53 @@ $assert( is_array( $xxzt_family ), 'xxzt package produced no family' );
 $assert( '文风·玄宗体' === $xxzt_family['font_family_settings']['name'], 'font library did not show the healed name' );
 $assert( 'wenfeng-xxzt' === $xxzt_family['font_family_settings']['slug'], 'font library changed the package slug' );
 $assert( '"wenfeng-xxzt", sans-serif' === $xxzt_family['font_family_settings']['fontFamily'], 'font library changed the css family' );
-$assert( 2 === count( $xxzt_family['font_family_settings']['fontFace'] ), 'unicode-range slices were split into named families' );
-$assert( 'wenfeng-xxzt' === $xxzt_family['font_family_settings']['fontFace'][0]['fontFamily'], 'first slice used its own family' );
-$assert( 'wenfeng-xxzt' === $xxzt_family['font_family_settings']['fontFace'][1]['fontFamily'], 'second slice used its own family' );
+$assert( 1 === count( $xxzt_family['font_family_settings']['fontFace'] ), 'unicode-range slices were listed once per file' );
+$assert( 'wenfeng-xxzt' === $xxzt_family['font_family_settings']['fontFace'][0]['fontFamily'], 'folded slice used another family' );
+$assert( '400' === $xxzt_family['font_family_settings']['fontFace'][0]['fontWeight'], 'folded slice changed weight' );
+$assert( 'normal' === $xxzt_family['font_family_settings']['fontFace'][0]['fontStyle'], 'folded slice changed style' );
+$assert( 'https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/0.woff2' === $xxzt_family['font_family_settings']['fontFace'][0]['src'], 'folded slice did not keep one woff2' );
+$assert( 'U+4E00' === $xxzt_family['font_family_settings']['fontFace'][0]['unicodeRange'], 'folded slice dropped its own range' );
+$assert( false === strpos( wp_json_encode( $xxzt_family ), '1.woff2' ), 'the second slice was copied into the font library' );
+$assert( isset( $xxzt_family['font_family_settings']['preview'] ) && false !== strpos( $xxzt_family['font_family_settings']['preview'], 'wpfonts_specimen=wenfeng-xxzt' ), 'family specimen URL missing' );
+$svg = WPFonts_Library::specimen_svg( '文风·玄宗体</text><script>' );
+$assert( false !== strpos( $svg, '文风·玄宗体' ), 'specimen dropped the display name' );
+$assert( false === strpos( $svg, '<script>' ), 'specimen svg was not escaped' );
+$assert( $xxzt_family['font_family_settings']['preview'] === $xxzt_family['font_family_settings']['fontFace'][0]['preview'], 'face preview was not the family specimen' );
+$assert( true === WPFonts_Library::css_is_sliced( $slice, 'wenfeng-xxzt' ), 'two slices of one weight were not treated as sliced' );
+$weights = $slice . '@font-face{font-family:"wenfeng-xxzt";font-weight:700;font-style:italic;src:url("https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/bold.woff2") format("woff2");unicode-range:U+4E00;}';
+$weight_faces = WPFonts_Library::faces_from_css( $weights, 'wenfeng-xxzt' );
+$assert( 2 === count( $weight_faces ), 'a different weight was folded into Normal' );
+$assert( '700' === $weight_faces[1]['fontWeight'] && 'italic' === $weight_faces[1]['fontStyle'], 'italic bold was rewritten' );
+$wide = '@font-face{font-family:"wenfeng-xxzt";font-weight:400;src:url("https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/0.woff2") format("woff2");unicode-range:U+4E00;}'
+	. '@font-face{font-family:"wenfeng-xxzt";font-weight:400;src:url("https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/wide.woff2") format("woff2");unicode-range:U+4E00-9FFF;}';
+$wide_faces = WPFonts_Library::faces_from_css( $wide, 'wenfeng-xxzt' );
+$assert( 1 === count( $wide_faces ), 'a wider slice did not collapse' );
+$assert( false !== strpos( $wide_faces[0]['src'], 'wide.woff2' ), 'the wider unicode-range was not the representative' );
+$assert( 'U+4E00-9FFF' === $wide_faces[0]['unicodeRange'], 'the representative lost its range' );
+$full = '@font-face{font-family:"wenfeng-xxzt";font-weight:normal;src:url("https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/full.woff2") format("woff2");}'
+	. '@font-face{font-family:"wenfeng-xxzt";font-weight:400;src:url("https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/0.woff2") format("woff2");unicode-range:U+4E00;}';
+$full_faces = WPFonts_Library::faces_from_css( $full, 'wenfeng-xxzt' );
+$assert( 1 === count( $full_faces ), 'normal and 400 stayed as two rows' );
+$assert( false !== strpos( $full_faces[0]['src'], 'full.woff2' ), 'a file without unicode-range lost to a slice' );
+$assert( ! isset( $full_faces[0]['unicodeRange'] ), 'the full file picked up a slice range' );
+$packed = WPFonts_Library::family_definition(
+	array(
+		'id'      => 'wenfeng-xxzt',
+		'name'    => '文风·玄宗体',
+		'family'  => 'wenfeng-xxzt',
+		'enabled' => 1,
+		'preview' => 'https://cdn.example.test/previews/xxzt.svg',
+	),
+	$slice
+);
+$assert( is_array( $packed ) && 'https://cdn.example.test/previews/xxzt.svg' === $packed['font_family_settings']['preview'], 'pack preview URL was ignored' );
+$noted = WPFonts_Library::describe_packages( array( $xxzt_family ), true );
+$assert( false !== strpos( $noted['description'], '本包按字符切片托管，前台会自动按需加载；字体库里每个字重只显示一条即可。' ), 'sliced collection lost the install note' );
+$plain_args = WPFonts_Library::describe_packages( array( $xxzt_family ), false );
+$assert( '本站已启用的文风字体包。关闭或删除后，全站样式里也不再出现。' === $plain_args['description'], 'unsliced collection description changed' );
+$packages_src = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-packages.php' );
+$assert( false !== strpos( $packages_src, "\$url = \$base . \$package['id'] . '/local.css';" ), 'package runtime stopped loading local.css' );
+$assert( false === strpos( $packages_src, 'faces_from_css' ), 'package runtime started copying font library faces' );
 $xxzt_list = WPFonts_Library::package_families(
 	array(
 		array(

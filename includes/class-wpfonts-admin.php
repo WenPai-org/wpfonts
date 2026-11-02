@@ -107,6 +107,7 @@ class WPFonts_Admin {
 					'nonce'   => wp_create_nonce( 'wpfonts_catalog' ),
 				)
 			);
+			self::enqueue_catalog_glyphs();
 		}
 		if ( 'packages' === $tab ) {
 			WPFonts_Packages::enqueue_admin_previews();
@@ -196,7 +197,7 @@ class WPFonts_Admin {
 		}
 		wp_send_json_success(
 			array(
-				'fonts'     => $result['fonts'],
+				'fonts'     => self::annotate_catalog_fonts( $result['fonts'], WPFonts_Settings::get() ),
 				'page'      => $result['page'],
 				'pageTotal' => $result['pageTotal'],
 				'total'     => $result['total'],
@@ -214,6 +215,7 @@ class WPFonts_Admin {
 	private static function send_refresh_result( array $result ) {
 		$messages = self::catalog_messages();
 		$fonts    = ( isset( $result['fonts'] ) && is_array( $result['fonts'] ) ) ? $result['fonts'] : array();
+		$fonts    = self::annotate_catalog_fonts( $fonts, WPFonts_Settings::get() );
 		$fresh    = ! empty( $result['ok'] ) && empty( $result['stale'] ) && empty( $result['cooling'] );
 		if ( $fresh ) {
 			wp_send_json_success(
@@ -1138,6 +1140,7 @@ class WPFonts_Admin {
 		$messages = self::catalog_messages();
 		$result   = WPFonts_Catalog::read( 1, '' );
 		$fonts    = ( ! empty( $result['ok'] ) && isset( $result['fonts'] ) && is_array( $result['fonts'] ) ) ? $result['fonts'] : array();
+		$fonts    = self::annotate_catalog_fonts( $fonts, $settings );
 		$failed   = empty( $result['ok'] );
 		$family   = isset( $settings['family'] ) ? (string) $settings['family'] : '';
 		$selected = array();
@@ -1173,7 +1176,7 @@ class WPFonts_Admin {
 		echo '<p class="hint" id="wpfonts-catalog-note">' . esc_html( $messages['note'] ) . '</p>';
 		echo '<p><button type="button" class="btn btn-secondary" id="wpfonts-catalog-refresh">' . esc_html( $messages['refresh'] ) . '</button></p>';
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
-		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '">';
+		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '" data-glyph="' . esc_attr__( '字形预览', 'wpfonts' ) . '" data-glyph-sample="' . esc_attr__( '永和九年', 'wpfonts' ) . '">';
 		if ( $failed ) {
 			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['missing'] ) . '</p>';
 		} elseif ( array() === $fonts ) {
@@ -1189,10 +1192,7 @@ class WPFonts_Admin {
 		foreach ( $fonts as $font ) {
 			$id = $font['fontFamily'];
 			$on = in_array( $id, $selected, true );
-			echo '<label class="choice' . ( $on ? ' is-on' : '' ) . '">';
-			echo '<input type="checkbox" name="wpfonts_settings[families][]" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
-			echo '<span><span class="t">' . esc_html( $font['name'] ) . '</span><span class="d">' . esc_html( $id ) . '</span></span>';
-			echo '</label>';
+			self::render_catalog_choice( $font, $on );
 		}
 		echo '</div>';
 		echo '<p class="hint" id="wpfonts-catalog-scope" hidden>' . esc_html( $messages['loaded'] ) . '</p>';
@@ -1204,6 +1204,127 @@ class WPFonts_Admin {
 		echo $json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_json_encode() hex-encodes tags and quotes.
 		echo '</script>';
 		echo '</div></div></div>';
+	}
+
+	/**
+	 * One catalog checkbox. A known CSS face paints a glyph sample.
+	 *
+	 * @param array $font Catalog row. May include cssFace and cssUrl.
+	 * @param bool  $on   Whether the family is selected.
+	 * @return void
+	 */
+	private static function render_catalog_choice( array $font, $on ) {
+		$id      = isset( $font['fontFamily'] ) ? (string) $font['fontFamily'] : '';
+		$name    = isset( $font['name'] ) ? (string) $font['name'] : $id;
+		$css     = isset( $font['cssFace'] ) ? (string) $font['cssFace'] : '';
+		$url     = isset( $font['cssUrl'] ) ? (string) $font['cssUrl'] : '';
+		$style   = self::glyph_family_style( $css );
+		$has_css = '' !== $style;
+		echo '<label class="choice' . ( $on ? ' is-on' : '' ) . '"';
+		if ( $has_css ) {
+			echo ' data-css-face="' . esc_attr( $css ) . '"';
+		}
+		if ( '' !== $url ) {
+			echo ' data-css-url="' . esc_attr( $url ) . '"';
+		}
+		echo '>';
+		echo '<input type="checkbox" name="wpfonts_settings[families][]" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
+		echo '<span>';
+		echo '<span class="t wpfonts-glyph"';
+		if ( $has_css ) {
+			echo ' style="' . esc_attr( $style ) . '"';
+		}
+		echo '>' . esc_html( $name ) . '</span>';
+		echo '<span class="d">' . esc_html( $id ) . '</span>';
+		if ( $has_css ) {
+			echo '<span class="meta wpfonts-glyph-label">' . esc_html__( '字形预览', 'wpfonts' ) . '</span>';
+			echo '<span class="wpfonts-glyph-sample wpfonts-glyph" style="' . esc_attr( $style ) . '">' . esc_html__( '永和九年', 'wpfonts' ) . '</span>';
+		}
+		echo '</span></label>';
+	}
+
+	/**
+	 * Attach a confirmed CSS face, and the public stylesheet URL, to catalog rows.
+	 *
+	 * cssFace is set only after this site has already read that stylesheet.
+	 * cssUrl is the allowlisted public address. The browser may use it to
+	 * learn a face that is not confirmed yet. The API key is not included.
+	 *
+	 * @param array $fonts    Catalog rows.
+	 * @param array $settings Public settings.
+	 * @return array<int,array<string,string>>
+	 */
+	private static function annotate_catalog_fonts( array $fonts, array $settings ) {
+		$map = array();
+		if ( class_exists( 'WPFonts_Settings', false ) ) {
+			foreach ( WPFonts_Settings::confirmed_faces( $settings ) as $face ) {
+				if ( '' !== $face['css_face'] ) {
+					$map[ $face['family'] ] = $face['css_face'];
+				}
+			}
+		}
+		$out = array();
+		foreach ( $fonts as $font ) {
+			if ( ! is_array( $font ) || empty( $font['fontFamily'] ) ) {
+				continue;
+			}
+			$token = (string) $font['fontFamily'];
+			$row   = array(
+				'name'       => isset( $font['name'] ) ? (string) $font['name'] : $token,
+				'fontFamily' => $token,
+			);
+			if ( isset( $map[ $token ] ) ) {
+				$row['cssFace'] = $map[ $token ];
+			}
+			if ( class_exists( 'WPFonts_Link', false ) ) {
+				$url = WPFonts_Link::family_stylesheet_url( $settings, $token, isset( $settings['subset'] ) ? $settings['subset'] : '' );
+				if ( '' !== $url && WPFonts_Link::is_allowlisted( $url ) ) {
+					$row['cssUrl'] = $url;
+				}
+			}
+			$out[] = $row;
+		}
+		return $out;
+	}
+
+	/**
+	 * Inline font-family for a confirmed CSS face, or empty.
+	 *
+	 * @param string $face CSS font-family name.
+	 * @return string
+	 */
+	private static function glyph_family_style( $face ) {
+		if ( ! class_exists( 'WPFonts_Library', false ) ) {
+			return '';
+		}
+		$stack = WPFonts_Library::css_stack( $face );
+		if ( '' === $stack ) {
+			return '';
+		}
+		return 'font-family: ' . $stack;
+	}
+
+	/**
+	 * Load confirmed 文风云 stylesheets so the catalog sample can use them.
+	 *
+	 * Only faces this site has already confirmed. Each URL is allowlisted.
+	 *
+	 * @return void
+	 */
+	private static function enqueue_catalog_glyphs() {
+		if ( ! function_exists( 'wp_enqueue_style' ) || ! class_exists( 'WPFonts_Settings', false ) || ! class_exists( 'WPFonts_Link', false ) ) {
+			return;
+		}
+		$settings = WPFonts_Settings::get();
+		$seen     = array();
+		foreach ( WPFonts_Settings::confirmed_faces( $settings ) as $face ) {
+			$url = WPFonts_Link::family_stylesheet_url( $settings, $face['family'], $face['subset'] );
+			if ( '' === $url || ! WPFonts_Link::is_allowlisted( $url ) || isset( $seen[ $url ] ) ) {
+				continue;
+			}
+			$seen[ $url ] = true;
+			wp_enqueue_style( 'wpfonts-catalog-' . $face['family'], $url, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
+		}
 	}
 
 	/**
@@ -1351,6 +1472,7 @@ class WPFonts_Admin {
 		if ( '' === $snippet ) {
 			return;
 		}
+		echo '<p class="meta">' . esc_html__( '链接文字（不加载字体）', 'wpfonts' ) . '</p>';
 		echo '<div class="wenpai-code"><code>' . esc_html( $snippet ) . '</code></div>';
 	}
 
@@ -1630,13 +1752,23 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function render_package_preview( array $package ) {
-		$family = isset( $package['family'] ) ? (string) $package['family'] : '';
-		$health = WPFonts_Packages::health( $package );
-		$ready  = '' !== $family && 'ok' === $health['code'];
-		echo '<div class="wpfonts-preview">';
-		echo '<p class="meta">' . esc_html__( '预览', 'wpfonts' ) . '</p>';
+		$family   = isset( $package['family'] ) ? (string) $package['family'] : '';
+		$id       = isset( $package['id'] ) ? (string) $package['id'] : '';
+		$declared = WPFonts_Packages::installed_css_family( $id );
+		$plain    = WPFonts_Library::plain_family( '' !== $declared ? $declared : $family );
+		$health   = WPFonts_Packages::health( $package );
+		$ready    = '' !== $plain && 'ok' === $health['code'];
+		$sliced   = class_exists( 'WPFonts_Library', false ) && WPFonts_Library::package_is_sliced( $id );
+		echo '<div class="wpfonts-preview"';
+		if ( '' !== $plain ) {
+			echo ' data-family="' . esc_attr( $plain ) . '"';
+		}
+		echo '>';
+		if ( $sliced ) {
+			echo '<p class="hint">' . esc_html__( '本包按字符切片托管，前台会自动按需加载；字体库里每个字重只显示一条即可。', 'wpfonts' ) . '</p>';
+		}
 		if ( 'unknown' === $health['code'] ) {
-			$ready = '' !== $family && self::package_css_ready( $package['id'] );
+			$ready = '' !== $plain && self::package_css_ready( $id );
 		}
 		if ( ! $ready ) {
 			$reason = ( '' !== $health['reason'] ) ? $health['reason'] : __( '预览暂时不可用。', 'wpfonts' );
@@ -1644,11 +1776,13 @@ class WPFonts_Admin {
 			echo '</div>';
 			return;
 		}
-		$stack = "'" . str_replace( array( '\\', "'", '"', ';', '{', '}', '<', '>' ), '', $family ) . "', system-ui, sans-serif";
-		echo '<p class="wpfonts-preview-zh" style="font-family: ' . esc_attr( $stack ) . '">' . esc_html__( '永和九年，岁在癸丑。暮春之初，会于会稽山阴之兰亭。', 'wpfonts' ) . '</p>';
-		echo '<p class="wpfonts-preview-en" style="font-family: ' . esc_attr( $stack ) . '">The quick brown fox jumps over the lazy dog.</p>';
-		echo '<p class="wpfonts-preview-num" style="font-family: ' . esc_attr( $stack ) . '">0123456789</p>';
-		echo '</div>';
+		$style = self::glyph_family_style( $plain );
+		echo '<p class="meta">' . esc_html__( '字形预览', 'wpfonts' ) . '</p>';
+		echo '<div class="wpfonts-glyph" style="' . esc_attr( $style ) . '">';
+		echo '<p class="wpfonts-preview-zh">' . esc_html__( '永和九年，岁在癸丑。暮春之初，会于会稽山阴之兰亭。', 'wpfonts' ) . '</p>';
+		echo '<p class="wpfonts-preview-en">The quick brown fox jumps over the lazy dog.</p>';
+		echo '<p class="wpfonts-preview-num">0123456789</p>';
+		echo '</div></div>';
 	}
 
 	/**

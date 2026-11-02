@@ -1,8 +1,8 @@
 # 2.0.0 发布闸门
 
-Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.12`。
+Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.13`。
 
-Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.12`.
+Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.13`.
 
 ## 还要做
 
@@ -14,10 +14,11 @@ Release gate before Feng says ship the stable release. This branch does not tag 
 - [x] **字体包钩子和命令行。** `2.0.0-rc.9` 在安装或替换成功后发出 `wpfonts_package_installed`。`wpfonts_package_deleted` 在删除目录之前发出，目录当时还在。命令是 `wp fonts package install`、`wp fonts package delete`、`wp fonts package list`。
 - [x] **中文回退。** `2.0.0-rc.10` 在设置里选正文、标题和中文回退。键是 `cjk_body`、`cjk_heading`、`cjk_fallback`。中文回退接在生成出来的西文栈后面，包括带 `!important` 的 `.has-*-font-family`。样式句柄 `wpfonts-cjk`，并过滤 `wp_get_global_stylesheet`。不改主题 JSON，也不把这条路交给全站样式同步。
 - [x] **字体包显示名。** `2.0.0-rc.12` 字体库、字体包列表和块侧栏显示「文风·」加字体原名，例如「文风·玄宗体」。包 id 和 CSS 的 `font-family` 仍是 `wenfeng-*`。已经装好、名字仍是 `wenfeng-*`、`WF-*` 或 `windfonts-*` 的，从 `local.css` 和字体目录改显示名。不改 id，也不重写 CSS。
+- [x] **切片与预览。** `2.0.0-rc.13` 字体库每个字重只列一条。前台仍加载完整 `local.css`。「文风字体」带预览图；没有包内 `preview` 时用显示名 SVG。字体包页和已确认的文风云显示字形预览。样式链接标明「链接文字（不加载字体）」。
 - [x] **文档 cocobook 已对齐 rc.8。** 不挡这次闸门。本支只补仓库里的 `readme.txt` / `README.md` 草稿和这份清单。
 
 ## 这一支不要做
 
 - 不要把 readme 的 Stable tag 改成 `2.0.0`。
-- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.12`，不要写成 `2.0.0`。
+- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.13`，不要写成 `2.0.0`。
 - 不要打 `2.0.0` git 标签。

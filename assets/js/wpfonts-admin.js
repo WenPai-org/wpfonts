@@ -86,6 +86,186 @@
 	var refreshing = false;
 	var selected = {};
 	var holds = document.getElementById("wpfonts-family-holds");
+	var glyphQueue = [];
+	var glyphActive = 0;
+	var glyphSeen = {};
+	var glyphFaces = {};
+	var glyphWait = {};
+	var glyphObserver = null;
+	var glyphLabel = root.getAttribute("data-glyph") || "字形预览";
+	var glyphSample = root.getAttribute("data-glyph-sample") || "永和九年";
+
+	function safeFace(value) {
+		return String(value || "").replace(/["'\\<>{};]/g, "").replace(/^\s+|\s+$/g, "");
+	}
+
+	function allowedCss(url) {
+		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/api\/css\?family=wenfeng-[a-z0-9-]+&subset=(?:en|zh-common|zh|full)$/.test(url || "");
+	}
+
+	function ensureCssLink(url) {
+		if (!allowedCss(url) || !document.head) {
+			return;
+		}
+		var existing = document.querySelectorAll("link[data-wpfonts-css]");
+		var i;
+		for (i = 0; i < existing.length; i++) {
+			if (existing[i].getAttribute("data-wpfonts-css") === url) {
+				return;
+			}
+		}
+		var link = document.createElement("link");
+		link.rel = "stylesheet";
+		link.href = url;
+		link.setAttribute("data-wpfonts-css", url);
+		document.head.appendChild(link);
+	}
+
+	function markGlyph(label, face) {
+		face = safeFace(face);
+		if (!label || !face) {
+			return;
+		}
+		var stack = '"' + face + '", sans-serif';
+		label.setAttribute("data-css-face", face);
+		var nodes = label.querySelectorAll(".wpfonts-glyph");
+		var i;
+		for (i = 0; i < nodes.length; i++) {
+			nodes[i].style.fontFamily = stack;
+		}
+		var text = label.querySelector("span");
+		if (!text || text.querySelector(".wpfonts-glyph-sample")) {
+			return;
+		}
+		var note = document.createElement("span");
+		note.className = "meta wpfonts-glyph-label";
+		note.textContent = glyphLabel;
+		var sample = document.createElement("span");
+		sample.className = "wpfonts-glyph-sample wpfonts-glyph";
+		sample.style.fontFamily = stack;
+		sample.textContent = glyphSample;
+		text.appendChild(note);
+		text.appendChild(sample);
+	}
+
+	function loadGlyphCss(url) {
+		var controller = window.AbortController ? new window.AbortController() : null;
+		var timer = window.setTimeout(function () {
+			if (controller) {
+				controller.abort();
+			}
+		}, 5000);
+		var opts = {
+			credentials: "omit",
+			method: "GET"
+		};
+		if (controller) {
+			opts.signal = controller.signal;
+		}
+		window.fetch(url, opts).then(function (response) {
+			if (!response.ok) {
+				throw new Error("css");
+			}
+			return response.text();
+		}).then(function (css) {
+			var match = /@font-face\s*\{[^}]*font-family\s*:\s*([^;}]+)/i.exec(css || "");
+			var face = match ? safeFace(match[1]) : "";
+			if (!face) {
+				return;
+			}
+			glyphFaces[url] = face;
+			ensureCssLink(url);
+			var waiting = glyphWait[url] || [];
+			var i;
+			for (i = 0; i < waiting.length; i++) {
+				markGlyph(waiting[i], face);
+			}
+			glyphWait[url] = [];
+		}).catch(function () {
+			glyphFaces[url] = "";
+		}).then(function () {
+			window.clearTimeout(timer);
+			glyphActive--;
+			pumpGlyphs();
+		});
+	}
+
+	function pumpGlyphs() {
+		while (glyphActive < 2 && glyphQueue.length) {
+			var url = glyphQueue.shift();
+			if (!url || !allowedCss(url) || !window.fetch) {
+				continue;
+			}
+			glyphActive++;
+			loadGlyphCss(url);
+		}
+	}
+
+	function queueGlyph(label) {
+		var url = label.getAttribute("data-css-url") || "";
+		if (!allowedCss(url)) {
+			return;
+		}
+		if (glyphFaces[url]) {
+			ensureCssLink(url);
+			markGlyph(label, glyphFaces[url]);
+			return;
+		}
+		if (!glyphWait[url]) {
+			glyphWait[url] = [];
+		}
+		glyphWait[url].push(label);
+		if (glyphSeen[url]) {
+			return;
+		}
+		glyphSeen[url] = true;
+		glyphQueue.push(url);
+		pumpGlyphs();
+	}
+
+	function watchGlyph(label) {
+		if (!label) {
+			return;
+		}
+		var face = label.getAttribute("data-css-face") || "";
+		var url = label.getAttribute("data-css-url") || "";
+		if (face) {
+			if (allowedCss(url)) {
+				ensureCssLink(url);
+			}
+			markGlyph(label, face);
+			return;
+		}
+		if (!allowedCss(url)) {
+			return;
+		}
+		if (glyphObserver) {
+			glyphObserver.observe(label);
+			return;
+		}
+		queueGlyph(label);
+	}
+
+	function watchGlyphs() {
+		var labels = list.querySelectorAll(".choice");
+		var i;
+		for (i = 0; i < labels.length; i++) {
+			watchGlyph(labels[i]);
+		}
+	}
+
+	if (window.IntersectionObserver) {
+		glyphObserver = new window.IntersectionObserver(function (entries) {
+			var i;
+			for (i = 0; i < entries.length; i++) {
+				if (!entries[i].isIntersecting) {
+					continue;
+				}
+				glyphObserver.unobserve(entries[i].target);
+				queueGlyph(entries[i].target);
+			}
+		}, { root: list, rootMargin: "80px" });
+	}
 
 	function trim(value) {
 		return (value || "").replace(/^\s+|\s+$/g, "");
@@ -166,6 +346,12 @@
 			}
 			var label = document.createElement("label");
 			label.className = "choice" + (selected[row.fontFamily] ? " is-on" : "");
+			if (row.cssFace) {
+				label.setAttribute("data-css-face", row.cssFace);
+			}
+			if (row.cssUrl) {
+				label.setAttribute("data-css-url", row.cssUrl);
+			}
 			var input = document.createElement("input");
 			input.type = "checkbox";
 			input.name = "wpfonts_settings[families][]";
@@ -173,7 +359,7 @@
 			input.checked = !!selected[row.fontFamily];
 			var text = document.createElement("span");
 			var title = document.createElement("span");
-			title.className = "t";
+			title.className = "t wpfonts-glyph";
 			title.textContent = row.name || row.fontFamily;
 			var meta = document.createElement("span");
 			meta.className = "d";
@@ -182,7 +368,14 @@
 			text.appendChild(meta);
 			label.appendChild(input);
 			label.appendChild(text);
+			if (row.cssFace) {
+				markGlyph(label, row.cssFace);
+				if (row.cssUrl) {
+					ensureCssLink(row.cssUrl);
+				}
+			}
 			list.appendChild(label);
+			watchGlyph(label);
 		}
 		if (scope) {
 			scope.hidden = !fromLoadedPage;
@@ -224,10 +417,17 @@
 			if (!input || !input.value) {
 				continue;
 			}
-			loaded.push({
+			var stored = {
 				name: title ? title.textContent : input.value,
 				fontFamily: input.value
-			});
+			};
+			if (existing[i].getAttribute("data-css-face")) {
+				stored.cssFace = existing[i].getAttribute("data-css-face");
+			}
+			if (existing[i].getAttribute("data-css-url")) {
+				stored.cssUrl = existing[i].getAttribute("data-css-url");
+			}
+			loaded.push(stored);
 		}
 	}
 
@@ -390,4 +590,5 @@
 	readLoaded();
 	rememberSelected();
 	paint();
+	watchGlyphs();
 })();
