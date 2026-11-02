@@ -3,123 +3,139 @@
   "font_families": [
     {
       "font_family_settings": {
-        "fontFamily": "system-ui, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif",
-        "slug": "system-ui",
+        "fontFamily": "system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', sans-serif",
+        "slug": "cn-system-ui",
         "name": "系统默认"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'SimSun', 'Songti SC', 'Noto Serif CJK SC', serif",
-        "slug": "traditional-serif",
-        "name": "传统衬线"
+        "fontFamily": "'Songti SC', STSong, SimSun, 'Noto Serif CJK SC', serif",
+        "slug": "cn-traditional-serif",
+        "name": "宋体"
       },
       "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'STKaiti', 'KaiTi', 'BiauKai', cursive",
-        "slug": "calligraphic",
-        "name": "书法手写"
+        "fontFamily": "'Kaiti SC', STKaiti, KaiTi, BiauKai, 'AR PL UKai CN', cursive",
+        "slug": "cn-calligraphic",
+        "name": "楷体"
       },
       "categories": ["handwriting"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Microsoft JhengHei', 'PingFang TC', 'Hiragino Sans CNS', 'WenQuanYi Zen Hei', sans-serif",
-        "slug": "humanist",
-        "name": "人文无衬线"
+        "fontFamily": "'PingFang TC', 'PingFang HK', 'Microsoft JhengHei', 'Heiti TC', 'Noto Sans CJK TC', 'WenQuanYi Zen Hei', sans-serif",
+        "slug": "cn-humanist",
+        "name": "繁体黑体"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Droid Sans Fallback', 'Source Han Sans', 'Noto Sans CJK SC', sans-serif",
-        "slug": "modern-sans",
-        "name": "现代黑体"
+        "fontFamily": "'Heiti SC', SimHei, STHeiti, 'Noto Sans CJK SC', 'WenQuanYi Zen Hei', sans-serif",
+        "slug": "cn-modern-sans",
+        "name": "黑体"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'FangSong', 'STFangsong', 'AR PL UKai CN', cursive",
-        "slug": "formal-script",
-        "name": "仿宋体"
+        "fontFamily": "FangSong, STFangsong, 'Songti SC', serif",
+        "slug": "cn-formal-script",
+        "name": "仿宋"
       },
       "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'NSimSun', 'SimSun-ExtB', 'MingLiU', 'PMingLiU', serif",
-        "slug": "ming-style",
+        "fontFamily": "PMingLiU, MingLiU, 'Songti TC', 'Noto Serif CJK TC', serif",
+        "slug": "cn-ming-style",
         "name": "明体"
       },
       "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Microsoft YaHei UI', 'Segoe UI', 'HarmonyOS Sans SC', sans-serif",
-        "slug": "ui-sans",
-        "name": "界面无衬线"
+        "fontFamily": "'Microsoft YaHei UI', 'PingFang SC', DengXian, 'Noto Sans CJK SC', 'HarmonyOS Sans SC', sans-serif",
+        "slug": "cn-ui-sans",
+        "name": "界面黑体"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Microsoft YaHei Mono', 'WenQuanYi Micro Hei Mono', 'Sarasa Mono SC', monospace",
-        "slug": "monospace-cjk",
-        "name": "等宽字体"
+        "fontFamily": "ui-monospace, 'Noto Sans Mono CJK SC', 'WenQuanYi Zen Hei Mono', monospace",
+        "slug": "cn-monospace-cjk",
+        "name": "等宽"
       },
       "categories": ["monospace"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'YouYuan', 'DFKai-SB', 'KaiTi_GB2312', cursive",
-        "slug": "classic-calligraphy",
-        "name": "古典书法"
-      },
-      "categories": ["handwriting"]
-    },
-    {
-      "font_family_settings": {
-        "fontFamily": "'LiSu', 'STLiti', 'Hanyi Senty Candy', fantasy",
-        "slug": "decorative",
-        "name": "艺术字体"
-      },
-      "categories": ["handwriting"]
-    },
-    {
-      "font_family_settings": {
-        "fontFamily": "'STXihei', 'Microsoft JhengHei UI', 'WenQuanYi Zen Hei Sharp', sans-serif",
-        "slug": "sharp-sans",
-        "name": "锐利黑体"
+        "fontFamily": "'Yuanti SC', 'Yuanti TC', YouYuan, sans-serif",
+        "slug": "cn-classic-calligraphy",
+        "name": "圆体"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'STSong', 'AR PL UMing CN', 'AR PL UKai HK', serif",
-        "slug": "song-style",
-        "name": "宋体变体"
+        "fontFamily": "LiSu, STLiti, 'Baoli SC', fantasy",
+        "slug": "cn-decorative",
+        "name": "隶书"
+      },
+      "categories": ["handwriting"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "STXihei, 'Microsoft YaHei', 'PingFang SC', 'WenQuanYi Zen Hei Sharp', sans-serif",
+        "slug": "cn-sharp-sans",
+        "name": "细黑体"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Songti TC', STSong, PMingLiU, 'Noto Serif CJK TC', serif",
+        "slug": "cn-song-style",
+        "name": "繁体宋体"
       },
       "categories": ["serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'Alibaba PuHuiTi', 'HarmonyOS Sans SC', 'MiSans', sans-serif",
-        "slug": "brand-sans",
-        "name": "品牌黑体"
+        "fontFamily": "'Hiragino Sans GB', 'Hiragino Sans CNS', 'Heiti SC', sans-serif",
+        "slug": "cn-brand-sans",
+        "name": "冬青黑体"
       },
       "categories": ["sans-serif"]
     },
     {
       "font_family_settings": {
-        "fontFamily": "'HYQiHei', 'Source Han Serif SC', 'Adobe Heiti Std', sans-serif",
-        "slug": "compact-sans",
-        "name": "紧凑黑体"
+        "fontFamily": "'Microsoft JhengHei UI', 'PingFang TC', 'Heiti TC', sans-serif",
+        "slug": "cn-compact-sans",
+        "name": "繁体界面"
       },
       "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "DengXian, 'Microsoft YaHei UI', 'PingFang SC', sans-serif",
+        "slug": "cn-dengxian",
+        "name": "等线"
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "fontFamily": "'Kaiti TC', BiauKai, 'DFKai-SB', KaiTi, cursive",
+        "slug": "cn-kaiti-tc",
+        "name": "繁体楷体"
+      },
+      "categories": ["handwriting"]
     }
   ]
 }

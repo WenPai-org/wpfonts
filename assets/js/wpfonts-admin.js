@@ -1,0 +1,393 @@
+(function () {
+	var input = document.getElementById("wpfonts-package-file");
+	var zone = document.getElementById("wpfonts-install-zone");
+	var form = document.getElementById("wpfonts-install-form");
+	var status = document.getElementById("wpfonts-install-status");
+	if (!input || !zone || !form) {
+		return;
+	}
+
+	function isZip(file) {
+		return !!(file && /\.zip$/i.test(file.name));
+	}
+
+	var busy = false;
+
+	function install(file, fromInput) {
+		if (busy || !isZip(file)) {
+			return;
+		}
+		busy = true;
+		if (!fromInput && typeof DataTransfer !== "undefined") {
+			var list = new DataTransfer();
+			list.items.add(file);
+			input.files = list.files;
+		}
+		if (status) {
+			status.hidden = false;
+			status.textContent = status.getAttribute("data-busy") || "";
+		}
+		zone.classList.add("is-busy");
+		form.submit();
+	}
+
+	input.addEventListener("click", function (event) {
+		event.stopPropagation();
+	});
+
+	input.addEventListener("change", function () {
+		install(input.files && input.files[0], true);
+	});
+
+	zone.addEventListener("click", function () {
+		input.click();
+	});
+
+	zone.addEventListener("dragover", function (event) {
+		event.preventDefault();
+		zone.classList.add("is-drag");
+	});
+
+	zone.addEventListener("dragleave", function (event) {
+		if (event.relatedTarget && zone.contains(event.relatedTarget)) {
+			return;
+		}
+		zone.classList.remove("is-drag");
+	});
+
+	zone.addEventListener("drop", function (event) {
+		event.preventDefault();
+		zone.classList.remove("is-drag");
+		var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+		install(file, false);
+	});
+})();
+
+(function () {
+	var root = document.getElementById("wpfonts-catalog");
+	var search = document.getElementById("wpfonts-catalog-search");
+	var family = document.getElementById("wpfonts-family");
+	var list = document.getElementById("wpfonts-catalog-list");
+	var status = document.getElementById("wpfonts-catalog-status");
+	var scope = document.getElementById("wpfonts-catalog-scope");
+	if (!root || !list || !family) {
+		return;
+	}
+
+	var cfg = window.wpfontsCatalog || {};
+	var loadingText = root.getAttribute("data-loading") || "";
+	var failText = root.getAttribute("data-fail") || "";
+	var emptyText = root.getAttribute("data-empty") || "";
+	var updatingText = root.getAttribute("data-updating") || "";
+	var updatedText = root.getAttribute("data-updated") || "";
+	var staleText = root.getAttribute("data-stale") || "";
+	var refreshBtn = document.getElementById("wpfonts-catalog-refresh");
+	var loaded = [];
+	var refreshing = false;
+	var selected = {};
+	var holds = document.getElementById("wpfonts-family-holds");
+
+	function trim(value) {
+		return (value || "").replace(/^\s+|\s+$/g, "");
+	}
+
+	function rememberSelected() {
+		var nodes = document.querySelectorAll('input[name="wpfonts_settings[families][]"]');
+		var i;
+		for (i = 0; i < nodes.length; i++) {
+			if (nodes[i].type === "hidden" || nodes[i].checked) {
+				selected[nodes[i].value] = true;
+			}
+		}
+	}
+
+	function syncHolds() {
+		if (!holds) {
+			return;
+		}
+		holds.textContent = "";
+		var visible = {};
+		var boxes = list.querySelectorAll('input[type="checkbox"]');
+		var i;
+		for (i = 0; i < boxes.length; i++) {
+			visible[boxes[i].value] = true;
+		}
+		var token;
+		for (token in selected) {
+			if (!Object.prototype.hasOwnProperty.call(selected, token) || !selected[token] || visible[token]) {
+				continue;
+			}
+			var input = document.createElement("input");
+			input.type = "hidden";
+			input.name = "wpfonts_settings[families][]";
+			input.value = token;
+			holds.appendChild(input);
+		}
+	}
+
+	function paint() {
+		var boxes = list.querySelectorAll('input[type="checkbox"]');
+		var i;
+		for (i = 0; i < boxes.length; i++) {
+			var on = !!selected[boxes[i].value];
+			boxes[i].checked = on;
+			var label = boxes[i].closest ? boxes[i].closest(".choice") : null;
+			if (label) {
+				label.classList.toggle("is-on", on);
+			}
+		}
+		syncHolds();
+	}
+
+	function setStatus(text, show) {
+		if (!status) {
+			return;
+		}
+		status.hidden = !show;
+		if (show) {
+			status.textContent = text;
+		}
+	}
+
+	function render(rows, fromLoadedPage) {
+		list.textContent = "";
+		if (!rows || !rows.length) {
+			list.hidden = true;
+			if (scope) {
+				scope.hidden = true;
+			}
+			return;
+		}
+		list.hidden = false;
+		for (var i = 0; i < rows.length; i++) {
+			var row = rows[i];
+			if (!row || !row.fontFamily) {
+				continue;
+			}
+			var label = document.createElement("label");
+			label.className = "choice" + (selected[row.fontFamily] ? " is-on" : "");
+			var input = document.createElement("input");
+			input.type = "checkbox";
+			input.name = "wpfonts_settings[families][]";
+			input.value = row.fontFamily;
+			input.checked = !!selected[row.fontFamily];
+			var text = document.createElement("span");
+			var title = document.createElement("span");
+			title.className = "t";
+			title.textContent = row.name || row.fontFamily;
+			var meta = document.createElement("span");
+			meta.className = "d";
+			meta.textContent = row.fontFamily;
+			text.appendChild(title);
+			text.appendChild(meta);
+			label.appendChild(input);
+			label.appendChild(text);
+			list.appendChild(label);
+		}
+		if (scope) {
+			scope.hidden = !fromLoadedPage;
+		}
+		syncHolds();
+	}
+
+	function filterLoaded(query) {
+		var needle = query.toLowerCase();
+		var rows = [];
+		for (var i = 0; i < loaded.length; i++) {
+			var name = (loaded[i].name || "").toLowerCase();
+			var slug = (loaded[i].fontFamily || "").toLowerCase();
+			if (name.indexOf(needle) !== -1 || slug.indexOf(needle) !== -1) {
+				rows.push(loaded[i]);
+			}
+		}
+		return rows;
+	}
+
+	function readLoaded() {
+		var node = document.getElementById("wpfonts-catalog-data");
+		if (node && node.textContent) {
+			try {
+				var parsed = JSON.parse(node.textContent);
+				if (parsed && parsed.length) {
+					loaded = parsed;
+					return;
+				}
+			} catch (error) {
+				loaded = [];
+			}
+		}
+		var existing = list.querySelectorAll(".choice");
+		loaded = [];
+		for (var i = 0; i < existing.length; i++) {
+			var input = existing[i].querySelector("input");
+			var title = existing[i].querySelector(".t");
+			if (!input || !input.value) {
+				continue;
+			}
+			loaded.push({
+				name: title ? title.textContent : input.value,
+				fontFamily: input.value
+			});
+		}
+	}
+
+	function finishRefresh(message, fonts) {
+		refreshing = false;
+		if (refreshBtn) {
+			refreshBtn.disabled = false;
+		}
+		if (fonts && fonts.length) {
+			loaded = fonts;
+		}
+		var query = search ? trim(search.value) : "";
+		var view = query ? filterLoaded(query) : loaded;
+		render(view, !!query && view.length > 0);
+		if (!loaded.length) {
+			list.hidden = true;
+		}
+		setStatus(message, !!message);
+	}
+
+	if (refreshBtn) {
+		refreshBtn.addEventListener("click", function (event) {
+			event.preventDefault();
+			if (refreshing) {
+				return;
+			}
+			refreshing = true;
+			refreshBtn.disabled = true;
+			setStatus(updatingText, true);
+			if (!cfg.ajaxUrl || !cfg.nonce || !window.fetch || !window.FormData) {
+				finishRefresh(loaded.length ? staleText : failText, null);
+				return;
+			}
+			var body = new window.FormData();
+			body.append("action", "wpfonts_catalog");
+			body.append("_ajax_nonce", cfg.nonce);
+			body.append("refresh", "1");
+			window.fetch(cfg.ajaxUrl, {
+				method: "POST",
+				credentials: "same-origin",
+				body: body
+			}).then(function (response) {
+				return response.json();
+			}).then(function (payload) {
+				var data = payload && payload.data ? payload.data : {};
+				var fonts = data && data.fonts;
+				if (payload && payload.success && fonts && fonts.length) {
+					finishRefresh(data.message || updatedText, fonts);
+					return;
+				}
+				if (fonts && fonts.length) {
+					finishRefresh(data.message || staleText, fonts);
+					return;
+				}
+				finishRefresh(loaded.length ? (data.message || staleText) : ((data && data.message) || failText), null);
+			}).catch(function () {
+				finishRefresh(loaded.length ? staleText : failText, null);
+			});
+		});
+	}
+
+	list.addEventListener("change", function (event) {
+		var target = event.target;
+		if (!target || target.name !== "wpfonts_settings[families][]") {
+			return;
+		}
+		if (target.checked) {
+			selected[target.value] = true;
+		} else {
+			delete selected[target.value];
+		}
+		paint();
+	});
+
+	family.addEventListener("input", function () {
+		paint();
+	});
+
+	if (search) {
+		search.addEventListener("keydown", function (event) {
+			if (event.key === "Enter") {
+				event.preventDefault();
+			}
+		});
+		var timer = 0;
+		search.addEventListener("input", function () {
+			var query = trim(search.value);
+			if (timer) {
+				window.clearTimeout(timer);
+			}
+			if (!query) {
+				render(loaded, false);
+				setStatus("", false);
+				return;
+			}
+			var local = filterLoaded(query);
+			if (local.length) {
+				render(local, true);
+				setStatus("", false);
+			} else {
+				list.hidden = true;
+				if (scope) {
+					scope.hidden = true;
+				}
+				setStatus(loadingText, true);
+			}
+			if (!cfg.ajaxUrl || !cfg.nonce || !window.fetch || !window.FormData) {
+				if (!local.length) {
+					setStatus(emptyText || failText, true);
+				}
+				return;
+			}
+			timer = window.setTimeout(function () {
+				var body = new window.FormData();
+				body.append("action", "wpfonts_catalog");
+				body.append("_ajax_nonce", cfg.nonce);
+				body.append("page", "1");
+				body.append("search", query);
+				window.fetch(cfg.ajaxUrl, {
+					method: "POST",
+					credentials: "same-origin",
+					body: body
+				}).then(function (response) {
+					return response.json();
+				}).then(function (payload) {
+					if (trim(search.value) !== query) {
+						return;
+					}
+					var fonts = payload && payload.success && payload.data ? payload.data.fonts : null;
+					if (!fonts) {
+						if (!local.length) {
+							list.hidden = true;
+							setStatus(failText, true);
+						}
+						return;
+					}
+					if (!fonts.length) {
+						list.hidden = true;
+						if (scope) {
+							scope.hidden = true;
+						}
+						setStatus(emptyText, true);
+						return;
+					}
+					render(fonts, false);
+					setStatus("", false);
+				}).catch(function () {
+					if (trim(search.value) !== query) {
+						return;
+					}
+					if (!local.length) {
+						list.hidden = true;
+						setStatus(failText, true);
+					}
+				});
+			}, 400);
+		});
+	}
+
+	readLoaded();
+	rememberSelected();
+	paint();
+})();

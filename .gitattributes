@@ -1,0 +1,6 @@
+/.forgejo export-ignore
+/docs export-ignore
+/tests export-ignore
+/scripts export-ignore
+/.gitattributes export-ignore
+/blueprint.json export-ignore

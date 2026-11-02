@@ -1,91 +1,88 @@
-#, fuzzy
+# Copyright (C) 2026 WPFonts.com
+# This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: WPFonts\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-22 05:59+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Project-Id-Version: WPFonts 1.3.0\n"
+"Report-Msgid-Bugs-To: https://wpcy.com/wpfonts\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
-"Language: \n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Loco https://localise.biz/\n"
-"X-Loco-Version: 2.6.11; wp-6.7.2\n"
-"X-Domain: wpfonts"
+"POT-Creation-Date: 2026-10-31T04:12:55+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: wpfonts\n"
 
-#. Description of the plugin
-msgid ""
-"Add optimized system font stacks for Chinese, English, Japanese, and Korean "
-"to your WordPress Font Library."
-msgstr ""
-
-#: wpfonts.php:35
-msgid "Chinese"
-msgstr ""
-
-#: wpfonts.php:36
-msgid ""
-"Cross-platform Chinese system font stacks. Automatically adapt to "
-"Windows/macOS/Linux fonts."
-msgstr ""
-
-#: wpfonts.php:43
-msgid "English"
-msgstr ""
-
-#: wpfonts.php:30
-msgid "Handwriting"
-msgstr ""
-
-#: wpfonts.php:60
-msgid "Hangul-optimized font stacks for Korean content"
-msgstr ""
-
-#. URI of the plugin
-msgid "https://wenpai.org/plugins/wpfonts"
-msgstr ""
-
-#. Author URI of the plugin
-msgid "https://wpfonts.com"
-msgstr ""
-
-#: wpfonts.php:51
-msgid "Japanese"
-msgstr ""
-
-#: wpfonts.php:52
-msgid "Japanese system font stacks with optimized kana rendering"
-msgstr ""
-
-#: wpfonts.php:59
-msgid "Korean"
-msgstr ""
-
-#: wpfonts.php:26
-msgid "Monospace"
-msgstr ""
-
-#: wpfonts.php:18
-msgid "Sans Serif"
-msgstr ""
-
-#: wpfonts.php:22
-msgid "Serif"
-msgstr ""
-
-#: wpfonts.php:44
-msgid ""
-"Stacks of modern systems fonts, no font files needed. The look will vary on "
-"each system."
-msgstr ""
-
-#. Name of the plugin
+#. Plugin Name of the plugin
+#: wpfonts.php
 msgid "WPFonts"
 msgstr ""
 
+#. Plugin URI of the plugin
+#: wpfonts.php
+msgid "https://wpcy.com/wpfonts"
+msgstr ""
+
+#. Description of the plugin
+#: wpfonts.php
+msgid "Add privacy-friendly system font stacks for Chinese, English, Japanese, and Korean to the WordPress Font Library."
+msgstr ""
+
 #. Author of the plugin
+#: wpfonts.php
 msgid "WPFonts.com"
+msgstr ""
+
+#. Author URI of the plugin
+#: wpfonts.php
+msgid "https://wpcy.com/"
+msgstr ""
+
+#: wpfonts.php:59
+msgid "Sans Serif"
+msgstr ""
+
+#: wpfonts.php:63
+msgid "Serif"
+msgstr ""
+
+#: wpfonts.php:67
+msgid "Monospace"
+msgstr ""
+
+#: wpfonts.php:71
+msgid "Handwriting"
+msgstr ""
+
+#: wpfonts.php:77
+msgid "Chinese"
+msgstr ""
+
+#: wpfonts.php:78
+msgid "Cross-platform Chinese system font stacks. Automatically adapt to Windows/macOS/Linux fonts."
+msgstr ""
+
+#: wpfonts.php:82
+msgid "English"
+msgstr ""
+
+#: wpfonts.php:83
+msgid "Stacks of modern system fonts, no font files needed. The look will vary on each system."
+msgstr ""
+
+#: wpfonts.php:87
+msgid "Japanese"
+msgstr ""
+
+#: wpfonts.php:88
+msgid "Japanese system font stacks with optimized kana rendering."
+msgstr ""
+
+#: wpfonts.php:92
+msgid "Korean"
+msgstr ""
+
+#: wpfonts.php:93
+msgid "Hangul-optimized font stacks for Korean content."
 msgstr ""

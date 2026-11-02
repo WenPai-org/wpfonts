@@ -1,0 +1,11 @@
+.wpfonts-editor-list .components-button.wpfonts-editor-family {
+	display: flex;
+	justify-content: flex-start;
+	width: 100%;
+	margin-bottom: 6px;
+	text-align: left;
+}
+
+.wpfonts-editor-note {
+	margin: 0 0 8px;
+}

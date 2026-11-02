@@ -4,8 +4,8 @@
   "tag": "字体",
   "tagClass": "",
   "icon": "type",
-  "desc": "为 WordPress 带来优雅舒适的中、日、韩网页字体服务。Windfonts 文风字体官方插件。",
-  "landingPage": "/wp-admin/site-editor.php?path=%2Fwp_global_styles",
+  "desc": "系统字体，另可选文风 CDN。",
+  "landingPage": "/wp-admin/options-general.php?page=wpfonts",
   "pluginPath": "wpfonts/wpfonts.php",
   "blogname": "文派字库体验站"
 }
