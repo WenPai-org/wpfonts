@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.18' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.19' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -649,16 +649,12 @@ if ( false !== strpos( $admin_css, 'object-fit: cover' ) ) {
 	fwrite( STDERR, "admin specimen CSS still crops with object-fit: cover.\n" );
 	exit( 1 );
 }
-if ( false === strpos( $packages_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/fontpreview.webp' ) ) {
-	fwrite( STDERR, "package long-text specimen did not use /preview/fontpreview.webp.\n" );
+if ( 1 !== substr_count( $packages_html, 'class="wpfonts-specimen"' ) ) {
+	fwrite( STDERR, "package detail should show one card specimen.\n" );
 	exit( 1 );
 }
-if ( false !== strpos( $packages_html, 'fontPreview.webp' ) || false !== strpos( $packages_html, 'fontPreview.png' ) ) {
-	fwrite( STDERR, "package long-text specimen still requests camelCase fontPreview.\n" );
-	exit( 1 );
-}
-if ( false === strpos( $packages_html, 'data-fallback="https://cn.windfonts.com/fonts-packages/ibmps/preview/fontpreview.png"' ) ) {
-	fwrite( STDERR, "fontpreview did not keep a png fallback.\n" );
+if ( false !== strpos( $packages_html, 'fontpreview.webp' ) || false !== strpos( $packages_html, 'fontpreview.png' ) || false !== strpos( $packages_html, 'fontPreview.webp' ) || false !== strpos( $packages_html, 'fontPreview.png' ) || false !== strpos( $packages_html, 'wpfonts-font-preview' ) ) {
+	fwrite( STDERR, "package detail still renders fontpreview.\n" );
 	exit( 1 );
 }
 if ( false === strpos( $packages_html, 'wpfonts-specimen-fallback" hidden' ) && false === strpos( $packages_html, 'wpfonts-specimen-fallback" hidden="hidden"' ) ) {
@@ -673,8 +669,16 @@ if ( false === strpos( $packages_html, 'font-family: &quot;IBM Plex Sans SC&quot
 	fwrite( STDERR, "package specimen style did not name the package family.\n" );
 	exit( 1 );
 }
-if ( false === strpos( $catalog_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/card.webp' ) ) {
+if ( false === strpos( $catalog_html, 'src="https://cn.windfonts.com/fonts-packages/ibmps/preview/card.webp"' ) ) {
 	fwrite( STDERR, "catalog card did not use the CDN card image.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $catalog_html, 'src="https://cn.windfonts.com/fonts-packages/ibmps/preview/fontpreview.webp"' ) || false !== strpos( $catalog_html, 'src="https://cn.windfonts.com/fonts-packages/975yt/preview/fontpreview.webp"' ) ) {
+	fwrite( STDERR, "catalog card rendered fontpreview.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, 'fontPreviewUrl' ) || false === strpos( $catalog_html, 'fontpreview.webp' ) ) {
+	fwrite( STDERR, "catalog row dropped fontPreviewUrl.\n" );
 	exit( 1 );
 }
 if ( false === strpos( $catalog_html, 'https://cn.windfonts.com/fonts-packages/975yt/preview/card.webp' ) ) {

@@ -219,7 +219,9 @@ class WPFonts_Link {
 	 * png does not replace webp. The catalog snapshot itself stays name +
 	 * fontFamily; this is the read path for a row that already has the fields.
 	 * fontPreviewUrl is the long-text specimen at fontpreview.webp. It does
-	 * not replace previewUrl.
+	 * not replace previewUrl. The installed package detail paints
+	 * cardPreviewUrl only and does not render fontPreviewUrl. Catalog
+	 * choice cards use the card strip. Font Library families use previewUrl.
 	 *
 	 * @param mixed $slug   Package id or catalog fontFamily.
 	 * @param mixed $region Region id.
