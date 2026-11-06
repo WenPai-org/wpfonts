@@ -68,6 +68,19 @@ class WPFonts_Link {
 	const SITE_URL = 'https://wenfeng.org';
 
 	/**
+	 * Package short => CDN fonts-packages directory.
+	 *
+	 * CSS, Font Library family tokens, and package install ids stay
+	 * wenfeng-*. Only the specimen URL path uses this alias.
+	 *
+	 * @var array<string, string>
+	 */
+	private const CDN_SPECIMEN_ALIASES = array(
+		'xxzt'    => 'xzt',
+		'syhtcjk' => 'syhtsc',
+	);
+
+	/**
 	 * Keep a region id, or fall back to mainland China.
 	 *
 	 * @param mixed $value Raw region.
@@ -122,10 +135,12 @@ class WPFonts_Link {
 	}
 
 	/**
-	 * Lowercase fonts-packages norm for a wenfeng-* slug.
+	 * Lowercase short after wenfeng- for a package id.
 	 *
-	 * wenfeng-xzt becomes xzt. The CSS id stays wenfeng-*. A zip-only id is
-	 * empty, so it does not invent a CDN specimen.
+	 * wenfeng-xxzt stays xxzt. The CSS id and the install id stay
+	 * wenfeng-*. A zip-only id is empty, so it does not invent a CDN
+	 * specimen. Specimen paths use package_cdn_norm(), which may point a
+	 * historical short at another fonts-packages folder.
 	 *
 	 * @param mixed $slug Package id or catalog fontFamily.
 	 * @return string
@@ -140,12 +155,34 @@ class WPFonts_Link {
 	}
 
 	/**
+	 * CDN fonts-packages directory for a wenfeng-* slug.
+	 *
+	 * The raw short from package_norm() is kept when it already matches the
+	 * CDN folder. A listed historical short is replaced with that folder.
+	 *
+	 * @param mixed $slug Package id or catalog fontFamily.
+	 * @return string
+	 */
+	public static function package_cdn_norm( $slug ) {
+		$norm = self::package_norm( $slug );
+		if ( '' === $norm ) {
+			return '';
+		}
+		if ( isset( self::CDN_SPECIMEN_ALIASES[ $norm ] ) ) {
+			return self::token( self::CDN_SPECIMEN_ALIASES[ $norm ], 64 );
+		}
+		return $norm;
+	}
+
+	/**
 	 * CDN specimen image for one wenfeng-* family.
 	 *
 	 * The host is WPFonts_Link::HOSTS for the site region, the same map as
 	 * public CSS. Nothing else is allowed. The path is
-	 * /fonts-packages/{norm}/preview/{preview|card|og}.{webp|png}.
-	 * Ask for webp first. png is the sibling when webp is missing.
+	 * /fonts-packages/{cdn norm}/preview/{preview|card|og}.{webp|png}.
+	 * The directory is package_cdn_norm(), so a historical short such as
+	 * xxzt uses the CDN folder xzt. Ask for webp first. png is the sibling
+	 * when webp is missing.
 	 *
 	 * @param mixed  $slug   Package id or catalog fontFamily.
 	 * @param string $asset  preview, card, or og.
@@ -154,7 +191,7 @@ class WPFonts_Link {
 	 * @return string
 	 */
 	public static function package_preview_url( $slug, $asset = 'preview', $format = 'webp', $region = 'cn' ) {
-		$norm = self::package_norm( $slug );
+		$norm = self::package_cdn_norm( $slug );
 		if ( '' === $norm ) {
 			return '';
 		}
@@ -172,11 +209,12 @@ class WPFonts_Link {
 	/**
 	 * previewUrl and cardPreviewUrl for a slug, preferring webp.
 	 *
-	 * Derived from the norm. A row may already carry previewUrl,
-	 * cardPreviewUrl, or assets.previewUrl / assets.cardPreviewUrl. A
-	 * supplied webp replaces the derived URL only when it is https, on an
-	 * existing CDN host, for this same norm, and has no query. A supplied
-	 * png does not replace webp. The catalog snapshot itself stays
+	 * Derived from the CDN folder (package_cdn_norm()). A row may already
+	 * carry previewUrl, cardPreviewUrl, or assets.previewUrl /
+	 * assets.cardPreviewUrl. A supplied webp replaces the derived URL only
+	 * when it is https, on an existing CDN host, for this same CDN folder,
+	 * and has no query. A raw historical short in that path is not kept. A
+	 * supplied png does not replace webp. The catalog snapshot itself stays
 	 * name + fontFamily; this is the read path for a row that already has
 	 * the fields.
 	 *
@@ -186,7 +224,7 @@ class WPFonts_Link {
 	 * @return array{previewUrl:string,cardPreviewUrl:string}
 	 */
 	public static function package_specimen_urls( $slug, $region = 'cn', $row = null ) {
-		$norm = self::package_norm( $slug );
+		$norm = self::package_cdn_norm( $slug );
 		$out  = array(
 			'previewUrl'     => '',
 			'cardPreviewUrl' => '',
