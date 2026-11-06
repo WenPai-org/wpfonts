@@ -211,12 +211,12 @@ class WPFonts_CJK {
 		if ( '' === $roles['fallback'] && '' === $roles['body'] && '' === $roles['heading'] ) {
 			return array(
 				'on'   => false,
-				'text' => __( '未指定。启用字体包或文风云后，可在设置里选。', 'wpfonts' ),
+				'text' => __( '尚未指定中文回退，站点先用系统中文；安装文风字体包或开启文风云后，到设置里选一个。', 'wpfonts' ),
 			);
 		}
 		return array(
 			'on'   => true,
-			'text' => __( '已指定。正文、标题，以及西文字体后面的中文，会用这套选择。', 'wpfonts' ),
+			'text' => __( '已指定。正文、标题和西文后面的中文，都会用这套选择。', 'wpfonts' ),
 		);
 	}
 

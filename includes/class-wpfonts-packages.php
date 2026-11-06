@@ -7,6 +7,9 @@
  * catalog, or the leading CSS comment has one. The id is not that label.
  * A successful install or replace runs wpfonts_package_installed.
  * wpfonts_package_deleted runs while the package directory is still present.
+ * If that directory is already empty, the same hook still carries uploads_rel
+ * so a listener can clear the object-storage prefix, and the filesystem
+ * delete is still asked to remove that prefix.
  *
  * @package WPFonts
  */
@@ -1319,7 +1322,10 @@ class WPFonts_Packages {
 	 *
 	 * wpfonts_package_deleted runs first, while the directory is still on
 	 * disk and the package list still includes this id. The directory and
-	 * the registry row are removed after that action returns.
+	 * the registry row are removed after that action returns. When the
+	 * local directory is already gone, the hook still includes uploads_rel
+	 * and the filesystem is still asked to delete that prefix, so an
+	 * object-storage wrapper can drop the same key.
 	 *
 	 * @param string $id Package id.
 	 * @return bool
@@ -1342,6 +1348,7 @@ class WPFonts_Packages {
 
 		$dir     = '';
 		$files   = array();
+		$prefix  = '';
 		$uploads = wp_upload_dir();
 		if ( is_array( $uploads ) && empty( $uploads['error'] ) && ! empty( $uploads['basedir'] ) ) {
 			$root = trailingslashit( $uploads['basedir'] ) . 'wpfonts/packages';
@@ -1352,9 +1359,12 @@ class WPFonts_Packages {
 			}
 			$root = rtrim( str_replace( '\\', '/', $root ), '/' );
 			$try  = rtrim( str_replace( '\\', '/', $try ), '/' );
-			if ( 0 === strpos( $try, $root . '/' ) && is_dir( $try ) ) {
-				$dir   = $try;
-				$files = self::list_rels( $dir );
+			if ( 0 === strpos( $try, $root . '/' ) ) {
+				$prefix = $try;
+				if ( is_dir( $try ) ) {
+					$dir   = $try;
+					$files = self::list_rels( $dir );
+				}
 			}
 		}
 
@@ -1364,18 +1374,20 @@ class WPFonts_Packages {
 		 *
 		 * When the directory exists, `dir` is still that absolute path and the
 		 * package list still includes this id. Cleanup runs after this action.
-		 * `files` may be an empty list. Listeners can read `dir`.
+		 * `files` may be an empty list. `uploads_rel` is still the prefix when
+		 * the local directory is already empty, so a listener can clear that
+		 * object-storage prefix without a file list. Listeners can read `dir`.
 		 *
 		 * @param array $package Package location. Keys: action, slug, package_id, dir, uploads_rel, local_css, files.
 		 */
 		do_action( 'wpfonts_package_deleted', $payload );
 
-		if ( '' !== $dir && is_dir( $dir ) ) {
+		if ( '' !== $prefix ) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 			WP_Filesystem();
 			global $wp_filesystem;
 			if ( $wp_filesystem ) {
-				$wp_filesystem->delete( $dir, true );
+				$wp_filesystem->delete( $prefix, true );
 			}
 		}
 
