@@ -90,11 +90,12 @@ class WPFonts_Catalog {
 	const MONTH_INTERVAL = 2592000;
 
 	/**
-	 * HTTP timeout in seconds. Short, so a dead directory does not stall cron.
+	 * HTTP timeout in seconds. A directory page often needs longer than a few
+	 * seconds. A failed request still leaves the previous snapshot.
 	 *
 	 * @var int
 	 */
-	const TIMEOUT = 6;
+	const TIMEOUT = 30;
 
 	/**
 	 * Minimum seconds between manual refreshes.

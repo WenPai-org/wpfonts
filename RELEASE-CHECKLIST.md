@@ -1,8 +1,8 @@
 # 2.0.0 发布闸门
 
-Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.20`。
+Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.21`。
 
-Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.20`.
+Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.21`.
 
 ## 还要做
 
@@ -22,10 +22,11 @@ Release gate before Feng says ship the stable release. This branch does not tag 
 - [x] **字形预览文件名。** `2.0.0-rc.18` 装包页字形预览请求 CDN 上的小写 `fontpreview.webp`（以及 png）。字段名仍是 `fontPreviewUrl`。`card`、`preview`、`og` 路径不变。
 - [x] **装包详情只留 card。** `2.0.0-rc.19` 装包详情只显示 `card.webp`（1200×280）。不再叠 `fontpreview.webp`。目录勾选仍用 card。字体库仍用 preview。card 图缺失时才显示实时字形预览。字段名仍是 `cardPreviewUrl` / `fontPreviewUrl`。
 - [x] **目录店面名单。** `2.0.0-rc.20` 选用字体和目录快照先套用 `data/catalog-allowlist.json` 里的别名，再丢掉不在店面名单里的 `fontFamily`。拉取带 `status=published`，页码仍在。行上的 status 不是 published 时丢掉。`wenfeng-zhi-mang-xing` 在没有 status 时收成 `wenfeng-zmxs`。Comfortaa、Cormorant、Cuprum 不出现。手填的 `wenfeng-*` 仍可用。名单这一版先随插件附带。仍从 app.windfonts.com 拉取。
+- [x] **目录刷新超时。** `2.0.0-rc.21` 把目录刷新的 HTTP 超时从 6 秒改成 30 秒。分页的 app.windfonts.com 在较慢的主机上经常超过 6 秒，内置刷新会停在旧快照。店面名单、`status=published` 和别名不变。
 - [x] **文档 cocobook 已对齐 rc.8。** 不挡这次闸门。本支只补仓库里的 `readme.txt` / `README.md` 草稿和这份清单。
 
 ## 这一支不要做
 
 - 不要把 readme 的 Stable tag 改成 `2.0.0`。
-- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.20`，不要写成 `2.0.0`。
+- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.21`，不要写成 `2.0.0`。
 - 不要打 `2.0.0` git 标签。
