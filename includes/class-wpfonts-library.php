@@ -549,8 +549,10 @@ class WPFonts_Library {
 	 * A pack https URL wins. Keys are preview, previewUrl, preview_url, and
 	 * assets.previewUrl, in meta.json, metadata.json, or font.json. A
 	 * wenfeng-* family with no pack image uses the CDN specimen
-	 * /fonts-packages/{norm}/preview/preview.webp on the same host as public
-	 * CSS. That image is the font, so the library does not download woff2
+	 * /fonts-packages/{cdn norm}/preview/preview.webp on the same host as
+	 * public CSS. A historical short uses the CDN folder alias. The package
+	 * id and CSS family stay wenfeng-*. That image is the font, so the
+	 * library does not download woff2
 	 * just to paint a sample. Anything else is a same-site SVG of the
 	 * display name. WordPress sanitizes preview with sanitize_url, which
 	 * drops data URIs.

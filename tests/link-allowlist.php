@@ -151,9 +151,22 @@ $assert( '' === WPFonts_Link::embed_snippet( 'https://fonts.example/api/css?fami
 $assert( 'xzt' === WPFonts_Link::package_norm( 'wenfeng-xzt' ), 'xzt norm drifted' );
 $assert( 'xzt' === WPFonts_Link::package_norm( 'Wenfeng-XZT' ), 'norm was not lowercased' );
 $assert( 'syhtsc' === WPFonts_Link::package_norm( 'wenfeng-syhtsc' ), 'syhtsc norm drifted' );
+$assert( 'xxzt' === WPFonts_Link::package_norm( 'wenfeng-xxzt' ), 'xxzt short was aliased inside package_norm' );
+$assert( 'syhtcjk' === WPFonts_Link::package_norm( 'wenfeng-syhtcjk' ), 'syhtcjk short was aliased inside package_norm' );
 $assert( '' === WPFonts_Link::package_norm( 'demo' ), 'a zip id invented a norm' );
 $assert( '' === WPFonts_Link::package_norm( 'wenfeng-' ), 'an empty short invented a norm' );
+$assert( 'xzt' === WPFonts_Link::package_cdn_norm( 'wenfeng-xzt' ), 'xzt CDN folder was rewritten' );
+$assert( 'xzt' === WPFonts_Link::package_cdn_norm( 'wenfeng-xxzt' ), 'xxzt CDN folder drifted' );
+$assert( 'xzt' === WPFonts_Link::package_cdn_norm( 'Wenfeng-XXZT' ), 'xxzt CDN folder was not lowercased' );
+$assert( 'syhtsc' === WPFonts_Link::package_cdn_norm( 'wenfeng-syhtsc' ), 'syhtsc CDN folder was rewritten' );
+$assert( 'syhtsc' === WPFonts_Link::package_cdn_norm( 'wenfeng-syhtcjk' ), 'syhtcjk CDN folder drifted' );
+$assert( '' === WPFonts_Link::package_cdn_norm( 'demo' ), 'a zip id invented a CDN folder' );
 $assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'preview', 'webp', 'cn' ), 'xzt preview URL drifted' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === WPFonts_Link::package_preview_url( 'wenfeng-xxzt', 'preview', 'webp', 'cn' ), 'xxzt specimen still 404s' );
+$assert( 'https://cn.windfonts.com/fonts-packages/syhtsc/preview/preview.webp' === WPFonts_Link::package_preview_url( 'wenfeng-syhtcjk', 'preview', 'webp', 'cn' ), 'syhtcjk specimen still 404s' );
+$assert( 'https://hk.windfonts.com/fonts-packages/xzt/preview/card.png' === WPFonts_Link::package_preview_url( 'wenfeng-xxzt', 'card', 'png', 'hk' ), 'xxzt card left the aliased folder' );
+$assert( true === WPFonts_Link::is_package_specimen_url( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp', WPFonts_Link::package_cdn_norm( 'wenfeng-xxzt' ), 'preview' ), 'aliased specimen was rejected' );
+$assert( false === WPFonts_Link::is_package_specimen_url( 'https://cn.windfonts.com/fonts-packages/xxzt/preview/preview.webp', WPFonts_Link::package_cdn_norm( 'wenfeng-xxzt' ), 'preview' ), 'raw short path passed the aliased allowlist' );
 $assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/card.webp' === WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'card', 'webp', 'cn' ), 'xzt card URL drifted' );
 $assert( 'https://cn.windfonts.com/fonts-packages/syhtsc/preview/preview.webp' === WPFonts_Link::package_preview_url( 'wenfeng-syhtsc', 'preview', 'webp', 'cn' ), 'syhtsc preview URL drifted' );
 $assert( 'https://hk.windfonts.com/fonts-packages/xzt/preview/preview.png' === WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'preview', 'png', 'hk' ), 'png specimen left the site host' );
@@ -181,6 +194,19 @@ $png_row = WPFonts_Link::package_specimen_urls(
 	)
 );
 $assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === $png_row['previewUrl'], 'a png specimen replaced webp' );
+$alias_row = WPFonts_Link::package_specimen_urls(
+	'wenfeng-xxzt',
+	'cn',
+	array(
+		'previewUrl'     => 'https://cn.windfonts.com/fonts-packages/xxzt/preview/preview.webp',
+		'cardPreviewUrl' => 'https://cn.windfonts.com/fonts-packages/xzt/preview/card.webp',
+	)
+);
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === $alias_row['previewUrl'], 'raw short specimen was kept' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/card.webp' === $alias_row['cardPreviewUrl'], 'aliased card specimen was dropped' );
+$syht_row = WPFonts_Link::package_specimen_urls( 'wenfeng-syhtcjk', 'en' );
+$assert( 'https://en.windfonts.com/fonts-packages/syhtsc/preview/preview.webp' === $syht_row['previewUrl'], 'syhtcjk preview left the aliased folder' );
+$assert( 'https://en.windfonts.com/fonts-packages/syhtsc/preview/card.webp' === $syht_row['cardPreviewUrl'], 'syhtcjk card left the aliased folder' );
 $assert( '' === WPFonts_Link::preconnect_origin( 'https://cn.windfonts.com/api/css?family=wenfeng-zhi-mang-xing&subset=zh-common' ) || false !== strpos( WPFonts_Link::embed_snippet( 'https://cn.windfonts.com/api/css?family=wenfeng-zhi-mang-xing&subset=zh-common' ), $license ), 'a shown link dropped the license note' );
 $embed_src = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-embed.php' );
 $assert( false !== strpos( $embed_src, 'print_license_note' ), 'front head does not print the license note' );

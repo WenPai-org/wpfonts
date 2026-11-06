@@ -407,7 +407,7 @@ $assert( 'normal' === $xxzt_family['font_family_settings']['fontFace'][0]['fontS
 $assert( 'https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/0.woff2' === $xxzt_family['font_family_settings']['fontFace'][0]['src'], 'folded slice did not keep one woff2' );
 $assert( 'U+4E00' === $xxzt_family['font_family_settings']['fontFace'][0]['unicodeRange'], 'folded slice dropped its own range' );
 $assert( false === strpos( wp_json_encode( $xxzt_family ), '1.woff2' ), 'the second slice was copied into the font library' );
-$assert( 'https://cn.windfonts.com/fonts-packages/xxzt/preview/preview.webp' === $xxzt_family['font_family_settings']['preview'], 'family specimen URL missing' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === $xxzt_family['font_family_settings']['preview'], 'xxzt family specimen was not aliased to xzt' );
 $xzt_preview = WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'preview', 'webp', 'cn' );
 $assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === $xzt_preview, 'xzt specimen path drifted' );
 $svg = WPFonts_Library::specimen_svg( '文风·玄宗体</text><script>' );
