@@ -1,8 +1,8 @@
 # 2.0.0 发布闸门
 
-Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.15`。
+Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.16`。
 
-Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.15`.
+Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.16`.
 
 ## 还要做
 
@@ -17,10 +17,11 @@ Release gate before Feng says ship the stable release. This branch does not tag 
 - [x] **切片与预览。** `2.0.0-rc.13` 字体库每个字重只列一条。前台仍加载完整 `local.css`。「文风字体」带预览图；没有包内 `preview` 时用显示名 SVG。字体包页和已确认的文风云显示字形预览。样式链接标明「链接文字（不加载字体）」。
 - [x] **CDN 样张。** `2.0.0-rc.14` 文风字体和文风云优先用 `fonts-packages/{短名}/preview/preview.webp`，卡片用 `card.webp`。主机是已有的 `cn` / `hk` / `en`。webp 打不开再试 png，再回到 SVG 或字形预览。不下载字体文件。目录快照仍只存名字和 `fontFamily`。
 - [x] **样张目录别名。** `2.0.0-rc.15` 装包短码与 CDN fonts-packages 目录别名（xxzt→xzt、syhtcjk→syhtsc）以免样张 404。CSS 和包 id 仍是 `wenfeng-*`。
+- [x] **装包页长条样张。** `2.0.0-rc.16` 装包页样张改用 card 长条（1200×280），字体库仍用 preview。
 - [x] **文档 cocobook 已对齐 rc.8。** 不挡这次闸门。本支只补仓库里的 `readme.txt` / `README.md` 草稿和这份清单。
 
 ## 这一支不要做
 
 - 不要把 readme 的 Stable tag 改成 `2.0.0`。
-- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.15`，不要写成 `2.0.0`。
+- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.16`，不要写成 `2.0.0`。
 - 不要打 `2.0.0` git 标签。

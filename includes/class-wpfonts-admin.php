@@ -1812,7 +1812,11 @@ class WPFonts_Admin {
 	}
 
 	/**
-	 * Chinese, English, and digit sample in the package font.
+	 * Card specimen for one installed package, then a glyph sample.
+	 *
+	 * The image is cardPreviewUrl (asset card, 1200×280). Font Library
+	 * families stay on previewUrl (720×400). webp is printed first; the
+	 * img carries the png sibling as data-fallback.
 	 *
 	 * @param array $package Package row.
 	 * @return void
@@ -1834,7 +1838,7 @@ class WPFonts_Admin {
 		}
 		if ( class_exists( 'WPFonts_Link', false ) ) {
 			$spec  = WPFonts_Link::package_specimen_urls( $id, $region, $package );
-			$image = isset( $spec['previewUrl'] ) ? (string) $spec['previewUrl'] : '';
+			$image = isset( $spec['cardPreviewUrl'] ) ? (string) $spec['cardPreviewUrl'] : '';
 		}
 		$has_img = self::specimen_url_ok( $image );
 		echo '<div class="wpfonts-preview"';
