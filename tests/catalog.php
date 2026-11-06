@@ -196,6 +196,8 @@ $assert = static function ( $condition, $message ) use ( &$failures ) {
 	}
 };
 
+$assert( WPFonts_Catalog::TIMEOUT >= 30, 'catalog TIMEOUT is under 30 seconds' );
+
 $catalog_body = static function ( $page, $page_total, array $rows ) {
 	return (string) json_encode(
 		array(
@@ -447,8 +449,10 @@ $assert( false === strpos( $GLOBALS['http_log'][0]['url'], 'search=' ), 'snapsho
 $assert( false !== strpos( $GLOBALS['http_log'][0]['url'], 'page=1' ), 'refresh dropped the page query' );
 $assert( false !== strpos( $GLOBALS['http_log'][0]['url'], 'status=published' ), 'refresh did not request published fonts' );
 $assert( empty( $GLOBALS['http_log'][0]['args']['headers']['X-API-Key'] ), 'anonymous refresh sent the API key' );
+$assert( isset( $GLOBALS['http_log'][0]['args']['timeout'] ) && (int) $GLOBALS['http_log'][0]['args']['timeout'] >= 30, 'catalog refresh HTTP timeout is under 30 seconds' );
 $assert( false !== strpos( $GLOBALS['http_log'][1]['url'], 'page=2' ), 'second page was not requested' );
 $assert( false !== strpos( $GLOBALS['http_log'][1]['url'], 'status=published' ), 'second page omitted published status' );
+$assert( isset( $GLOBALS['http_log'][1]['args']['timeout'] ) && (int) $GLOBALS['http_log'][1]['args']['timeout'] >= 30, 'second catalog page HTTP timeout is under 30 seconds' );
 $raw = (string) file_get_contents( WPFONTS_CATALOG_PATH );
 $saved = json_decode( $raw, true );
 $assert( is_array( $saved ) && isset( $saved['updated_at'] ) && is_int( $saved['updated_at'] ) && $saved['updated_at'] > 0, 'snapshot updated_at missing' );
