@@ -36,6 +36,16 @@
 	border-radius: 6px;
 }
 
+/* Installed package cards: full-width 1200×280 card strip. No square crop. */
+.wenpai-app .wpfonts-preview .wpfonts-specimen {
+	width: 100%;
+	max-width: none;
+	height: auto;
+	max-height: none;
+	object-fit: contain;
+	object-position: left center;
+}
+
 .wpfonts-specimen-fallback[hidden] {
 	display: none;
 }

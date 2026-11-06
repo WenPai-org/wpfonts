@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.15' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.16' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -628,12 +628,21 @@ if ( false === strpos( $packages_html, '删除后本站不再提供这份字体�
 	fwrite( STDERR, "packages fixture lost the delete gate copy.\n" );
 	exit( 1 );
 }
-if ( false === strpos( $packages_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/preview.webp' ) ) {
-	fwrite( STDERR, "package specimen did not use the CDN preview image.\n" );
+if ( false === strpos( $packages_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/card.webp' ) ) {
+	fwrite( STDERR, "package specimen did not use the CDN card image.\n" );
 	exit( 1 );
 }
-if ( false === strpos( $packages_html, 'data-fallback="https://cn.windfonts.com/fonts-packages/ibmps/preview/preview.png"' ) ) {
+if ( false !== strpos( $packages_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/preview.webp' ) ) {
+	fwrite( STDERR, "package specimen still uses the short preview image.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, 'data-fallback="https://cn.windfonts.com/fonts-packages/ibmps/preview/card.png"' ) ) {
 	fwrite( STDERR, "package specimen did not keep a png fallback.\n" );
+	exit( 1 );
+}
+$admin_css = (string) file_get_contents( $root . '/assets/css/wpfonts-admin.css' );
+if ( false === strpos( $admin_css, '.wenpai-app .wpfonts-preview .wpfonts-specimen' ) || false === strpos( $admin_css, 'max-width: none' ) || false === strpos( $admin_css, 'object-fit: contain' ) ) {
+	fwrite( STDERR, "package specimen CSS does not show the full-width card strip.\n" );
 	exit( 1 );
 }
 if ( false === strpos( $packages_html, '字形预览' ) || false === strpos( $packages_html, 'data-family="IBM Plex Sans SC"' ) ) {
