@@ -235,6 +235,18 @@ $body = $catalog_body(
 			'fontFamily'     => 'wenfeng-zhi-mang-xing',
 		),
 		array(
+			'name'       => 'Comfortaa',
+			'fontFamily' => 'wenfeng-comfortaa',
+		),
+		array(
+			'name'       => 'Cormorant',
+			'fontFamily' => 'wenfeng-cormorant',
+		),
+		array(
+			'name'       => 'Cuprum',
+			'fontFamily' => 'wenfeng-cuprum',
+		),
+		array(
 			'id'             => '7f48fdc1-8032-4d2d-8f94-5f64cce36943',
 			'normalizedName' => 'not-a-family',
 			'name'           => '丢弃',
@@ -253,8 +265,15 @@ $body = $catalog_body(
 $parsed = WPFonts_Catalog::parse_body( $body );
 $assert( ! empty( $parsed['ok'] ), 'catalog JSON should parse' );
 $assert( 1 === count( $parsed['fonts'] ), 'dirty catalog rows were kept' );
-$assert( isset( $parsed['fonts'][0]['fontFamily'] ) && 'wenfeng-zhi-mang-xing' === $parsed['fonts'][0]['fontFamily'], 'parsed fontFamily mismatch' );
-$assert( isset( $parsed['fonts'][0]['name'] ) && '钟齐志莽行书' === $parsed['fonts'][0]['name'], 'parsed name mismatch' );
+$assert( isset( $parsed['fonts'][0]['fontFamily'] ) && 'wenfeng-zmxs' === $parsed['fonts'][0]['fontFamily'], 'parsed fontFamily mismatch' );
+$assert( isset( $parsed['fonts'][0]['name'] ) && false !== strpos( $parsed['fonts'][0]['name'], '志莽' ), 'parsed 志莽 name mismatch' );
+$parsed_families = array();
+foreach ( $parsed['fonts'] as $font ) {
+	$parsed_families[] = $font['fontFamily'];
+}
+foreach ( array( 'wenfeng-comfortaa', 'wenfeng-cormorant', 'wenfeng-cuprum', 'wenfeng-zhi-mang-xing' ) as $fake_family ) {
+	$assert( ! in_array( $fake_family, $parsed_families, true ), $fake_family . ' survived parse' );
+}
 $keys = array_keys( $parsed['fonts'][0] );
 sort( $keys );
 $assert( array( 'fontFamily', 'name' ) === $keys, 'parsed row kept id or normalizedName' );
@@ -264,6 +283,45 @@ $assert( empty( WPFonts_Catalog::parse_body( 'not-json' )['ok'] ), 'bad JSON sho
 $assert( empty( WPFonts_Catalog::parse_body( '{"code":500,"data":{}}' )['ok'] ), 'non-200 catalog code should fail' );
 $assert( WPFonts_Catalog::FONTS_URL === 'https://app.windfonts.com/api/fonts', 'catalog host drifted' );
 $assert( 'wpfonts/catalog.json' === WPFonts_Catalog::SNAPSHOT_RELATIVE, 'snapshot path drifted' );
+$assert( 'data/catalog-allowlist.json' === WPFonts_Catalog::ALLOWLIST_RELATIVE, 'allowlist path drifted' );
+$allowlist = json_decode( (string) file_get_contents( WPFonts_Catalog::allowlist_path() ), true );
+$assert( is_array( $allowlist ) && isset( $allowlist['fonts'] ) && 775 === count( $allowlist['fonts'] ), 'vendored allowlist is not the 775-family pack' );
+$assert( isset( $allowlist['aliases']['wenfeng-zhi-mang-xing'] ) && 'wenfeng-zmxs' === $allowlist['aliases']['wenfeng-zhi-mang-xing'], 'zhi-mang-xing alias missing from the vendored pack' );
+$fakes_only = WPFonts_Catalog::parse_body(
+	$catalog_body(
+		1,
+		1,
+		array(
+			array(
+				'name'       => 'Comfortaa',
+				'fontFamily' => 'wenfeng-comfortaa',
+			),
+			array(
+				'name'       => 'Cormorant',
+				'fontFamily' => 'wenfeng-cormorant',
+			),
+			array(
+				'name'       => 'Cuprum',
+				'fontFamily' => 'wenfeng-cuprum',
+			),
+		)
+	)
+);
+$assert( array() === $fakes_only['fonts'], 'comfortaa, cormorant, or cuprum was kept' );
+$canonical = WPFonts_Catalog::parse_body(
+	$catalog_body(
+		1,
+		1,
+		array(
+			array(
+				'name'       => '志莽行书',
+				'fontFamily' => 'wenfeng-zmxs',
+			),
+		)
+	)
+);
+$assert( 1 === count( $canonical['fonts'] ) && 'wenfeng-zmxs' === $canonical['fonts'][0]['fontFamily'], 'storefront zmxs was dropped' );
+$assert( '志莽行书' === $canonical['fonts'][0]['name'], 'storefront 志莽 name was rewritten' );
 $assert( 2592000 === WPFonts_Catalog::MONTH_INTERVAL, 'monthly interval is not 30 days' );
 
 $reset();
@@ -306,6 +364,18 @@ $GLOBALS['http_queue'] = array(
 					'fontFamily'     => 'wenfeng-zhi-mang-xing',
 				),
 				array(
+					'name'       => 'Comfortaa',
+					'fontFamily' => 'wenfeng-comfortaa',
+				),
+				array(
+					'name'       => 'Cormorant',
+					'fontFamily' => 'wenfeng-cormorant',
+				),
+				array(
+					'name'       => 'Cuprum',
+					'fontFamily' => 'wenfeng-cuprum',
+				),
+				array(
 					'name'       => '丢弃',
 					'fontFamily' => 'zhi-mang-xing',
 				),
@@ -325,7 +395,10 @@ $families = array();
 foreach ( $written['fonts'] as $font ) {
 	$families[] = $font['fontFamily'];
 }
-$assert( array( 'wenfeng-zhi-mang-xing', 'wenfeng-hcwjt' ) === $families, 'merged snapshot lost fontFamily' );
+$assert( array( 'wenfeng-zmxs', 'wenfeng-hcwjt' ) === $families, 'merged snapshot lost fontFamily' );
+foreach ( array( 'wenfeng-comfortaa', 'wenfeng-cormorant', 'wenfeng-cuprum', 'wenfeng-zhi-mang-xing' ) as $fake_family ) {
+	$assert( ! in_array( $fake_family, $families, true ), $fake_family . ' survived refresh' );
+}
 $assert( 2 === count( $GLOBALS['http_log'] ), 'manual refresh did not request both pages' );
 $assert( false === strpos( $GLOBALS['http_log'][0]['url'], 'api_key' ), 'catalog URL contains a key' );
 $assert( false === strpos( $GLOBALS['http_log'][0]['url'], 'search=' ), 'snapshot refresh sent a search query' );
@@ -334,7 +407,12 @@ $assert( false !== strpos( $GLOBALS['http_log'][1]['url'], 'page=2' ), 'second p
 $raw = (string) file_get_contents( WPFONTS_CATALOG_PATH );
 $saved = json_decode( $raw, true );
 $assert( is_array( $saved ) && isset( $saved['updated_at'] ) && is_int( $saved['updated_at'] ) && $saved['updated_at'] > 0, 'snapshot updated_at missing' );
-$assert( isset( $saved['fonts'][0]['fontFamily'] ) && 'wenfeng-zhi-mang-xing' === $saved['fonts'][0]['fontFamily'], 'snapshot file lost fontFamily' );
+$assert( isset( $saved['fonts'][0]['fontFamily'] ) && 'wenfeng-zmxs' === $saved['fonts'][0]['fontFamily'], 'snapshot file lost fontFamily' );
+$assert( false === strpos( $raw, 'wenfeng-zhi-mang-xing' ), 'snapshot file stored the zhi-mang-xing alias' );
+$assert( false === strpos( $raw, 'wenfeng-comfortaa' ), 'snapshot file stored comfortaa' );
+$assert( false === strpos( $raw, 'wenfeng-cormorant' ), 'snapshot file stored cormorant' );
+$assert( false === strpos( $raw, 'wenfeng-cuprum' ), 'snapshot file stored cuprum' );
+$assert( false !== strpos( $saved['fonts'][0]['name'], '志莽' ), 'snapshot file dropped 志莽' );
 $assert( false === strpos( $raw, 'normalizedName' ), 'snapshot file stored normalizedName' );
 $assert( false === strpos( $raw, '7f48fdc1-8032-4d2d-8f94-5f64cce36943' ), 'snapshot file stored a UUID' );
 $assert( false === strpos( $raw, 'wf_catalog_key_123' ), 'snapshot file stored the API key' );
@@ -350,13 +428,17 @@ $again = WPFonts_Catalog::read( 1, '' );
 $assert( array() === $GLOBALS['http_log'], 'snapshot hit requested the directory' );
 $assert( ! empty( $again['ok'] ), 'snapshot hit failed' );
 $assert( ! empty( $again['cached'] ), 'snapshot hit was not marked cached' );
-$assert( 'wenfeng-zhi-mang-xing' === $again['fonts'][0]['fontFamily'], 'snapshot hit lost fontFamily' );
+$assert( 'wenfeng-zmxs' === $again['fonts'][0]['fontFamily'], 'snapshot hit lost fontFamily' );
+$assert( false !== strpos( $again['fonts'][0]['name'], '志莽' ), 'snapshot hit dropped 志莽' );
 $assert( 1 === count( $GLOBALS['http_queue'] ), 'snapshot hit consumed the HTTP queue' );
 
 $filtered = WPFonts_Catalog::read( 1, '寒蝉' );
 $assert( array() === $GLOBALS['http_log'], 'local search requested the directory' );
 $assert( 1 === count( $filtered['fonts'] ), 'local search did not filter the snapshot' );
 $assert( 'wenfeng-hcwjt' === $filtered['fonts'][0]['fontFamily'], 'local search returned the wrong family' );
+$zhi_search = WPFonts_Catalog::read( 1, '志莽' );
+$assert( 1 === count( $zhi_search['fonts'] ), '志莽 search missed the aliased family' );
+$assert( 'wenfeng-zmxs' === $zhi_search['fonts'][0]['fontFamily'], '志莽 search returned the wrong family' );
 
 $bytes                 = $raw;
 $GLOBALS['transients'] = array();
@@ -370,7 +452,7 @@ $GLOBALS['http_queue'] = array(
 $stale = WPFonts_Catalog::refresh( true );
 $assert( ! empty( $stale['ok'] ), 'failed refresh discarded the good snapshot' );
 $assert( ! empty( $stale['stale'] ), 'failed refresh was not marked stale' );
-$assert( 'wenfeng-zhi-mang-xing' === $stale['fonts'][0]['fontFamily'], 'stale snapshot lost fontFamily' );
+$assert( 'wenfeng-zmxs' === $stale['fonts'][0]['fontFamily'], 'stale snapshot lost fontFamily' );
 $assert( $bytes === (string) file_get_contents( WPFONTS_CATALOG_PATH ), 'failed refresh overwrote the good snapshot' );
 
 $GLOBALS['transients']  = array();
@@ -399,11 +481,19 @@ $assert( ! is_file( WPFONTS_CATALOG_PATH ), 'transport failure wrote a snapshot'
 
 file_put_contents(
 	WPFONTS_CATALOG_PATH,
-	'{"updated_at":10,"fonts":[{"name":"钟齐志莽行书","fontFamily":"wenfeng-zhi-mang-xing"},{"name":"坏","fontFamily":"not-wenfeng"}]}'
+	'{"updated_at":10,"fonts":[{"name":"钟齐志莽行书","fontFamily":"wenfeng-zhi-mang-xing"},{"name":"Comfortaa","fontFamily":"wenfeng-comfortaa"},{"name":"Cormorant","fontFamily":"wenfeng-cormorant"},{"name":"Cuprum","fontFamily":"wenfeng-cuprum"},{"name":"坏","fontFamily":"not-wenfeng"}]}'
 );
 $cleaned = WPFonts_Catalog::read( 1, '' );
-$assert( 1 === count( $cleaned['fonts'] ), 'stored non-wenfeng family was returned' );
-$assert( 'wenfeng-zhi-mang-xing' === $cleaned['fonts'][0]['fontFamily'], 'stored snapshot lost fontFamily' );
+$assert( 1 === count( $cleaned['fonts'] ), 'stored fake families were returned' );
+$assert( 'wenfeng-zmxs' === $cleaned['fonts'][0]['fontFamily'], 'stored alias was not rewritten to zmxs' );
+$assert( false !== strpos( $cleaned['fonts'][0]['name'], '志莽' ), 'stored 志莽 name was dropped' );
+$cleaned_families = array();
+foreach ( $cleaned['fonts'] as $font ) {
+	$cleaned_families[] = $font['fontFamily'];
+}
+foreach ( array( 'wenfeng-comfortaa', 'wenfeng-cormorant', 'wenfeng-cuprum', 'wenfeng-zhi-mang-xing' ) as $fake_family ) {
+	$assert( ! in_array( $fake_family, $cleaned_families, true ), $fake_family . ' survived a stored snapshot read' );
+}
 
 $GLOBALS['wpfonts_test_key'] = 'wf_catalog_key_123';
 $reset();
@@ -446,7 +536,8 @@ $GLOBALS['http_queue']                                 = array(
 $cooled = WPFonts_Catalog::refresh( true );
 $assert( array() === $GLOBALS['http_log'], 'manual refresh ignored the cooldown' );
 $assert( ! empty( $cooled['cooling'] ), 'cooldown was not reported' );
-$assert( 'wenfeng-zhi-mang-xing' === $cooled['fonts'][0]['fontFamily'], 'cooled refresh dropped the snapshot family' );
+$assert( 'wenfeng-zmxs' === $cooled['fonts'][0]['fontFamily'], 'cooled refresh dropped the snapshot family' );
+$assert( false === strpos( (string) file_get_contents( WPFONTS_CATALOG_PATH ), 'wenfeng-zhi-mang-xing' ), 'cooled snapshot still stored zhi-mang-xing' );
 
 $GLOBALS['wp_doing_cron'] = true;
 $GLOBALS['http_log']      = array();
@@ -609,7 +700,11 @@ $js        = file_get_contents( dirname( __DIR__ ) . '/assets/js/wpfonts-admin.j
 $embed     = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-embed.php' );
 $link      = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-link.php' );
 $main      = file_get_contents( dirname( __DIR__ ) . '/wpfonts.php' );
-$uninstall = file_get_contents( dirname( __DIR__ ) . '/uninstall.php' );
+$uninstall    = file_get_contents( dirname( __DIR__ ) . '/uninstall.php' );
+$settings_src = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-settings.php' );
+$assert( false === strpos( $settings_src, 'catalog-allowlist' ), 'manual family save consults the catalog allowlist' );
+$assert( false === strpos( $settings_src, 'ALLOWLIST_RELATIVE' ), 'manual family save consults the storefront allowlist' );
+$assert( false !== strpos( $admin, 'placeholder="wenfeng-ibmps"' ), 'manual family field missing' );
 $assert( false === strpos( $embed, 'WPFonts_Catalog' ), 'front embed references the catalog' );
 $assert( false === strpos( $embed, '/api/fonts' ), 'front embed references the catalog URL' );
 $assert( false === strpos( $link, '/api/fonts' ), 'allowlist link references the catalog URL' );
