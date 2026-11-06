@@ -138,7 +138,7 @@
 	}
 
 	function allowedSpecimen(url) {
-		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/preview\/(?:preview|card|og)\.(?:webp|png)$/.test(url || "");
+		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/preview\/(?:preview|card|og|fontPreview)\.(?:webp|png)$/.test(url || "");
 	}
 
 	function pngSibling(url) {
@@ -176,7 +176,7 @@
 
 	function markGlyph(label, face) {
 		face = safeFace(face);
-		if (!label || !face) {
+		if (!label || !face || specimenShowing(label)) {
 			return;
 		}
 		var stack = '"' + face + '", sans-serif';
@@ -456,21 +456,9 @@
 			text.appendChild(meta);
 			label.appendChild(input);
 			label.appendChild(text);
-			if (row.cssFace) {
+			if (row.cssFace && !cardUrl) {
 				markGlyph(label, row.cssFace);
-				if (cardUrl) {
-					var sample = text.querySelector(".wpfonts-glyph-sample");
-					var note = text.querySelector(".wpfonts-glyph-label");
-					if (sample && note) {
-						var box = document.createElement("span");
-						box.className = "wpfonts-specimen-fallback";
-						box.hidden = true;
-						box.appendChild(note);
-						box.appendChild(sample);
-						text.appendChild(box);
-					}
-					title.style.fontFamily = "";
-				} else if (row.cssUrl) {
+				if (row.cssUrl) {
 					ensureCssLink(row.cssUrl);
 				}
 			}

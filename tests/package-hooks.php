@@ -57,6 +57,10 @@ class WPFonts_Hook_Filesystem {
 	 * @return bool
 	 */
 	public function delete( $path, $recursive = false ) {
+		if ( ! isset( $GLOBALS['wpfonts_fs_deletes'] ) || ! is_array( $GLOBALS['wpfonts_fs_deletes'] ) ) {
+			$GLOBALS['wpfonts_fs_deletes'] = array();
+		}
+		$GLOBALS['wpfonts_fs_deletes'][] = (string) $path;
 		if ( is_file( $path ) || is_link( $path ) ) {
 			return unlink( $path );
 		}
@@ -404,11 +408,22 @@ if ( is_array( $again ) ) {
 	$fs->delete( (string) $again['dir'], true );
 }
 $empty = count( $GLOBALS['wpfonts_hooks'] );
+$GLOBALS['wpfonts_fs_deletes'] = array();
 $assert( true === WPFonts_Packages::delete( 'wenfeng-fzss' ), 'delete of a missing directory failed' );
 $early = $GLOBALS['wpfonts_hooks'][ $empty ];
 $assert( 'wpfonts_package_deleted' === $early['hook'], 'missing directory skipped the delete hook' );
 $assert( '' === $early['arg']['dir'], 'missing directory still reported a path' );
 $assert( array() === $early['arg']['files'], 'missing directory invented a file list' );
+$assert( 'wpfonts/packages/wenfeng-fzss' === $early['arg']['uploads_rel'], 'empty delete dropped the uploads prefix' );
+$prefix_deleted = false;
+if ( isset( $GLOBALS['wpfonts_fs_deletes'] ) && is_array( $GLOBALS['wpfonts_fs_deletes'] ) ) {
+	foreach ( $GLOBALS['wpfonts_fs_deletes'] as $deleted_path ) {
+		if ( substr( (string) $deleted_path, -strlen( '/wpfonts/packages/wenfeng-fzss' ) ) === '/wpfonts/packages/wenfeng-fzss' ) {
+			$prefix_deleted = true;
+		}
+	}
+}
+$assert( $prefix_deleted, 'empty delete did not ask the filesystem to clear the uploads prefix' );
 $assert( array( 'wenfeng-fzss' ) === $early['option_ids'], 'list was cleared before the empty delete hook' );
 $assert( array() === WPFonts_Packages::all(), 'list kept the package after the empty delete' );
 

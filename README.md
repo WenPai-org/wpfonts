@@ -2,9 +2,9 @@
 
 文派字库给 WordPress 字体库加上系统字体，分成「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。文风云默认关闭。开启之后，每条已确认的文风云字体各加一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.16`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。设置里还可以指定正文、标题和中文回退。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。下面的 `2.0.0` 一节是正式版说明草稿，版本号和 Stable tag 都没有改成正式版。
+这一版是 `2.0.0-rc.17`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。设置里还可以指定正文、标题和中文回退。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。下面的 `2.0.0` 一节是正式版说明草稿，版本号和 Stable tag 都没有改成正式版。
 
-WPFonts 2.0.0-rc.16 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The `2.0.0` section below is a draft. The version and Stable tag stay at `2.0.0-rc.16`. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP. A Chinese fallback is appended to Latin stacks by plugin CSS and the global stylesheet filter. That path does not edit theme.json or the user Global Styles post.
+WPFonts 2.0.0-rc.17 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The `2.0.0` section below is a draft. The version and Stable tag stay at `2.0.0-rc.17`. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP. A Chinese fallback is appended to Latin stacks by plugin CSS and the global stylesheet filter. That path does not edit theme.json or the user Global Styles post.
 
 Settings → WPFonts has four screens: Overview, Settings, Font packages, and Tools. Help stays in the header. Enabled packages register in the Font Library as 文风字体 (Windfonts in English), using the woff2 files stored at install. That tab, and 文风云, are registered before the system collections. 文风云 is registered only after the saved stylesheet URL has opened; the Font Library name is the face declared in that CSS, not the catalog token. Those same families are copied into the user Global Styles post, so Appearance → Styles lists them under typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only the entries this plugin wrote. A saved URL that returns 404 is not embedded and is not described as loading. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
 
@@ -20,9 +20,9 @@ Settings → WPFonts has four screens: Overview, Settings, Font packages, and To
 
 安装时，包的短名尽量用目录里的 `wenfeng-*`。旧包里的 `WF-*`、`windfonts-*` 会换成这个短名，并写进 `local.css` 的 `font-family`。已经是 `wenfeng-*` 的只做小写。认不出目录名时，仍用 zip 文件名，字体库里继续用 `wpfonts-pkg-` 前缀。已经装好的包不改目录，也不重写 CSS。字体库、字体包列表和块侧栏显示「文风·」加字体原名，例如「文风·玄宗体」。认不出原名时才显示短名。woff2 文件名不动。
 
-已启用的包会登记到字体库的「文风字体」，排在系统字体前面。英文界面写作 Windfonts。字体库里每个字重、每种字形只列一条，避免按字符切片的包出现几百条相同的 Normal。前台和字体包页仍加载完整的 `local.css`，字形以这份样式为准。列表上的预览图先用包内元数据的 `preview`（也认 `previewUrl`、`preview_url`，以及 `assets.previewUrl`，须是 https 图片，写在 `meta.json`、`metadata.json` 或 `font.json`）。没有这张图、而且短名是 `wenfeng-*` 时，用文风 CDN 上的样张：`https://{已有服务器}/fonts-packages/{短名}/preview/preview.webp`。短名是 `wenfeng-` 后面的小写，例如 `xzt`。已装包 `wenfeng-xxzt`、`wenfeng-syhtcjk` 的样张目录分别是 `xzt`、`syhtsc`。包 id 和 CSS 的 `font-family` 不变。服务器只用来源里已有的 `cn`、`hk`、`en`。目录勾选和装包页用同目录的 `card.webp`（1200×280 长条）。字体库仍用 `preview.webp`（720×400）。优先 webp；打不开再试同名 png，再不行才用显示名生成的 SVG。不为此下载字体文件。停用或删除后，字体库里不再出现。启用后，字体名会写进全站样式，外观 → 样式里可以直接选用。停用或删除时，只去掉这项，其它全站样式不动。插件不改主题文件，卸载时也不删全站样式。设置页仍称这些包为文风字体包。
+已启用的包会登记到字体库的「文风字体」，排在系统字体前面。英文界面写作 Windfonts。字体库里每个字重、每种字形只列一条，避免按字符切片的包出现几百条相同的 Normal。前台和字体包页仍加载完整的 `local.css`，字形以这份样式为准。列表上的预览图先用包内元数据的 `preview`（也认 `previewUrl`、`preview_url`，以及 `assets.previewUrl`，须是 https 图片，写在 `meta.json`、`metadata.json` 或 `font.json`）。没有这张图、而且短名是 `wenfeng-*` 时，用文风 CDN 上的样张：`https://{已有服务器}/fonts-packages/{短名}/preview/preview.webp`。短名是 `wenfeng-` 后面的小写，例如 `xzt`。已装包 `wenfeng-xxzt`、`wenfeng-syhtcjk` 的样张目录分别是 `xzt`、`syhtsc`。包 id 和 CSS 的 `font-family` 不变。服务器只用来源里已有的 `cn`、`hk`、`en`。目录勾选和装包页用同目录的 `card.webp`（1200×280 长条）。字体库仍用 `preview.webp`（720×400）。装包页的字形预览另用同目录的 `fontPreview.webp`（720×400，文案是「永和九年，岁在癸丑。暮春之初，会于会稽山阴之兰亭。」）。优先 webp；打不开再试同名 png，再不行才用显示名生成的 SVG 或原来的字形预览。有 CDN 图时，不把实时字体样句叠在图上。不为此下载字体文件。停用或删除后，字体库里不再出现。启用后，字体名会写进全站样式，外观 → 样式里可以直接选用。停用或删除时，只去掉这项，其它全站样式不动。插件不改主题文件，卸载时也不删全站样式。设置页仍称这些包为文风字体包。
 
-安装或替换成功后，WordPress 会发出 `wpfonts_package_installed`。删除时，`wpfonts_package_deleted` 在目录还在、列表里也还留着这个包的时候发出；钩子返回之后才删目录，并从这个列表里去掉。其它插件可以接着处理 `wp-content/uploads/wpfonts/` 里的文件。本插件不把这些文件上传到别处。
+安装或替换成功后，WordPress 会发出 `wpfonts_package_installed`。删除时，`wpfonts_package_deleted` 在目录还在、列表里也还留着这个包的时候发出；钩子返回之后才删目录，并从这个列表里去掉。本地目录已经空了时，钩子仍带 `uploads_rel`，并仍请求文件系统删除这个前缀，对象存储可以按同一路径清掉文件。其它插件可以接着处理 `wp-content/uploads/wpfonts/` 里的文件。本插件不把这些文件上传到别处。
 
 参数是一个数组：
 
@@ -54,9 +54,9 @@ wp fonts package list
 
 ## 2.0.0
 
-正式版说明草稿，还没有打标签，也没有把 Stable tag 改成 `2.0.0`。插件版本和 `WPFONTS_VERSION` 仍是 `2.0.0-rc.16`。下面按 rc.16 已经有的行为来写。
+正式版说明草稿，还没有打标签，也没有把 Stable tag 改成 `2.0.0`。插件版本和 `WPFONTS_VERSION` 仍是 `2.0.0-rc.17`。下面按 rc.17 已经有的行为来写。
 
-Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.16`.
+Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.17`.
 
 - 两条路并存。文风云给每条已确认的字体加一条文风服务器上的样式链接。文风字体包把站长已经下载好的包装到本站，由本站托管 woff2。两条路互不影响。插件不往文风控制台上传字体，也不切字。
 - 字体目录写在 `wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。WP-Cron 大约每月更新一次。更新失败会留下上一份。新装站点还没有这份文件时，会排一次马上执行的任务去拉取。选中后写入 `fontFamily`（`wenfeng-*`）。
@@ -68,9 +68,16 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 - 字体包页面会写明原因：找不到 `local.css`、样式里没有可用的 woff2，或已经启用但不会加载。读不到上传目录时，不把正常的包说成坏了。
 - 工具页可以导出、导入已启用的字体包记录和已确认的文风云。文件里没有 API Key。文件里如果还带着密钥，整份拒绝，不会写入。
 - 前台打印已确认的样式链接时，同时打印文风授权说明（`CDN_LICENSE_NOTE`）。这句话不改写。API Key 不进入网页，也不进入导出文件。
-- 字体包装上或替换之后发出 `wpfonts_package_installed`。删除目录之前发出 `wpfonts_package_deleted`，此时目录还在，列表里也还留着这个包。钩子返回后才删目录并去掉列表项。参数见上面的表。`files` 可以是空数组。再次安装同一个 id 会替换，不另存一份。
+- 字体包装上或替换之后发出 `wpfonts_package_installed`。删除目录之前发出 `wpfonts_package_deleted`，此时目录还在，列表里也还留着这个包。钩子返回后才删目录并去掉列表项。本地目录已经空了时，`dir` 为空，`uploads_rel` 仍在，并仍请求文件系统删除这个前缀。参数见上面的表。`files` 可以是空数组。再次安装同一个 id 会替换，不另存一份。
 - 命令行：`wp fonts package install <zip>`、`wp fonts package delete <slug-or-id>`、`wp fonts package list`。浏览器上传不变。
 - 设置里可以指定正文、标题和中文回退。键是 `wpfonts_settings` 里的 `cjk_body`、`cjk_heading`、`cjk_fallback`。正文或标题留空时，用中文回退。存的是 `pkg:{包 id}` 或 `cloud:{wenfeng-*}`。页面上的字体名仍是包里的 family，或已确认文风云的 `css_face`。中文回退会插进全站样式生成的西文栈，包括带 `!important` 的 `.has-*-font-family`，插在 `system-ui`、`sans-serif` 这类通用字体之前。插件自己的样式句柄是 `wpfonts-cjk`，前台和编辑器都会输出。这条路不改 `theme.json`，也不改用户的全站样式帖。已有的全站样式同步还在。
+
+## 2.0.0-rc.17
+
+- 概览里还没选定中文回退时，写明站点先用系统中文；安装文风字体包或开启文风云后，到设置里选一个。The overview says the site uses system Chinese until a 文风字体包 is installed or 文风云 is turned on, and the choice is then made in Settings.
+- 设置页「选用字体」沿用文派后台的 choice 卡片和勾选尺寸。目录样张用 card 长条铺满，`object-fit: contain`，不再按方块裁切。有 CDN 图时，不再把实时 `font-family` 样句叠在图上。The cloud face picker uses the existing choice cards. Card strips are full width and not cropped. A live pangram is not painted on top of a CDN image.
+- 装包页在 card 长条下显示长句样张 `fontPreview.webp`（720×400，打不开再试 png）。地址与 `previewUrl`、`cardPreviewUrl` 同一套推导，`xxzt`→`xzt`、`syhtcjk`→`syhtsc` 仍只改 CDN 目录。字体库继续用 `preview.webp`。The package screen binds `fontPreviewUrl`. The Font Library stays on `previewUrl`.
+- 删除字体包时，如果本地目录已经不在，`wpfonts_package_deleted` 仍带 `uploads_rel`，并仍让文件系统删除这个前缀，方便对象存储清掉同一路径。An empty local directory still emits `uploads_rel` and still asks the filesystem to delete that prefix.
 
 ## 2.0.0-rc.16
 

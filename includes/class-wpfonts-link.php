@@ -179,13 +179,14 @@ class WPFonts_Link {
 	 *
 	 * The host is WPFonts_Link::HOSTS for the site region, the same map as
 	 * public CSS. Nothing else is allowed. The path is
-	 * /fonts-packages/{cdn norm}/preview/{preview|card|og}.{webp|png}.
+	 * /fonts-packages/{cdn norm}/preview/{preview|card|og|fontPreview}.{webp|png}.
 	 * The directory is package_cdn_norm(), so a historical short such as
-	 * xxzt uses the CDN folder xzt. Ask for webp first. png is the sibling
+	 * xxzt uses the CDN folder xzt. fontPreview is the long-text specimen
+	 * (same 720×400 frame as preview). Ask for webp first. png is the sibling
 	 * when webp is missing.
 	 *
 	 * @param mixed  $slug   Package id or catalog fontFamily.
-	 * @param string $asset  preview, card, or og.
+	 * @param string $asset  preview, card, og, or fontPreview.
 	 * @param string $format webp or png.
 	 * @param mixed  $region Region id. Unknown values use cn.
 	 * @return string
@@ -195,8 +196,8 @@ class WPFonts_Link {
 		if ( '' === $norm ) {
 			return '';
 		}
-		$asset = strtolower( (string) $asset );
-		if ( ! in_array( $asset, array( 'preview', 'card', 'og' ), true ) ) {
+		$asset = self::specimen_asset( $asset );
+		if ( '' === $asset ) {
 			return '';
 		}
 		$format = strtolower( (string) $format );
@@ -207,33 +208,34 @@ class WPFonts_Link {
 	}
 
 	/**
-	 * previewUrl and cardPreviewUrl for a slug, preferring webp.
+	 * previewUrl, cardPreviewUrl, and fontPreviewUrl for a slug, preferring webp.
 	 *
 	 * Derived from the CDN folder (package_cdn_norm()). A row may already
-	 * carry previewUrl, cardPreviewUrl, or assets.previewUrl /
-	 * assets.cardPreviewUrl. A supplied webp replaces the derived URL only
-	 * when it is https, on an existing CDN host, for this same CDN folder,
-	 * and has no query. A raw historical short in that path is not kept. A
-	 * supplied png does not replace webp. The catalog snapshot itself stays
-	 * name + fontFamily; this is the read path for a row that already has
-	 * the fields.
+	 * carry previewUrl, cardPreviewUrl, fontPreviewUrl, or the same keys
+	 * under assets. A supplied webp replaces the derived URL only when it
+	 * is https, on an existing CDN host, for this same CDN folder, and has
+	 * no query. A raw historical short in that path is not kept. A supplied
+	 * png does not replace webp. The catalog snapshot itself stays name +
+	 * fontFamily; this is the read path for a row that already has the fields.
+	 * fontPreview is the long-text specimen. It does not replace previewUrl.
 	 *
 	 * @param mixed $slug   Package id or catalog fontFamily.
 	 * @param mixed $region Region id.
 	 * @param mixed $row    Catalog row or metadata, or null.
-	 * @return array{previewUrl:string,cardPreviewUrl:string}
+	 * @return array{previewUrl:string,cardPreviewUrl:string,fontPreviewUrl:string}
 	 */
 	public static function package_specimen_urls( $slug, $region = 'cn', $row = null ) {
 		$norm = self::package_cdn_norm( $slug );
 		$out  = array(
 			'previewUrl'     => '',
 			'cardPreviewUrl' => '',
+			'fontPreviewUrl' => '',
 		);
 		if ( '' === $norm ) {
 			return $out;
 		}
-		foreach ( array( 'preview', 'card' ) as $asset ) {
-			$key     = ( 'card' === $asset ) ? 'cardPreviewUrl' : 'previewUrl';
+		foreach ( array( 'preview', 'card', 'fontPreview' ) as $asset ) {
+			$key     = self::specimen_meta_key( $asset );
 			$derived = self::package_preview_url( $slug, $asset, 'webp', $region );
 			$given   = self::specimen_url_from_row( $row, $asset );
 			if ( '' !== $given && self::is_package_specimen_url( $given, $norm, $asset ) && '.webp' === substr( $given, -5 ) ) {
@@ -257,7 +259,7 @@ class WPFonts_Link {
 			return '';
 		}
 		$png = substr( $webp, 0, -5 ) . '.png';
-		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og)\.png$#', $png, $matches ) ) {
+		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og|fontPreview)\.png$#', $png, $matches ) ) {
 			return '';
 		}
 		if ( ! self::is_package_specimen_url( $png, $matches[1], $matches[2] ) ) {
@@ -271,13 +273,13 @@ class WPFonts_Link {
 	 *
 	 * @param string $url   Candidate URL.
 	 * @param string $norm  Package norm.
-	 * @param string $asset preview, card, or og.
+	 * @param string $asset preview, card, og, or fontPreview.
 	 * @return bool
 	 */
 	public static function is_package_specimen_url( $url, $norm, $asset ) {
 		$norm  = self::token( $norm, 64 );
-		$asset = strtolower( (string) $asset );
-		if ( '' === $norm || ! in_array( $asset, array( 'preview', 'card', 'og' ), true ) ) {
+		$asset = self::specimen_asset( $asset );
+		if ( '' === $norm || '' === $asset ) {
 			return false;
 		}
 		$parts = parse_url( (string) $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Same shape as is_allowlisted(). The CLI test has no WordPress.
@@ -300,20 +302,57 @@ class WPFonts_Link {
 	}
 
 	/**
-	 * previewUrl or cardPreviewUrl already present on a row.
+	 * CDN file name for a specimen asset, or empty.
+	 *
+	 * preview, card, and og stay lowercase. fontPreview keeps that spelling
+	 * because the CDN file is fontPreview.webp, not fontpreview.webp.
+	 *
+	 * @param mixed $asset Raw asset name.
+	 * @return string
+	 */
+	private static function specimen_asset( $asset ) {
+		$asset = strtolower( (string) $asset );
+		if ( 'fontpreview' === $asset ) {
+			return 'fontPreview';
+		}
+		if ( in_array( $asset, array( 'preview', 'card', 'og' ), true ) ) {
+			return $asset;
+		}
+		return '';
+	}
+
+	/**
+	 * Row key for a specimen asset.
+	 *
+	 * @param string $asset preview, card, or fontPreview.
+	 * @return string
+	 */
+	private static function specimen_meta_key( $asset ) {
+		$asset = self::specimen_asset( $asset );
+		if ( 'card' === $asset ) {
+			return 'cardPreviewUrl';
+		}
+		if ( 'fontPreview' === $asset ) {
+			return 'fontPreviewUrl';
+		}
+		return 'previewUrl';
+	}
+
+	/**
+	 * previewUrl, cardPreviewUrl, or fontPreviewUrl already present on a row.
 	 *
 	 * Top-level fields win over assets.*, matching index.json either flat
 	 * or nested. The caller still rejects a URL that is not this norm.
 	 *
 	 * @param mixed  $row   Catalog row or metadata.
-	 * @param string $asset preview or card.
+	 * @param string $asset preview, card, or fontPreview.
 	 * @return string
 	 */
 	private static function specimen_url_from_row( $row, $asset ) {
 		if ( ! is_array( $row ) ) {
 			return '';
 		}
-		$key        = ( 'card' === $asset ) ? 'cardPreviewUrl' : 'previewUrl';
+		$key        = self::specimen_meta_key( $asset );
 		$candidates = array();
 		if ( isset( $row[ $key ] ) && is_string( $row[ $key ] ) ) {
 			$candidates[] = $row[ $key ];
