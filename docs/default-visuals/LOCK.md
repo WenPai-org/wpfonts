@@ -92,3 +92,5 @@
 **LOCKED 2026-11-06 ~17:00 CST（Feng t699u）**：左下角两行 = `文风·{中文}` + `{EN} · {pinyin}`；L1 标仍右下/右端。
 **LOCKED 2026-11-06 ~17:10 CST（Feng t705u/t706u）**：左下角**单行** `文风·{display}`；禁止换行；EN·拼音不放 BL。
 **LOCKED 2026-11-06 ~17:15 CST（Feng t707u）**：左下角单行 `文风·中文` + 空格 + EN（优先）否则拼音；禁止换行；EN 与拼音不同时出。
+**LOCKED 2026-11-06 ~17:00 CST（Feng t708u）**：定稿落 Mac 座位真源；`~/office/modiqi/tools/wpfonts-preview/` 脚本 `20261106b` + 本 LOCK；产出/执行在 Mac（非仅 sandbox `/workspace`）；CDN 仍须 Feng 点名 Ops/赑屃。
+
