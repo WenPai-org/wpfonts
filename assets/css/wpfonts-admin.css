@@ -38,7 +38,7 @@
 	object-position: left center;
 }
 
-/* Installed package cards: full-width 1200×280 card strip. No square crop. */
+/* Installed package detail: full-width 1200×280 card strip. No square crop. */
 .wenpai-app .wpfonts-preview .wpfonts-specimen {
 	width: 100%;
 	max-width: none;
@@ -47,15 +47,6 @@
 	object-fit: contain;
 	object-position: left center;
 	background: var(--wenpai-card);
-}
-
-/* Long-text specimen is 720×400, same frame as preview. Do not stretch it. */
-.wenpai-app .wpfonts-preview .wpfonts-font-preview {
-	margin-top: var(--wenpai-space-3);
-}
-
-.wenpai-app .wpfonts-preview .wpfonts-font-preview .wpfonts-specimen {
-	max-width: 720px;
 }
 
 .wpfonts-specimen-fallback[hidden] {
