@@ -1218,8 +1218,11 @@ class WPFonts_Admin {
 		$name    = isset( $font['name'] ) ? (string) $font['name'] : $id;
 		$css     = isset( $font['cssFace'] ) ? (string) $font['cssFace'] : '';
 		$url     = isset( $font['cssUrl'] ) ? (string) $font['cssUrl'] : '';
+		$card    = isset( $font['cardPreviewUrl'] ) ? (string) $font['cardPreviewUrl'] : '';
+		$preview = isset( $font['previewUrl'] ) ? (string) $font['previewUrl'] : '';
 		$style   = self::glyph_family_style( $css );
 		$has_css = '' !== $style;
+		$has_img = self::specimen_url_ok( $card );
 		echo '<label class="choice' . ( $on ? ' is-on' : '' ) . '"';
 		if ( $has_css ) {
 			echo ' data-css-face="' . esc_attr( $css ) . '"';
@@ -1227,18 +1230,33 @@ class WPFonts_Admin {
 		if ( '' !== $url ) {
 			echo ' data-css-url="' . esc_attr( $url ) . '"';
 		}
+		if ( $has_img ) {
+			echo ' data-card-url="' . esc_attr( $card ) . '"';
+		}
+		if ( self::specimen_url_ok( $preview ) ) {
+			echo ' data-preview-url="' . esc_attr( $preview ) . '"';
+		}
 		echo '>';
 		echo '<input type="checkbox" name="wpfonts_settings[families][]" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
 		echo '<span>';
+		if ( $has_img ) {
+			self::render_specimen_image( $card, $name );
+		}
 		echo '<span class="t wpfonts-glyph"';
-		if ( $has_css ) {
+		if ( $has_css && ! $has_img ) {
 			echo ' style="' . esc_attr( $style ) . '"';
 		}
 		echo '>' . esc_html( $name ) . '</span>';
 		echo '<span class="d">' . esc_html( $id ) . '</span>';
 		if ( $has_css ) {
+			echo '<span class="wpfonts-specimen-fallback"';
+			if ( $has_img ) {
+				echo ' hidden';
+			}
+			echo '>';
 			echo '<span class="meta wpfonts-glyph-label">' . esc_html__( '字形预览', 'wpfonts' ) . '</span>';
 			echo '<span class="wpfonts-glyph-sample wpfonts-glyph" style="' . esc_attr( $style ) . '">' . esc_html__( '永和九年', 'wpfonts' ) . '</span>';
+			echo '</span>';
 		}
 		echo '</span></label>';
 	}
@@ -1249,6 +1267,9 @@ class WPFonts_Admin {
 	 * cssFace is set only after this site has already read that stylesheet.
 	 * cssUrl is the allowlisted public address. The browser may use it to
 	 * learn a face that is not confirmed yet. The API key is not included.
+	 * previewUrl and cardPreviewUrl are derived from the slug. They are not
+	 * stored in the catalog snapshot. A row that already has those fields,
+	 * or assets.previewUrl / assets.cardPreviewUrl, keeps a matching webp.
 	 *
 	 * @param array $fonts    Catalog rows.
 	 * @param array $settings Public settings.
@@ -1281,10 +1302,55 @@ class WPFonts_Admin {
 				if ( '' !== $url && WPFonts_Link::is_allowlisted( $url ) ) {
 					$row['cssUrl'] = $url;
 				}
+				$region = isset( $settings['region'] ) ? $settings['region'] : 'cn';
+				$spec   = WPFonts_Link::package_specimen_urls( $token, $region, $font );
+				if ( '' !== $spec['previewUrl'] ) {
+					$row['previewUrl'] = $spec['previewUrl'];
+				}
+				if ( '' !== $spec['cardPreviewUrl'] ) {
+					$row['cardPreviewUrl'] = $spec['cardPreviewUrl'];
+				}
 			}
 			$out[] = $row;
 		}
 		return $out;
+	}
+
+	/**
+	 * Whether this string is a CDN specimen image URL.
+	 *
+	 * @param string $url Candidate URL.
+	 * @return bool
+	 */
+	private static function specimen_url_ok( $url ) {
+		if ( ! class_exists( 'WPFonts_Link', false ) || ! is_string( $url ) || '' === $url ) {
+			return false;
+		}
+		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og)\.(?:webp|png)$#', $url, $matches ) ) {
+			return false;
+		}
+		return WPFonts_Link::is_package_specimen_url( $url, $matches[1], $matches[2] );
+	}
+
+	/**
+	 * Print one specimen image. webp first; data-fallback is the png sibling.
+	 *
+	 * The admin script swaps to png, then reveals the text specimen, when
+	 * the image is missing. Printing the URL does not download a font.
+	 *
+	 * @param string $url Image URL, already checked.
+	 * @param string $alt Accessible name.
+	 * @return void
+	 */
+	private static function render_specimen_image( $url, $alt ) {
+		echo '<img class="wpfonts-specimen" src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '" decoding="async" loading="lazy"';
+		if ( class_exists( 'WPFonts_Link', false ) ) {
+			$png = WPFonts_Link::specimen_png_url( $url );
+			if ( '' !== $png ) {
+				echo ' data-fallback="' . esc_attr( $png ) . '"';
+			}
+		}
+		echo '>';
 	}
 
 	/**
@@ -1754,11 +1820,23 @@ class WPFonts_Admin {
 	private static function render_package_preview( array $package ) {
 		$family   = isset( $package['family'] ) ? (string) $package['family'] : '';
 		$id       = isset( $package['id'] ) ? (string) $package['id'] : '';
+		$name     = isset( $package['name'] ) ? (string) $package['name'] : $id;
 		$declared = WPFonts_Packages::installed_css_family( $id );
 		$plain    = WPFonts_Library::plain_family( '' !== $declared ? $declared : $family );
 		$health   = WPFonts_Packages::health( $package );
 		$ready    = '' !== $plain && 'ok' === $health['code'];
 		$sliced   = class_exists( 'WPFonts_Library', false ) && WPFonts_Library::package_is_sliced( $id );
+		$region   = 'cn';
+		$image    = '';
+		if ( class_exists( 'WPFonts_Settings', false ) ) {
+			$saved  = WPFonts_Settings::get();
+			$region = isset( $saved['region'] ) ? (string) $saved['region'] : 'cn';
+		}
+		if ( class_exists( 'WPFonts_Link', false ) ) {
+			$spec  = WPFonts_Link::package_specimen_urls( $id, $region, $package );
+			$image = isset( $spec['previewUrl'] ) ? (string) $spec['previewUrl'] : '';
+		}
+		$has_img = self::specimen_url_ok( $image );
 		echo '<div class="wpfonts-preview"';
 		if ( '' !== $plain ) {
 			echo ' data-family="' . esc_attr( $plain ) . '"';
@@ -1770,19 +1848,37 @@ class WPFonts_Admin {
 		if ( 'unknown' === $health['code'] ) {
 			$ready = '' !== $plain && self::package_css_ready( $id );
 		}
+		if ( $has_img ) {
+			echo '<div class="wpfonts-specimen-wrap">';
+			self::render_specimen_image( $image, $name );
+		}
 		if ( ! $ready ) {
-			$reason = ( '' !== $health['reason'] ) ? $health['reason'] : __( '预览暂时不可用。', 'wpfonts' );
-			echo '<p class="meta">' . esc_html( $reason ) . '</p>';
+			if ( ! $has_img ) {
+				$reason = ( '' !== $health['reason'] ) ? $health['reason'] : __( '预览暂时不可用。', 'wpfonts' );
+				echo '<p class="meta">' . esc_html( $reason ) . '</p>';
+			}
+			if ( $has_img ) {
+				echo '</div>';
+			}
 			echo '</div>';
 			return;
 		}
 		$style = self::glyph_family_style( $plain );
+		echo '<div class="wpfonts-specimen-fallback"';
+		if ( $has_img ) {
+			echo ' hidden';
+		}
+		echo '>';
 		echo '<p class="meta">' . esc_html__( '字形预览', 'wpfonts' ) . '</p>';
 		echo '<div class="wpfonts-glyph" style="' . esc_attr( $style ) . '">';
 		echo '<p class="wpfonts-preview-zh">' . esc_html__( '永和九年，岁在癸丑。暮春之初，会于会稽山阴之兰亭。', 'wpfonts' ) . '</p>';
 		echo '<p class="wpfonts-preview-en">The quick brown fox jumps over the lazy dog.</p>';
 		echo '<p class="wpfonts-preview-num">0123456789</p>';
 		echo '</div></div>';
+		if ( $has_img ) {
+			echo '</div>';
+		}
+		echo '</div>';
 	}
 
 	/**

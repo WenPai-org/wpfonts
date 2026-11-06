@@ -148,6 +148,39 @@ $assert( false !== $pre_at && false !== $css_at && $note_at < $pre_at && $pre_at
 $hk_snip = WPFonts_Link::embed_snippet( 'https://hk.windfonts.com/api/css?family=wenfeng-ibmps&subset=zh-common' );
 $assert( false !== strpos( $hk_snip, 'href="https://hk.windfonts.com" crossorigin' ), 'preconnect left the stylesheet host' );
 $assert( '' === WPFonts_Link::embed_snippet( 'https://fonts.example/api/css?family=wenfeng-ibmps' ), 'a foreign host received an embed snippet' );
+$assert( 'xzt' === WPFonts_Link::package_norm( 'wenfeng-xzt' ), 'xzt norm drifted' );
+$assert( 'xzt' === WPFonts_Link::package_norm( 'Wenfeng-XZT' ), 'norm was not lowercased' );
+$assert( 'syhtsc' === WPFonts_Link::package_norm( 'wenfeng-syhtsc' ), 'syhtsc norm drifted' );
+$assert( '' === WPFonts_Link::package_norm( 'demo' ), 'a zip id invented a norm' );
+$assert( '' === WPFonts_Link::package_norm( 'wenfeng-' ), 'an empty short invented a norm' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'preview', 'webp', 'cn' ), 'xzt preview URL drifted' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/card.webp' === WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'card', 'webp', 'cn' ), 'xzt card URL drifted' );
+$assert( 'https://cn.windfonts.com/fonts-packages/syhtsc/preview/preview.webp' === WPFonts_Link::package_preview_url( 'wenfeng-syhtsc', 'preview', 'webp', 'cn' ), 'syhtsc preview URL drifted' );
+$assert( 'https://hk.windfonts.com/fonts-packages/xzt/preview/preview.png' === WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'preview', 'png', 'hk' ), 'png specimen left the site host' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.png' === WPFonts_Link::specimen_png_url( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' ), 'webp did not fall back to png' );
+$assert( '' === WPFonts_Link::specimen_png_url( 'https://cdn.example.test/fonts-packages/xzt/preview/preview.webp' ), 'a second CDN host was accepted as a specimen' );
+$assert( '' === WPFonts_Link::package_preview_url( 'not-wenfeng', 'preview', 'webp', 'cn' ), 'a non-wenfeng slug invented a specimen' );
+$assert( '' === WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'script', 'webp', 'cn' ), 'an unknown specimen asset was built' );
+$xzt_row = WPFonts_Link::package_specimen_urls(
+	'wenfeng-xzt',
+	'cn',
+	array(
+		'assets' => array(
+			'previewUrl'    => 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp',
+			'cardPreviewUrl' => 'https://evil.example/card.webp',
+		),
+	)
+);
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === $xzt_row['previewUrl'], 'supplied preview webp was dropped' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/card.webp' === $xzt_row['cardPreviewUrl'], 'a foreign card URL replaced the derived specimen' );
+$png_row = WPFonts_Link::package_specimen_urls(
+	'wenfeng-xzt',
+	'cn',
+	array(
+		'previewUrl' => 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.png',
+	)
+);
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === $png_row['previewUrl'], 'a png specimen replaced webp' );
 $assert( '' === WPFonts_Link::preconnect_origin( 'https://cn.windfonts.com/api/css?family=wenfeng-zhi-mang-xing&subset=zh-common' ) || false !== strpos( WPFonts_Link::embed_snippet( 'https://cn.windfonts.com/api/css?family=wenfeng-zhi-mang-xing&subset=zh-common' ), $license ), 'a shown link dropped the license note' );
 $embed_src = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-embed.php' );
 $assert( false !== strpos( $embed_src, 'print_license_note' ), 'front head does not print the license note' );

@@ -218,10 +218,12 @@ $assert( is_array( $aligned ), 'wenfeng package produced no family' );
 $assert( 'wenfeng-fzss' === $aligned['font_family_settings']['slug'], 'catalog package slug was prefixed' );
 $assert( '方正书宋' === $aligned['font_family_settings']['name'], 'catalog package display name drifted' );
 $assert( '"wenfeng-fzss", sans-serif' === $aligned['font_family_settings']['fontFamily'], 'catalog package stack drifted' );
+$assert( 'https://cn.windfonts.com/fonts-packages/fzss/preview/preview.webp' === $aligned['font_family_settings']['preview'], 'wenfeng package did not use the CDN specimen' );
 $assert( '演示包' === $built[0]['font_family_settings']['name'], 'package name drifted' );
 $assert( isset( $built[0]['font_family_settings']['fontFace'][0]['src'] ), 'enabled package lost its woff2' );
 $assert( false === strpos( wp_json_encode( $built ), 'evil.example' ), 'non-woff2 url was kept' );
 $assert( false === strpos( wp_json_encode( $built ), 'secret.woff2' ), 'relative url was kept' );
+$assert( isset( $built[0]['font_family_settings']['preview'] ) && false !== strpos( $built[0]['font_family_settings']['preview'], 'wpfonts_specimen=demo' ), 'zip package lost the svg specimen' );
 
 $deleted = WPFonts_Library::package_families(
 	array(
@@ -253,6 +255,11 @@ $assert( 'wenfeng-ibmps' === $cloud[0]['font_family_settings']['slug'], 'cloud s
 $assert( '"windfonts-ibmps", sans-serif' === $cloud[0]['font_family_settings']['fontFamily'], 'cloud stack used the catalog token' );
 $assert( 'IBM Plex 无衬线简体中文' === $cloud[0]['font_family_settings']['name'], 'cloud label drifted' );
 $assert( ! isset( $cloud[0]['font_family_settings']['fontFace'] ), 'cloud family attached a font file' );
+$assert( 'https://cn.windfonts.com/fonts-packages/ibmps/preview/preview.webp' === $cloud[0]['font_family_settings']['preview'], 'cloud family did not use the CDN specimen' );
+$hk_cloud = $cloud_settings;
+$hk_cloud['region'] = 'hk';
+$hk_listed = WPFonts_Library::confirmed_cloud_families( $hk_cloud, 'IBM Plex 无衬线简体中文' );
+$assert( 'https://hk.windfonts.com/fonts-packages/ibmps/preview/preview.webp' === $hk_listed[0]['font_family_settings']['preview'], 'cloud specimen left the site CDN host' );
 $unconfirmed                   = $cloud_settings;
 $unconfirmed['css_status']     = 'missing';
 $unconfirmed['family']         = 'wenfeng-zhi-mang-xing';
@@ -400,7 +407,9 @@ $assert( 'normal' === $xxzt_family['font_family_settings']['fontFace'][0]['fontS
 $assert( 'https://example.test/wp-content/uploads/wpfonts/packages/wenfeng-xxzt/0.woff2' === $xxzt_family['font_family_settings']['fontFace'][0]['src'], 'folded slice did not keep one woff2' );
 $assert( 'U+4E00' === $xxzt_family['font_family_settings']['fontFace'][0]['unicodeRange'], 'folded slice dropped its own range' );
 $assert( false === strpos( wp_json_encode( $xxzt_family ), '1.woff2' ), 'the second slice was copied into the font library' );
-$assert( isset( $xxzt_family['font_family_settings']['preview'] ) && false !== strpos( $xxzt_family['font_family_settings']['preview'], 'wpfonts_specimen=wenfeng-xxzt' ), 'family specimen URL missing' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xxzt/preview/preview.webp' === $xxzt_family['font_family_settings']['preview'], 'family specimen URL missing' );
+$xzt_preview = WPFonts_Link::package_preview_url( 'wenfeng-xzt', 'preview', 'webp', 'cn' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === $xzt_preview, 'xzt specimen path drifted' );
 $svg = WPFonts_Library::specimen_svg( '文风·玄宗体</text><script>' );
 $assert( false !== strpos( $svg, '文风·玄宗体' ), 'specimen dropped the display name' );
 $assert( false === strpos( $svg, '<script>' ), 'specimen svg was not escaped' );

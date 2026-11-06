@@ -633,10 +633,13 @@ $assert( false !== strpos( $js, 'data-css-face' ), 'catalog script ignores a con
 $assert( false !== strpos( $js, '字形预览' ), 'catalog script does not label glyph preview' );
 $assert( false !== strpos( $admin, '字形预览' ), 'catalog screen does not label glyph preview' );
 $assert( false !== strpos( $admin, '链接文字（不加载字体）' ), 'link preview is not labeled as link text' );
+$assert( false !== strpos( $admin, 'cardPreviewUrl' ), 'catalog rows are not given a card preview' );
+$assert( false !== strpos( $js, 'fonts-packages' ), 'catalog script does not render the CDN specimen' );
 $assert( false !== strpos( $js, 'body.append("refresh", "1")' ), 'refresh button does not post refresh=1' );
 $assert( false !== strpos( $js, 'data-updating' ), 'refresh progress attribute missing' );
 $assert( false !== strpos( $js, 'data-stale' ), 'stale refresh attribute missing' );
 $catalog_src = file_get_contents( dirname( __DIR__ ) . '/includes/class-wpfonts-catalog.php' );
+$assert( false === strpos( $catalog_src, 'cardPreviewUrl' ), 'snapshot started storing preview URLs' );
 $assert( false !== strpos( $catalog_src, "const CRON_HOOK = 'wpfonts_catalog_refresh'" ), 'cron hook name drifted' );
 $assert( false !== strpos( $main, 'WPFonts_Catalog::CRON_HOOK' ), 'cron hook is not registered' );
 $assert( false !== strpos( $main, "'WPFonts_Catalog', 'run_cron'" ), 'cron callback is not registered' );

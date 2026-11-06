@@ -139,6 +139,7 @@ $assert( 'wenfeng-xxzt' === WPFonts_Packages::resolve_display_name( 'wenfeng-xxz
 $assert( '玄宗体' === WPFonts_Packages::display_name_from_metadata( array( 'name' => 'wenfeng-xxzt', 'chinese' => '玄宗体' ) ), 'chinese metadata was skipped' );
 $assert( 'https://cdn.example.test/previews/xxzt.svg' === WPFonts_Packages::preview_url_from_metadata( array( 'preview' => 'https://cdn.example.test/previews/xxzt.svg' ) ), 'preview metadata was dropped' );
 $assert( 'https://cdn.example.test/a.png' === WPFonts_Packages::preview_url_from_metadata( '{"previewUrl":"https://cdn.example.test/a.png"}' ), 'previewUrl metadata was dropped' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp' === WPFonts_Packages::preview_url_from_metadata( array( 'assets' => array( 'previewUrl' => 'https://cn.windfonts.com/fonts-packages/xzt/preview/preview.webp', 'cardPreviewUrl' => 'https://cn.windfonts.com/fonts-packages/xzt/preview/card.webp' ) ) ), 'assets.previewUrl was dropped' );
 $assert( '' === WPFonts_Packages::preview_url_from_metadata( array( 'preview' => 'https://cdn.example.test/local.css' ) ), 'a stylesheet was accepted as a preview image' );
 $assert( '' === WPFonts_Packages::clean_preview_url( 'http://cdn.example.test/a.svg' ), 'an http preview was kept' );
 $assert( '' === WPFonts_Packages::preview_url_from_metadata( array( 'name' => '玄宗体' ) ), 'missing preview invented a URL' );
