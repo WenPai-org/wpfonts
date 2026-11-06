@@ -322,6 +322,48 @@ $canonical = WPFonts_Catalog::parse_body(
 );
 $assert( 1 === count( $canonical['fonts'] ) && 'wenfeng-zmxs' === $canonical['fonts'][0]['fontFamily'], 'storefront zmxs was dropped' );
 $assert( '志莽行书' === $canonical['fonts'][0]['name'], 'storefront 志莽 name was rewritten' );
+$by_status = WPFonts_Catalog::parse_body(
+	$catalog_body(
+		1,
+		1,
+		array(
+			array(
+				'name'       => '钟齐志莽行书',
+				'fontFamily' => 'wenfeng-zhi-mang-xing',
+				'status'     => 'archived',
+			),
+			array(
+				'name'       => 'Comfortaa',
+				'fontFamily' => 'wenfeng-comfortaa',
+				'status'     => 'offline',
+			),
+			array(
+				'name'       => 'Cormorant',
+				'fontFamily' => 'wenfeng-cormorant',
+				'status'     => 'offline',
+			),
+			array(
+				'name'       => 'Cuprum',
+				'fontFamily' => 'wenfeng-cuprum',
+				'status'     => 'offline',
+			),
+			array(
+				'name'       => '志莽行书',
+				'fontFamily' => 'wenfeng-zmxs',
+				'status'     => 'published',
+			),
+		)
+	)
+);
+$status_families = array();
+foreach ( $by_status['fonts'] as $font ) {
+	$status_families[] = $font['fontFamily'];
+}
+$assert( array( 'wenfeng-zmxs' ) === $status_families, 'archived or offline families stayed in the catalog' );
+$assert( isset( $by_status['fonts'][0]['name'] ) && '志莽行书' === $by_status['fonts'][0]['name'], 'archived alias replaced the published 志莽 row' );
+foreach ( array( 'wenfeng-comfortaa', 'wenfeng-cormorant', 'wenfeng-cuprum', 'wenfeng-zhi-mang-xing' ) as $fake_family ) {
+	$assert( ! in_array( $fake_family, $status_families, true ), $fake_family . ' survived a status filter' );
+}
 $assert( 2592000 === WPFonts_Catalog::MONTH_INTERVAL, 'monthly interval is not 30 days' );
 
 $reset();
@@ -402,8 +444,11 @@ foreach ( array( 'wenfeng-comfortaa', 'wenfeng-cormorant', 'wenfeng-cuprum', 'we
 $assert( 2 === count( $GLOBALS['http_log'] ), 'manual refresh did not request both pages' );
 $assert( false === strpos( $GLOBALS['http_log'][0]['url'], 'api_key' ), 'catalog URL contains a key' );
 $assert( false === strpos( $GLOBALS['http_log'][0]['url'], 'search=' ), 'snapshot refresh sent a search query' );
+$assert( false !== strpos( $GLOBALS['http_log'][0]['url'], 'page=1' ), 'refresh dropped the page query' );
+$assert( false !== strpos( $GLOBALS['http_log'][0]['url'], 'status=published' ), 'refresh did not request published fonts' );
 $assert( empty( $GLOBALS['http_log'][0]['args']['headers']['X-API-Key'] ), 'anonymous refresh sent the API key' );
 $assert( false !== strpos( $GLOBALS['http_log'][1]['url'], 'page=2' ), 'second page was not requested' );
+$assert( false !== strpos( $GLOBALS['http_log'][1]['url'], 'status=published' ), 'second page omitted published status' );
 $raw = (string) file_get_contents( WPFONTS_CATALOG_PATH );
 $saved = json_decode( $raw, true );
 $assert( is_array( $saved ) && isset( $saved['updated_at'] ) && is_int( $saved['updated_at'] ) && $saved['updated_at'] > 0, 'snapshot updated_at missing' );

@@ -11,10 +11,13 @@
  * Snapshot path: wp-content/uploads/wpfonts/catalog.json
  * Shape: { "updated_at": unix, "fonts": [ { "name": "…", "fontFamily": "wenfeng-…" } ] }
  *
- * Before a row is saved or shown, fontFamily is rewritten with the vendored
- * storefront aliases in data/catalog-allowlist.json. A family that is still
- * not on that list is dropped. The manual family text field is not filtered
- * by this list. The file is vendored for now; the plugin does not publish it.
+ * Refresh asks the directory for status=published. The default list also
+ * includes archived and offline fonts. A row that still carries a status
+ * other than published is dropped. Before a row is saved or shown,
+ * fontFamily is rewritten with the vendored storefront aliases in
+ * data/catalog-allowlist.json. A family that is still not on that list is
+ * dropped. The manual family text field is not filtered by this list. The
+ * file is vendored for now; the plugin does not publish it.
  *
  * Page transients from older builds are not read.
  *
@@ -36,6 +39,13 @@ class WPFonts_Catalog {
 	 * @var string
 	 */
 	const FONTS_URL = 'https://app.windfonts.com/api/fonts';
+
+	/**
+	 * Directory status to request and to keep. The default list also returns archived and offline fonts.
+	 *
+	 * @var string
+	 */
+	const FONTS_STATUS = 'published';
 
 	/**
 	 * Path under the uploads base directory.
@@ -208,8 +218,9 @@ class WPFonts_Catalog {
 	/**
 	 * Parse a catalog body. Public so tests can check fontFamily without HTTP.
 	 *
-	 * Storefront aliases are applied, then any fontFamily that is not on the
-	 * vendored allowlist is dropped. The manual family field does not use this.
+	 * A row with a status other than published is dropped. Storefront aliases
+	 * are applied, then any fontFamily that is not on the vendored allowlist
+	 * is dropped. The manual family field does not use this.
 	 *
 	 * @param string $body Response body.
 	 * @return array{ok:bool,fonts:array<int,array{name:string,fontFamily:string}>,page:int,pageTotal:int,total:int,code:int,cached:bool,cooling:bool,stale:bool,updated_at:int}
@@ -567,7 +578,7 @@ class WPFonts_Catalog {
 	}
 
 	/**
-	 * One HTTP GET. The key is a header, never part of the URL.
+	 * One HTTP GET. Requests this page of published fonts. The key is a header, never part of the URL.
 	 *
 	 * @param int    $page Page number.
 	 * @param string $key  API key, or empty for an anonymous read.
@@ -579,7 +590,8 @@ class WPFonts_Catalog {
 		}
 		$url     = add_query_arg(
 			array(
-				'page' => $page,
+				'page'   => $page,
+				'status' => self::FONTS_STATUS,
 			),
 			self::FONTS_URL
 		);
@@ -850,10 +862,10 @@ class WPFonts_Catalog {
 	}
 
 	/**
-	 * Apply storefront aliases, then keep one row per allowlisted family.
+	 * Drop unpublished rows, apply storefront aliases, then keep one row per family.
 	 *
-	 * The first row wins when an alias and the canonical family both appear.
-	 * A name is kept from that row. This does not restrict the manual field.
+	 * The first remaining row wins when an alias and the canonical family both
+	 * appear. A name is kept from that row. This does not restrict the manual field.
 	 *
 	 * @param array $rows API or snapshot rows.
 	 * @return array<int,array{name:string,fontFamily:string}>
@@ -863,6 +875,9 @@ class WPFonts_Catalog {
 		$seen  = array();
 		foreach ( $rows as $row ) {
 			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			if ( ! self::row_is_published( $row ) ) {
 				continue;
 			}
 			$family = self::accepted_family( isset( $row['fontFamily'] ) ? $row['fontFamily'] : '' );
@@ -880,6 +895,23 @@ class WPFonts_Catalog {
 			);
 		}
 		return $fonts;
+	}
+
+	/**
+	 * Whether a catalog row may enter the allowlist.
+	 *
+	 * Missing status is left to the allowlist. Archived, offline, and any
+	 * other explicit status are dropped before aliases run.
+	 *
+	 * @param array $row API or snapshot row.
+	 * @return bool
+	 */
+	private static function row_is_published( array $row ) {
+		if ( ! array_key_exists( 'status', $row ) ) {
+			return true;
+		}
+		$status = strtolower( trim( (string) $row['status'] ) );
+		return self::FONTS_STATUS === $status;
 	}
 
 	/**

@@ -21,7 +21,7 @@ Release gate before Feng says ship the stable release. This branch does not tag 
 - [x] **长句样张与空态文案。** `2.0.0-rc.17` 装包页字形预览使用 `fontPreview`。中文回退未指定时说明先用系统中文。
 - [x] **字形预览文件名。** `2.0.0-rc.18` 装包页字形预览请求 CDN 上的小写 `fontpreview.webp`（以及 png）。字段名仍是 `fontPreviewUrl`。`card`、`preview`、`og` 路径不变。
 - [x] **装包详情只留 card。** `2.0.0-rc.19` 装包详情只显示 `card.webp`（1200×280）。不再叠 `fontpreview.webp`。目录勾选仍用 card。字体库仍用 preview。card 图缺失时才显示实时字形预览。字段名仍是 `cardPreviewUrl` / `fontPreviewUrl`。
-- [x] **目录店面名单。** `2.0.0-rc.20` 选用字体和目录快照先套用 `data/catalog-allowlist.json` 里的别名，再丢掉不在店面名单里的 `fontFamily`。`wenfeng-zhi-mang-xing` 收成 `wenfeng-zmxs`。Comfortaa、Cormorant、Cuprum 不出现。手填的 `wenfeng-*` 仍可用。名单这一版先随插件附带。仍从 app.windfonts.com 拉取。
+- [x] **目录店面名单。** `2.0.0-rc.20` 选用字体和目录快照先套用 `data/catalog-allowlist.json` 里的别名，再丢掉不在店面名单里的 `fontFamily`。拉取带 `status=published`，页码仍在。行上的 status 不是 published 时丢掉。`wenfeng-zhi-mang-xing` 在没有 status 时收成 `wenfeng-zmxs`。Comfortaa、Cormorant、Cuprum 不出现。手填的 `wenfeng-*` 仍可用。名单这一版先随插件附带。仍从 app.windfonts.com 拉取。
 - [x] **文档 cocobook 已对齐 rc.8。** 不挡这次闸门。本支只补仓库里的 `readme.txt` / `README.md` 草稿和这份清单。
 
 ## 这一支不要做

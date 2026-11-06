@@ -74,7 +74,7 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 
 ## 2.0.0-rc.20
 
-- 设置里的字体目录，以及保存下来的目录快照，先套用随插件附带的店面别名，再丢掉不在店面名单里的 `fontFamily`。`wenfeng-zhi-mang-xing` 收成 `wenfeng-zmxs`。Comfortaa、Cormorant、Cuprum 这类假家族不再出现在选用列表里。手填的 `wenfeng-*` 不受这份名单限制。名单在 `data/catalog-allowlist.json`，这一版先随插件附带。仍从 app.windfonts.com 拉取目录。Catalog rows and snapshot refreshes apply the vendored storefront aliases, then drop any fontFamily that is not on that list. `wenfeng-zhi-mang-xing` becomes `wenfeng-zmxs`. Fake families such as Comfortaa, Cormorant, and Cuprum are not offered. A typed `wenfeng-*` token is still accepted. The allowlist is vendored for now. Refresh still fetches app.windfonts.com.
+- 设置里的字体目录，以及保存下来的目录快照，先套用随插件附带的店面别名，再丢掉不在店面名单里的 `fontFamily`。拉取目录时带 `status=published`，页码仍在。行上如果还有 status，不是 published 的（归档、下线）直接丢掉。`wenfeng-zhi-mang-xing` 在没有 status 时收成 `wenfeng-zmxs`。Comfortaa、Cormorant、Cuprum 这类假家族不再出现在选用列表里。手填的 `wenfeng-*` 不受这份名单限制。名单在 `data/catalog-allowlist.json`，这一版先随插件附带。仍从 app.windfonts.com 拉取目录。Catalog rows and snapshot refreshes apply the vendored storefront aliases, then drop any fontFamily that is not on that list. Refresh requests `status=published` and still sends the page. A row that carries any other status is dropped. Without a status, `wenfeng-zhi-mang-xing` becomes `wenfeng-zmxs`. Fake families such as Comfortaa, Cormorant, and Cuprum are not offered. A typed `wenfeng-*` token is still accepted. The allowlist is vendored for now. Refresh still fetches app.windfonts.com.
 
 ## 2.0.0-rc.19
 
