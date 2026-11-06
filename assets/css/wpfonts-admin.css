@@ -26,6 +26,27 @@
 	margin: 0 0 18px;
 }
 
+.wpfonts-specimen {
+	display: block;
+	width: 100%;
+	max-width: 720px;
+	height: auto;
+	margin: 8px 0 12px;
+	background: var(--wenpai-bg);
+	border-radius: 6px;
+}
+
+.wpfonts-specimen-fallback[hidden] {
+	display: none;
+}
+
+.wenpai-app .wpfonts-catalog-list .wpfonts-specimen {
+	max-height: 84px;
+	object-fit: cover;
+	object-position: left center;
+	margin-bottom: 8px;
+}
+
 .wpfonts-preview-zh,
 .wpfonts-preview-en,
 .wpfonts-preview-num {

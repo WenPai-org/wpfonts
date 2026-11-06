@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.13' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.14' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -628,12 +628,28 @@ if ( false === strpos( $packages_html, '删除后本站不再提供这份字体�
 	fwrite( STDERR, "packages fixture lost the delete gate copy.\n" );
 	exit( 1 );
 }
+if ( false === strpos( $packages_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/preview.webp' ) ) {
+	fwrite( STDERR, "package specimen did not use the CDN preview image.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, 'data-fallback="https://cn.windfonts.com/fonts-packages/ibmps/preview/preview.png"' ) ) {
+	fwrite( STDERR, "package specimen did not keep a png fallback.\n" );
+	exit( 1 );
+}
 if ( false === strpos( $packages_html, '字形预览' ) || false === strpos( $packages_html, 'data-family="IBM Plex Sans SC"' ) ) {
 	fwrite( STDERR, "package specimen did not use the package font-family.\n" );
 	exit( 1 );
 }
 if ( false === strpos( $packages_html, 'font-family: &quot;IBM Plex Sans SC&quot;, sans-serif' ) && false === strpos( $packages_html, 'font-family: "IBM Plex Sans SC", sans-serif' ) ) {
 	fwrite( STDERR, "package specimen style did not name the package family.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/card.webp' ) ) {
+	fwrite( STDERR, "catalog card did not use the CDN card image.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $catalog_html, 'https://cn.windfonts.com/fonts-packages/975yt/preview/card.webp' ) ) {
+	fwrite( STDERR, "catalog card omitted a second family specimen.\n" );
 	exit( 1 );
 }
 if ( false === strpos( $catalog_html, '字形预览' ) || false === strpos( $catalog_html, 'data-css-face="windfonts-ibmps"' ) ) {

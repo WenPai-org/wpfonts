@@ -64,6 +64,40 @@
 })();
 
 (function () {
+	function revealSpecimen(img) {
+		var next = img.getAttribute("data-fallback") || "";
+		if (next) {
+			img.removeAttribute("data-fallback");
+			img.setAttribute("src", next);
+			return;
+		}
+		img.hidden = true;
+		var wrap = img.closest ? img.closest(".wpfonts-specimen-wrap, .choice") : null;
+		if (!wrap) {
+			wrap = img.parentNode;
+		}
+		if (!wrap) {
+			return;
+		}
+		if (wrap.classList) {
+			wrap.classList.add("is-specimen-missing");
+		}
+		var fallback = wrap.querySelector(".wpfonts-specimen-fallback");
+		if (fallback) {
+			fallback.hidden = false;
+		}
+	}
+
+	document.addEventListener("error", function (event) {
+		var img = event.target;
+		if (!img || !img.getAttribute || !img.classList || !img.classList.contains("wpfonts-specimen")) {
+			return;
+		}
+		revealSpecimen(img);
+	}, true);
+})();
+
+(function () {
 	var root = document.getElementById("wpfonts-catalog");
 	var search = document.getElementById("wpfonts-catalog-search");
 	var family = document.getElementById("wpfonts-family");
@@ -101,6 +135,25 @@
 
 	function allowedCss(url) {
 		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/api\/css\?family=wenfeng-[a-z0-9-]+&subset=(?:en|zh-common|zh|full)$/.test(url || "");
+	}
+
+	function allowedSpecimen(url) {
+		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/preview\/(?:preview|card|og)\.(?:webp|png)$/.test(url || "");
+	}
+
+	function pngSibling(url) {
+		if (!allowedSpecimen(url) || !/\.webp$/.test(url)) {
+			return "";
+		}
+		return url.replace(/\.webp$/, ".png");
+	}
+
+	function specimenShowing(label) {
+		if (!label || !label.querySelector) {
+			return false;
+		}
+		var img = label.querySelector("img.wpfonts-specimen");
+		return !!(img && !img.hidden && label.classList && !label.classList.contains("is-specimen-missing"));
 	}
 
 	function ensureCssLink(url) {
@@ -227,6 +280,9 @@
 		if (!label) {
 			return;
 		}
+		if (specimenShowing(label)) {
+			return;
+		}
 		var face = label.getAttribute("data-css-face") || "";
 		var url = label.getAttribute("data-css-url") || "";
 		if (face) {
@@ -253,6 +309,18 @@
 			watchGlyph(labels[i]);
 		}
 	}
+
+	document.addEventListener("error", function (event) {
+		var img = event.target;
+		if (!img || !img.classList || !img.classList.contains("wpfonts-specimen") || !list.contains(img)) {
+			return;
+		}
+		var label = img.closest ? img.closest(".choice") : null;
+		if (!label || !label.classList.contains("is-specimen-missing")) {
+			return;
+		}
+		watchGlyph(label);
+	}, true);
 
 	if (window.IntersectionObserver) {
 		glyphObserver = new window.IntersectionObserver(function (entries) {
@@ -352,12 +420,32 @@
 			if (row.cssUrl) {
 				label.setAttribute("data-css-url", row.cssUrl);
 			}
+			var cardUrl = allowedSpecimen(row.cardPreviewUrl) ? row.cardPreviewUrl : "";
+			if (cardUrl) {
+				label.setAttribute("data-card-url", cardUrl);
+			}
+			if (allowedSpecimen(row.previewUrl)) {
+				label.setAttribute("data-preview-url", row.previewUrl);
+			}
 			var input = document.createElement("input");
 			input.type = "checkbox";
 			input.name = "wpfonts_settings[families][]";
 			input.value = row.fontFamily;
 			input.checked = !!selected[row.fontFamily];
 			var text = document.createElement("span");
+			if (cardUrl) {
+				var img = document.createElement("img");
+				img.className = "wpfonts-specimen";
+				img.alt = row.name || row.fontFamily;
+				img.decoding = "async";
+				img.loading = "lazy";
+				var png = pngSibling(cardUrl);
+				if (png) {
+					img.setAttribute("data-fallback", png);
+				}
+				img.src = cardUrl;
+				text.appendChild(img);
+			}
 			var title = document.createElement("span");
 			title.className = "t wpfonts-glyph";
 			title.textContent = row.name || row.fontFamily;
@@ -370,7 +458,19 @@
 			label.appendChild(text);
 			if (row.cssFace) {
 				markGlyph(label, row.cssFace);
-				if (row.cssUrl) {
+				if (cardUrl) {
+					var sample = text.querySelector(".wpfonts-glyph-sample");
+					var note = text.querySelector(".wpfonts-glyph-label");
+					if (sample && note) {
+						var box = document.createElement("span");
+						box.className = "wpfonts-specimen-fallback";
+						box.hidden = true;
+						box.appendChild(note);
+						box.appendChild(sample);
+						text.appendChild(box);
+					}
+					title.style.fontFamily = "";
+				} else if (row.cssUrl) {
 					ensureCssLink(row.cssUrl);
 				}
 			}
@@ -426,6 +526,12 @@
 			}
 			if (existing[i].getAttribute("data-css-url")) {
 				stored.cssUrl = existing[i].getAttribute("data-css-url");
+			}
+			if (existing[i].getAttribute("data-card-url")) {
+				stored.cardPreviewUrl = existing[i].getAttribute("data-card-url");
+			}
+			if (existing[i].getAttribute("data-preview-url")) {
+				stored.previewUrl = existing[i].getAttribute("data-preview-url");
 			}
 			loaded.push(stored);
 		}

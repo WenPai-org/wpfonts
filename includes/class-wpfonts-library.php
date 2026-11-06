@@ -197,12 +197,20 @@ class WPFonts_Library {
 			if ( '' === $name ) {
 				$name = $css;
 			}
+			$row = array(
+				'name'       => $name,
+				'slug'       => $token,
+				'fontFamily' => $stack,
+			);
+			if ( class_exists( 'WPFonts_Link', false ) ) {
+				$region  = isset( $settings['region'] ) ? $settings['region'] : 'cn';
+				$preview = WPFonts_Link::package_preview_url( $token, 'preview', 'webp', $region );
+				if ( '' !== $preview ) {
+					$row['preview'] = $preview;
+				}
+			}
 			$out[] = array(
-				'font_family_settings' => array(
-					'name'       => $name,
-					'slug'       => $token,
-					'fontFamily' => $stack,
-				),
+				'font_family_settings' => $row,
 			);
 		}
 		return $out;
@@ -536,12 +544,16 @@ class WPFonts_Library {
 	}
 
 	/**
-	 * Family preview image. A pack https URL wins. Otherwise a same-site SVG.
+	 * Family preview image.
 	 *
-	 * WordPress sanitizes preview with sanitize_url, which drops data URIs.
-	 * The SVG is drawn from the package display name when the pack has no
-	 * preview of its own. Optional metadata keys are preview, previewUrl,
-	 * and preview_url, in meta.json, metadata.json, or font.json.
+	 * A pack https URL wins. Keys are preview, previewUrl, preview_url, and
+	 * assets.previewUrl, in meta.json, metadata.json, or font.json. A
+	 * wenfeng-* family with no pack image uses the CDN specimen
+	 * /fonts-packages/{norm}/preview/preview.webp on the same host as public
+	 * CSS. That image is the font, so the library does not download woff2
+	 * just to paint a sample. Anything else is a same-site SVG of the
+	 * display name. WordPress sanitizes preview with sanitize_url, which
+	 * drops data URIs.
 	 *
 	 * @param array $package Package row.
 	 * @return string
@@ -561,6 +573,19 @@ class WPFonts_Library {
 			$given = WPFonts_Packages::clean_preview_url( $package['preview'] );
 			if ( '' !== $given ) {
 				return $given;
+			}
+		}
+		if ( '' !== $id && class_exists( 'WPFonts_Link', false ) ) {
+			$region = 'cn';
+			if ( class_exists( 'WPFonts_Settings', false ) ) {
+				$saved = WPFonts_Settings::get();
+				if ( isset( $saved['region'] ) && '' !== (string) $saved['region'] ) {
+					$region = $saved['region'];
+				}
+			}
+			$cdn = WPFonts_Link::package_preview_url( $id, 'preview', 'webp', $region );
+			if ( '' !== $cdn ) {
+				return $cdn;
 			}
 		}
 		return self::specimen_preview_url( $id );

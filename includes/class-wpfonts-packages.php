@@ -803,9 +803,10 @@ class WPFonts_Packages {
 	/**
 	 * https preview image from package metadata, or empty.
 	 *
-	 * Keys, in order: preview, previewUrl, preview_url. A stylesheet or
+	 * Keys, in order: preview, previewUrl, preview_url, then
+	 * assets.previewUrl and assets.cardPreviewUrl. A stylesheet or
 	 * script URL is refused. The Font Library uses this instead of the
-	 * generated name specimen when the pack provides one.
+	 * CDN specimen when the pack provides one.
 	 *
 	 * @param array|string|null $metadata Decoded metadata or a JSON string.
 	 * @return string
@@ -822,6 +823,17 @@ class WPFonts_Packages {
 			$url = self::clean_preview_url( $data[ $key ] );
 			if ( '' !== $url ) {
 				return $url;
+			}
+		}
+		if ( isset( $data['assets'] ) && is_array( $data['assets'] ) ) {
+			foreach ( array( 'previewUrl', 'cardPreviewUrl' ) as $key ) {
+				if ( ! isset( $data['assets'][ $key ] ) || ! is_string( $data['assets'][ $key ] ) ) {
+					continue;
+				}
+				$url = self::clean_preview_url( $data['assets'][ $key ] );
+				if ( '' !== $url ) {
+					return $url;
+				}
 			}
 		}
 		return '';

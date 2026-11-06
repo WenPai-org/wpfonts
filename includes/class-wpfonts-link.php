@@ -122,6 +122,177 @@ class WPFonts_Link {
 	}
 
 	/**
+	 * Lowercase fonts-packages norm for a wenfeng-* slug.
+	 *
+	 * wenfeng-xzt becomes xzt. The CSS id stays wenfeng-*. A zip-only id is
+	 * empty, so it does not invent a CDN specimen.
+	 *
+	 * @param mixed $slug Package id or catalog fontFamily.
+	 * @return string
+	 */
+	public static function package_norm( $slug ) {
+		$token  = self::token( $slug, 80 );
+		$prefix = 'wenfeng-';
+		if ( '' === $token || 0 !== strpos( $token, $prefix ) ) {
+			return '';
+		}
+		return self::token( substr( $token, strlen( $prefix ) ), 64 );
+	}
+
+	/**
+	 * CDN specimen image for one wenfeng-* family.
+	 *
+	 * The host is WPFonts_Link::HOSTS for the site region, the same map as
+	 * public CSS. Nothing else is allowed. The path is
+	 * /fonts-packages/{norm}/preview/{preview|card|og}.{webp|png}.
+	 * Ask for webp first. png is the sibling when webp is missing.
+	 *
+	 * @param mixed  $slug   Package id or catalog fontFamily.
+	 * @param string $asset  preview, card, or og.
+	 * @param string $format webp or png.
+	 * @param mixed  $region Region id. Unknown values use cn.
+	 * @return string
+	 */
+	public static function package_preview_url( $slug, $asset = 'preview', $format = 'webp', $region = 'cn' ) {
+		$norm = self::package_norm( $slug );
+		if ( '' === $norm ) {
+			return '';
+		}
+		$asset = strtolower( (string) $asset );
+		if ( ! in_array( $asset, array( 'preview', 'card', 'og' ), true ) ) {
+			return '';
+		}
+		$format = strtolower( (string) $format );
+		if ( ! in_array( $format, array( 'webp', 'png' ), true ) ) {
+			return '';
+		}
+		return 'https://' . self::host( $region ) . '/fonts-packages/' . $norm . '/preview/' . $asset . '.' . $format;
+	}
+
+	/**
+	 * previewUrl and cardPreviewUrl for a slug, preferring webp.
+	 *
+	 * Derived from the norm. A row may already carry previewUrl,
+	 * cardPreviewUrl, or assets.previewUrl / assets.cardPreviewUrl. A
+	 * supplied webp replaces the derived URL only when it is https, on an
+	 * existing CDN host, for this same norm, and has no query. A supplied
+	 * png does not replace webp. The catalog snapshot itself stays
+	 * name + fontFamily; this is the read path for a row that already has
+	 * the fields.
+	 *
+	 * @param mixed $slug   Package id or catalog fontFamily.
+	 * @param mixed $region Region id.
+	 * @param mixed $row    Catalog row or metadata, or null.
+	 * @return array{previewUrl:string,cardPreviewUrl:string}
+	 */
+	public static function package_specimen_urls( $slug, $region = 'cn', $row = null ) {
+		$norm = self::package_norm( $slug );
+		$out  = array(
+			'previewUrl'     => '',
+			'cardPreviewUrl' => '',
+		);
+		if ( '' === $norm ) {
+			return $out;
+		}
+		foreach ( array( 'preview', 'card' ) as $asset ) {
+			$key     = ( 'card' === $asset ) ? 'cardPreviewUrl' : 'previewUrl';
+			$derived = self::package_preview_url( $slug, $asset, 'webp', $region );
+			$given   = self::specimen_url_from_row( $row, $asset );
+			if ( '' !== $given && self::is_package_specimen_url( $given, $norm, $asset ) && '.webp' === substr( $given, -5 ) ) {
+				$out[ $key ] = $given;
+				continue;
+			}
+			$out[ $key ] = $derived;
+		}
+		return $out;
+	}
+
+	/**
+	 * png sibling of a webp specimen on an existing CDN host, or empty.
+	 *
+	 * @param string $webp webp specimen URL.
+	 * @return string
+	 */
+	public static function specimen_png_url( $webp ) {
+		$webp = (string) $webp;
+		if ( '.webp' !== substr( $webp, -5 ) ) {
+			return '';
+		}
+		$png = substr( $webp, 0, -5 ) . '.png';
+		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og)\.png$#', $png, $matches ) ) {
+			return '';
+		}
+		if ( ! self::is_package_specimen_url( $png, $matches[1], $matches[2] ) ) {
+			return '';
+		}
+		return $png;
+	}
+
+	/**
+	 * Whether this URL is a specimen image for this norm on an existing host.
+	 *
+	 * @param string $url   Candidate URL.
+	 * @param string $norm  Package norm.
+	 * @param string $asset preview, card, or og.
+	 * @return bool
+	 */
+	public static function is_package_specimen_url( $url, $norm, $asset ) {
+		$norm  = self::token( $norm, 64 );
+		$asset = strtolower( (string) $asset );
+		if ( '' === $norm || ! in_array( $asset, array( 'preview', 'card', 'og' ), true ) ) {
+			return false;
+		}
+		$parts = parse_url( (string) $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Same shape as is_allowlisted(). The CLI test has no WordPress.
+		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return false;
+		}
+		if ( 'https' !== strtolower( (string) $parts['scheme'] ) ) {
+			return false;
+		}
+		if ( ! empty( $parts['user'] ) || ! empty( $parts['pass'] ) || ! empty( $parts['port'] ) || ! empty( $parts['query'] ) || ! empty( $parts['fragment'] ) ) {
+			return false;
+		}
+		$host = strtolower( (string) $parts['host'] );
+		if ( ! in_array( $host, self::HOSTS, true ) ) {
+			return false;
+		}
+		$path   = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+		$expect = '/fonts-packages/' . $norm . '/preview/' . $asset;
+		return $path === $expect . '.webp' || $path === $expect . '.png';
+	}
+
+	/**
+	 * previewUrl or cardPreviewUrl already present on a row.
+	 *
+	 * Top-level fields win over assets.*, matching index.json either flat
+	 * or nested. The caller still rejects a URL that is not this norm.
+	 *
+	 * @param mixed  $row   Catalog row or metadata.
+	 * @param string $asset preview or card.
+	 * @return string
+	 */
+	private static function specimen_url_from_row( $row, $asset ) {
+		if ( ! is_array( $row ) ) {
+			return '';
+		}
+		$key        = ( 'card' === $asset ) ? 'cardPreviewUrl' : 'previewUrl';
+		$candidates = array();
+		if ( isset( $row[ $key ] ) && is_string( $row[ $key ] ) ) {
+			$candidates[] = $row[ $key ];
+		}
+		if ( isset( $row['assets'] ) && is_array( $row['assets'] ) && isset( $row['assets'][ $key ] ) && is_string( $row['assets'][ $key ] ) ) {
+			$candidates[] = $row['assets'][ $key ];
+		}
+		foreach ( $candidates as $url ) {
+			$url = trim( $url );
+			if ( '' !== $url ) {
+				return $url;
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * Project slug, or empty.
 	 *
 	 * @param array $settings Settings row.
