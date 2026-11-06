@@ -1,8 +1,8 @@
 # 2.0.0 发布闸门
 
-Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.17`。
+Foundry 在 Feng 说可以发正式版之前，还差下面一项。这一支不打 `2.0.0` 标签，也不把版本改成 `2.0.0`。插件版本、`WPFONTS_VERSION` 和 readme 的 Stable tag 仍是 `2.0.0-rc.18`。
 
-Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.17`.
+Release gate before Feng says ship the stable release. This branch does not tag `2.0.0` and does not change the version to `2.0.0`. Plugin version, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.18`.
 
 ## 还要做
 
@@ -19,10 +19,11 @@ Release gate before Feng says ship the stable release. This branch does not tag 
 - [x] **样张目录别名。** `2.0.0-rc.15` 装包短码与 CDN fonts-packages 目录别名（xxzt→xzt、syhtcjk→syhtsc）以免样张 404。CSS 和包 id 仍是 `wenfeng-*`。
 - [x] **装包页长条样张。** `2.0.0-rc.16` 装包页样张改用 card 长条（1200×280），字体库仍用 preview。
 - [x] **长句样张与空态文案。** `2.0.0-rc.17` 装包页字形预览使用 `fontPreview`。中文回退未指定时说明先用系统中文。
+- [x] **字形预览文件名。** `2.0.0-rc.18` 装包页字形预览请求 CDN 上的小写 `fontpreview.webp`（以及 png）。字段名仍是 `fontPreviewUrl`。`card`、`preview`、`og` 路径不变。
 - [x] **文档 cocobook 已对齐 rc.8。** 不挡这次闸门。本支只补仓库里的 `readme.txt` / `README.md` 草稿和这份清单。
 
 ## 这一支不要做
 
 - 不要把 readme 的 Stable tag 改成 `2.0.0`。
-- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.17`，不要写成 `2.0.0`。
+- 不要改 `Version` 和 `WPFONTS_VERSION`。现在是 `2.0.0-rc.18`，不要写成 `2.0.0`。
 - 不要打 `2.0.0` git 标签。

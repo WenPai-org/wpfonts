@@ -1331,7 +1331,7 @@ class WPFonts_Admin {
 		if ( ! class_exists( 'WPFonts_Link', false ) || ! is_string( $url ) || '' === $url ) {
 			return false;
 		}
-		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og|fontPreview)\.(?:webp|png)$#', $url, $matches ) ) {
+		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og|fontpreview)\.(?:webp|png)$#', $url, $matches ) ) {
 			return false;
 		}
 		return WPFonts_Link::is_package_specimen_url( $url, $matches[1], $matches[2] );
@@ -1820,9 +1820,10 @@ class WPFonts_Admin {
 	 * Card strip for one installed package, then the long-text specimen.
 	 *
 	 * The strip is cardPreviewUrl (asset card, 1200×280). The long sentence
-	 * is fontPreviewUrl (720×400, same frame as preview). Font Library
-	 * families stay on previewUrl. webp is printed first; each img carries
-	 * the png sibling as data-fallback. A live pangram is only the fallback
+	 * is fontPreviewUrl (720×400, same frame as preview). That file on the
+	 * CDN is fontpreview.webp. Font Library families stay on previewUrl.
+	 * webp is printed first; each img carries the png sibling as
+	 * data-fallback. A live pangram is only the fallback
 	 * when those images are missing. It is not painted on top of a CDN image.
 	 *
 	 * @param array $package Package row.

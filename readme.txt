@@ -4,7 +4,7 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 2.0.0-rc.17
+Stable tag: 2.0.0-rc.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ System font stacks, plus an optional Windfonts CDN link. Release candidate: CI d
 
 WPFonts adds Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device. The collections are named 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文.
 
-Version 2.0.0-rc.17 can print one allowlisted Windfonts stylesheet for each confirmed cloud face. Settings can also assign an enabled package or a confirmed cloud face to body text, headings, and a site Chinese fallback. The fallback is appended to Latin stacks, including `.has-*-font-family` rules, by plugin CSS and a filter on the generated global stylesheet. That path does not edit theme.json or the user Global Styles post. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML, and it is not included in a settings export. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick fontFamily values from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and every confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Removing one cloud face, or disabling a package, removes only that WPFonts entry. System font collections can be turned off per language. The plugin does not edit theme files, and uninstall does not delete Global Styles. A package can also be installed, replaced, or deleted with WP-CLI (`wp fonts package`). After a successful install or replace, and before a package directory is removed, other plugins may listen for that change. This plugin does not upload the package anywhere else.
+Version 2.0.0-rc.18 can print one allowlisted Windfonts stylesheet for each confirmed cloud face. Settings can also assign an enabled package or a confirmed cloud face to body text, headings, and a site Chinese fallback. The fallback is appended to Latin stacks, including `.has-*-font-family` rules, by plugin CSS and a filter on the generated global stylesheet. That path does not edit theme.json or the user Global Styles post. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML, and it is not included in a settings export. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick fontFamily values from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and every confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Removing one cloud face, or disabling a package, removes only that WPFonts entry. System font collections can be turned off per language. The plugin does not edit theme files, and uninstall does not delete Global Styles. A package can also be installed, replaced, or deleted with WP-CLI (`wp fonts package`). After a successful install or replace, and before a package directory is removed, other plugins may listen for that change. This plugin does not upload the package anywhere else.
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
@@ -48,7 +48,7 @@ The collections target the WordPress Font Library. The CDN link is a normal fron
 
 = 2.0.0 =
 
-Draft notes for the stable release. Plugin version, WPFONTS_VERSION, and Stable tag stay at 2.0.0-rc.17 until Feng says ship. These notes describe behavior already in 2.0.0-rc.17. Nothing is tagged 2.0.0.
+Draft notes for the stable release. Plugin version, WPFONTS_VERSION, and Stable tag stay at 2.0.0-rc.18 until Feng says ship. These notes describe behavior already in 2.0.0-rc.18. Nothing is tagged 2.0.0.
 
 * Assign Chinese fonts from Settings after a package is enabled or a 文风云 face is confirmed. Keys on `wpfonts_settings` are `cjk_body`, `cjk_heading`, and `cjk_fallback`. Empty body and heading follow `cjk_fallback`. Stored values are `pkg:{package id}` or `cloud:{wenfeng-* token}`. The printed CSS name is the package family, or the confirmed cloud `css_face`.
 
@@ -64,6 +64,9 @@ Draft notes for the stable release. Plugin version, WPFONTS_VERSION, and Stable 
 * When a confirmed stylesheet is printed, the front also prints the fixed Windfonts license note (`CDN_LICENSE_NOTE`). That sentence is not paraphrased. The API key is not printed in HTML, and it is not included in a settings export.
 * After a font package is installed or replaced, WordPress runs `wpfonts_package_installed`. Before that package's directory is removed, it runs `wpfonts_package_deleted`. The directory is still on disk for the second action, and the package is still in the list. The directory and the list entry are removed after the action returns. If the local directory is already gone, `dir` is empty, `uploads_rel` is still set, and the filesystem is still asked to delete that prefix. Listeners receive one array: `action` (`install`, `reinstall`, or `delete`), `slug`, `package_id`, `dir`, `uploads_rel`, `local_css`, and `files`. `files` may be an empty list. Read `dir` when you need the files that are there. Installing the same package id again replaces that package and does not remove the list entry first.
 * Install, replace, and delete a package from WP-CLI without a browser upload: `wp fonts package install <zip>`, `wp fonts package delete <slug-or-id>`, and `wp fonts package list`. The packages screen still accepts a browser upload.
+
+= 2.0.0-rc.18 =
+* 装包页字形预览请求小写 `fontpreview.webp`（以及 png）。字段名仍是 fontPreviewUrl。card、preview、og 的路径不变。The installed-package glyph preview loads `fontpreview.webp`. The field stays fontPreviewUrl.
 
 = 2.0.0-rc.17 =
 * 概览里未指定中文回退时，说明站点先用系统中文；安装文风字体包或开启文风云后，到设置里选一个。Empty Chinese fallback copy says the site uses system Chinese until a package is installed or 文风云 is on, then the choice is made in Settings.

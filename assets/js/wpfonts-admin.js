@@ -138,7 +138,7 @@
 	}
 
 	function allowedSpecimen(url) {
-		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/preview\/(?:preview|card|og|fontPreview)\.(?:webp|png)$/.test(url || "");
+		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/preview\/(?:preview|card|og|fontpreview)\.(?:webp|png)$/.test(url || "");
 	}
 
 	function pngSibling(url) {
