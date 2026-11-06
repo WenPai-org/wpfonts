@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.17' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.18' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -649,12 +649,16 @@ if ( false !== strpos( $admin_css, 'object-fit: cover' ) ) {
 	fwrite( STDERR, "admin specimen CSS still crops with object-fit: cover.\n" );
 	exit( 1 );
 }
-if ( false === strpos( $packages_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/fontPreview.webp' ) ) {
-	fwrite( STDERR, "package long-text specimen did not use fontPreview.\n" );
+if ( false === strpos( $packages_html, 'https://cn.windfonts.com/fonts-packages/ibmps/preview/fontpreview.webp' ) ) {
+	fwrite( STDERR, "package long-text specimen did not use /preview/fontpreview.webp.\n" );
 	exit( 1 );
 }
-if ( false === strpos( $packages_html, 'data-fallback="https://cn.windfonts.com/fonts-packages/ibmps/preview/fontPreview.png"' ) ) {
-	fwrite( STDERR, "fontPreview did not keep a png fallback.\n" );
+if ( false !== strpos( $packages_html, 'fontPreview.webp' ) || false !== strpos( $packages_html, 'fontPreview.png' ) ) {
+	fwrite( STDERR, "package long-text specimen still requests camelCase fontPreview.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $packages_html, 'data-fallback="https://cn.windfonts.com/fonts-packages/ibmps/preview/fontpreview.png"' ) ) {
+	fwrite( STDERR, "fontpreview did not keep a png fallback.\n" );
 	exit( 1 );
 }
 if ( false === strpos( $packages_html, 'wpfonts-specimen-fallback" hidden' ) && false === strpos( $packages_html, 'wpfonts-specimen-fallback" hidden="hidden"' ) ) {

@@ -179,14 +179,15 @@ class WPFonts_Link {
 	 *
 	 * The host is WPFonts_Link::HOSTS for the site region, the same map as
 	 * public CSS. Nothing else is allowed. The path is
-	 * /fonts-packages/{cdn norm}/preview/{preview|card|og|fontPreview}.{webp|png}.
+	 * /fonts-packages/{cdn norm}/preview/{preview|card|og|fontpreview}.{webp|png}.
 	 * The directory is package_cdn_norm(), so a historical short such as
-	 * xxzt uses the CDN folder xzt. fontPreview is the long-text specimen
-	 * (same 720×400 frame as preview). Ask for webp first. png is the sibling
-	 * when webp is missing.
+	 * xxzt uses the CDN folder xzt. fontpreview is the long-text specimen
+	 * (same 720×400 frame as preview). The row key for that file stays
+	 * fontPreviewUrl. Ask for webp first. png is the sibling when webp is
+	 * missing.
 	 *
 	 * @param mixed  $slug   Package id or catalog fontFamily.
-	 * @param string $asset  preview, card, og, or fontPreview.
+	 * @param string $asset  preview, card, og, or fontpreview.
 	 * @param string $format webp or png.
 	 * @param mixed  $region Region id. Unknown values use cn.
 	 * @return string
@@ -217,7 +218,8 @@ class WPFonts_Link {
 	 * no query. A raw historical short in that path is not kept. A supplied
 	 * png does not replace webp. The catalog snapshot itself stays name +
 	 * fontFamily; this is the read path for a row that already has the fields.
-	 * fontPreview is the long-text specimen. It does not replace previewUrl.
+	 * fontPreviewUrl is the long-text specimen at fontpreview.webp. It does
+	 * not replace previewUrl.
 	 *
 	 * @param mixed $slug   Package id or catalog fontFamily.
 	 * @param mixed $region Region id.
@@ -234,7 +236,7 @@ class WPFonts_Link {
 		if ( '' === $norm ) {
 			return $out;
 		}
-		foreach ( array( 'preview', 'card', 'fontPreview' ) as $asset ) {
+		foreach ( array( 'preview', 'card', 'fontpreview' ) as $asset ) {
 			$key     = self::specimen_meta_key( $asset );
 			$derived = self::package_preview_url( $slug, $asset, 'webp', $region );
 			$given   = self::specimen_url_from_row( $row, $asset );
@@ -259,7 +261,7 @@ class WPFonts_Link {
 			return '';
 		}
 		$png = substr( $webp, 0, -5 ) . '.png';
-		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og|fontPreview)\.png$#', $png, $matches ) ) {
+		if ( ! preg_match( '#/fonts-packages/([a-z0-9-]+)/preview/(preview|card|og|fontpreview)\.png$#', $png, $matches ) ) {
 			return '';
 		}
 		if ( ! self::is_package_specimen_url( $png, $matches[1], $matches[2] ) ) {
@@ -273,7 +275,7 @@ class WPFonts_Link {
 	 *
 	 * @param string $url   Candidate URL.
 	 * @param string $norm  Package norm.
-	 * @param string $asset preview, card, og, or fontPreview.
+	 * @param string $asset preview, card, og, or fontpreview.
 	 * @return bool
 	 */
 	public static function is_package_specimen_url( $url, $norm, $asset ) {
@@ -304,18 +306,16 @@ class WPFonts_Link {
 	/**
 	 * CDN file name for a specimen asset, or empty.
 	 *
-	 * preview, card, and og stay lowercase. fontPreview keeps that spelling
-	 * because the CDN file is fontPreview.webp, not fontpreview.webp.
+	 * preview, card, og, and fontpreview stay lowercase. The live object is
+	 * fontpreview.webp. fontPreview is accepted as the same asset name. The
+	 * row key stays fontPreviewUrl.
 	 *
 	 * @param mixed $asset Raw asset name.
 	 * @return string
 	 */
 	private static function specimen_asset( $asset ) {
 		$asset = strtolower( (string) $asset );
-		if ( 'fontpreview' === $asset ) {
-			return 'fontPreview';
-		}
-		if ( in_array( $asset, array( 'preview', 'card', 'og' ), true ) ) {
+		if ( in_array( $asset, array( 'preview', 'card', 'og', 'fontpreview' ), true ) ) {
 			return $asset;
 		}
 		return '';
@@ -324,7 +324,9 @@ class WPFonts_Link {
 	/**
 	 * Row key for a specimen asset.
 	 *
-	 * @param string $asset preview, card, or fontPreview.
+	 * The CDN file is fontpreview. The field name stays fontPreviewUrl.
+	 *
+	 * @param string $asset preview, card, or fontpreview.
 	 * @return string
 	 */
 	private static function specimen_meta_key( $asset ) {
@@ -332,7 +334,7 @@ class WPFonts_Link {
 		if ( 'card' === $asset ) {
 			return 'cardPreviewUrl';
 		}
-		if ( 'fontPreview' === $asset ) {
+		if ( 'fontpreview' === $asset ) {
 			return 'fontPreviewUrl';
 		}
 		return 'previewUrl';
@@ -345,7 +347,7 @@ class WPFonts_Link {
 	 * or nested. The caller still rejects a URL that is not this norm.
 	 *
 	 * @param mixed  $row   Catalog row or metadata.
-	 * @param string $asset preview, card, or fontPreview.
+	 * @param string $asset preview, card, or fontpreview.
 	 * @return string
 	 */
 	private static function specimen_url_from_row( $row, $asset ) {
