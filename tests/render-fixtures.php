@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.19' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.20' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -330,6 +330,22 @@ function wpfonts_sample_catalog() {
 			array(
 				'name'       => '975 圆体',
 				'fontFamily' => 'wenfeng-975yt',
+			),
+			array(
+				'name'       => 'Comfortaa',
+				'fontFamily' => 'wenfeng-comfortaa',
+			),
+			array(
+				'name'       => 'Cormorant',
+				'fontFamily' => 'wenfeng-cormorant',
+			),
+			array(
+				'name'       => 'Cuprum',
+				'fontFamily' => 'wenfeng-cuprum',
+			),
+			array(
+				'name'       => '钟齐志莽行书',
+				'fontFamily' => 'wenfeng-zhi-mang-xing',
 			),
 		),
 		'page'      => 1,
@@ -580,8 +596,14 @@ foreach ( $screens as $name => $screen ) {
 
 $catalog_html = (string) file_get_contents( $out . '/settings-catalog.html' );
 $missing_html = (string) file_get_contents( $out . '/settings-css-missing.html' );
-if ( false !== strpos( $catalog_html, 'wenfeng-zhi-mang-xing' ) ) {
-	fwrite( STDERR, "settings catalog fixture still uses wenfeng-zhi-mang-xing.\n" );
+foreach ( array( 'wenfeng-comfortaa', 'wenfeng-cormorant', 'wenfeng-cuprum', 'wenfeng-zhi-mang-xing' ) as $fake_family ) {
+	if ( false !== strpos( $catalog_html, $fake_family ) ) {
+		fwrite( STDERR, "settings catalog fixture still offers {$fake_family}.\n" );
+		exit( 1 );
+	}
+}
+if ( false === strpos( $catalog_html, 'wenfeng-zmxs' ) || false === strpos( $catalog_html, '志莽' ) ) {
+	fwrite( STDERR, "settings catalog fixture dropped wenfeng-zmxs / 志莽.\n" );
 	exit( 1 );
 }
 if ( false === strpos( $catalog_html, 'family=wenfeng-ibmps&amp;subset=zh-common' ) ) {

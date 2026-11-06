@@ -11,6 +11,14 @@
  * Snapshot path: wp-content/uploads/wpfonts/catalog.json
  * Shape: { "updated_at": unix, "fonts": [ { "name": "…", "fontFamily": "wenfeng-…" } ] }
  *
+ * Refresh asks the directory for status=published. The default list also
+ * includes archived and offline fonts. A row that still carries a status
+ * other than published is dropped. Before a row is saved or shown,
+ * fontFamily is rewritten with the vendored storefront aliases in
+ * data/catalog-allowlist.json. A family that is still not on that list is
+ * dropped. The manual family text field is not filtered by this list. The
+ * file is vendored for now; the plugin does not publish it.
+ *
  * Page transients from older builds are not read.
  *
  * @package WPFonts
@@ -31,6 +39,13 @@ class WPFonts_Catalog {
 	 * @var string
 	 */
 	const FONTS_URL = 'https://app.windfonts.com/api/fonts';
+
+	/**
+	 * Directory status to request and to keep. The default list also returns archived and offline fonts.
+	 *
+	 * @var string
+	 */
+	const FONTS_STATUS = 'published';
 
 	/**
 	 * Path under the uploads base directory.
@@ -101,6 +116,23 @@ class WPFonts_Catalog {
 	 * @var int
 	 */
 	const MAX_PAGES = 100;
+
+	/**
+	 * Vendored storefront families and aliases, relative to the plugin root.
+	 *
+	 * Source of truth is fonts-front. The live directory is still fetched,
+	 * then filtered through this file before the snapshot is saved or shown.
+	 *
+	 * @var string
+	 */
+	const ALLOWLIST_RELATIVE = 'data/catalog-allowlist.json';
+
+	/**
+	 * Parsed storefront shield. Null until the vendored JSON is read.
+	 *
+	 * @var array{families:array<string,bool>,aliases:array<string,string>}|null
+	 */
+	private static $shield = null;
 
 	/**
 	 * Read the local snapshot. This does not call the directory.
@@ -186,7 +218,9 @@ class WPFonts_Catalog {
 	/**
 	 * Parse a catalog body. Public so tests can check fontFamily without HTTP.
 	 *
-	 * Rows without a wenfeng- fontFamily are dropped.
+	 * A row with a status other than published is dropped. Storefront aliases
+	 * are applied, then any fontFamily that is not on the vendored allowlist
+	 * is dropped. The manual family field does not use this.
 	 *
 	 * @param string $body Response body.
 	 * @return array{ok:bool,fonts:array<int,array{name:string,fontFamily:string}>,page:int,pageTotal:int,total:int,code:int,cached:bool,cooling:bool,stale:bool,updated_at:int}
@@ -383,6 +417,15 @@ class WPFonts_Catalog {
 	}
 
 	/**
+	 * Absolute path of the vendored storefront allowlist.
+	 *
+	 * @return string
+	 */
+	public static function allowlist_path() {
+		return dirname( __DIR__ ) . '/' . self::ALLOWLIST_RELATIVE;
+	}
+
+	/**
 	 * Absolute snapshot path, or empty when uploads are unavailable.
 	 *
 	 * Tests may set WPFONTS_CATALOG_PATH.
@@ -535,7 +578,7 @@ class WPFonts_Catalog {
 	}
 
 	/**
-	 * One HTTP GET. The key is a header, never part of the URL.
+	 * One HTTP GET. Requests this page of published fonts. The key is a header, never part of the URL.
 	 *
 	 * @param int    $page Page number.
 	 * @param string $key  API key, or empty for an anonymous read.
@@ -547,7 +590,8 @@ class WPFonts_Catalog {
 		}
 		$url     = add_query_arg(
 			array(
-				'page' => $page,
+				'page'   => $page,
+				'status' => self::FONTS_STATUS,
 			),
 			self::FONTS_URL
 		);
@@ -798,31 +842,13 @@ class WPFonts_Catalog {
 	}
 
 	/**
-	 * API rows to name + fontFamily. Drops anything that is not wenfeng-*.
+	 * API rows to name + fontFamily. Aliases, then the storefront allowlist.
 	 *
 	 * @param array $rows dataList.
 	 * @return array<int,array{name:string,fontFamily:string}>
 	 */
 	private static function rows_from_api( array $rows ) {
-		$fonts = array();
-		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
-			$family = self::accepted_family( isset( $row['fontFamily'] ) ? $row['fontFamily'] : '' );
-			if ( '' === $family ) {
-				continue;
-			}
-			$name = self::plain_label( isset( $row['name'] ) ? $row['name'] : '' );
-			if ( '' === $name ) {
-				$name = $family;
-			}
-			$fonts[] = array(
-				'name'       => $name,
-				'fontFamily' => $family,
-			);
-		}
-		return $fonts;
+		return self::clean_rows( $rows );
 	}
 
 	/**
@@ -832,15 +858,33 @@ class WPFonts_Catalog {
 	 * @return array<int,array{name:string,fontFamily:string}>
 	 */
 	private static function rows_from_stored( array $rows ) {
+		return self::clean_rows( $rows );
+	}
+
+	/**
+	 * Drop unpublished rows, apply storefront aliases, then keep one row per family.
+	 *
+	 * The first remaining row wins when an alias and the canonical family both
+	 * appear. A name is kept from that row. This does not restrict the manual field.
+	 *
+	 * @param array $rows API or snapshot rows.
+	 * @return array<int,array{name:string,fontFamily:string}>
+	 */
+	private static function clean_rows( array $rows ) {
 		$fonts = array();
+		$seen  = array();
 		foreach ( $rows as $row ) {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
-			$family = self::accepted_family( isset( $row['fontFamily'] ) ? $row['fontFamily'] : '' );
-			if ( '' === $family ) {
+			if ( ! self::row_is_published( $row ) ) {
 				continue;
 			}
+			$family = self::accepted_family( isset( $row['fontFamily'] ) ? $row['fontFamily'] : '' );
+			if ( '' === $family || isset( $seen[ $family ] ) ) {
+				continue;
+			}
+			$seen[ $family ] = true;
 			$name = self::plain_label( isset( $row['name'] ) ? $row['name'] : '' );
 			if ( '' === $name ) {
 				$name = $family;
@@ -854,17 +898,102 @@ class WPFonts_Catalog {
 	}
 
 	/**
-	 * fontFamily that is safe to store and to write into the settings field.
+	 * Whether a catalog row may enter the allowlist.
+	 *
+	 * Missing status is left to the allowlist. Archived, offline, and any
+	 * other explicit status are dropped before aliases run.
+	 *
+	 * @param array $row API or snapshot row.
+	 * @return bool
+	 */
+	private static function row_is_published( array $row ) {
+		if ( ! array_key_exists( 'status', $row ) ) {
+			return true;
+		}
+		$status = strtolower( trim( (string) $row['status'] ) );
+		return self::FONTS_STATUS === $status;
+	}
+
+	/**
+	 * fontFamily that is safe to store and to offer in the catalog picker.
+	 *
+	 * Aliases run first. The result must be on the vendored storefront list.
+	 * An unreadable allowlist drops every row. The manual family field does
+	 * not call this.
 	 *
 	 * @param mixed $value Raw family.
 	 * @return string
 	 */
 	private static function accepted_family( $value ) {
 		$family = WPFonts_Link::token( $value, 80 );
-		if ( '' === $family || 0 !== strpos( $family, 'wenfeng-' ) ) {
+		if ( '' === $family ) {
+			return '';
+		}
+		$shield = self::shield();
+		if ( isset( $shield['aliases'][ $family ] ) ) {
+			$family = $shield['aliases'][ $family ];
+		}
+		if ( ! isset( $shield['families'][ $family ] ) ) {
 			return '';
 		}
 		return $family;
+	}
+
+	/**
+	 * Storefront families and aliases from the vendored JSON.
+	 *
+	 * @return array{families:array<string,bool>,aliases:array<string,string>}
+	 */
+	private static function shield() {
+		if ( null !== self::$shield ) {
+			return self::$shield;
+		}
+		$empty = array(
+			'families' => array(),
+			'aliases'  => array(),
+		);
+		$path = self::allowlist_path();
+		if ( ! is_readable( $path ) ) {
+			self::$shield = $empty;
+			return self::$shield;
+		}
+		$json = json_decode( self::read_file( $path ), true );
+		if ( ! is_array( $json ) ) {
+			self::$shield = $empty;
+			return self::$shield;
+		}
+		$families = array();
+		if ( isset( $json['fonts'] ) && is_array( $json['fonts'] ) ) {
+			foreach ( $json['fonts'] as $font ) {
+				if ( ! is_array( $font ) ) {
+					continue;
+				}
+				$family = WPFonts_Link::token( isset( $font['fontFamily'] ) ? $font['fontFamily'] : '', 80 );
+				if ( '' === $family || 0 !== strpos( $family, 'wenfeng-' ) ) {
+					continue;
+				}
+				$families[ $family ] = true;
+			}
+		}
+		$aliases = array();
+		if ( isset( $json['aliases'] ) && is_array( $json['aliases'] ) ) {
+			foreach ( $json['aliases'] as $from => $to ) {
+				$source = WPFonts_Link::token( $from, 80 );
+				$target = WPFonts_Link::token( $to, 80 );
+				if ( '' === $source || '' === $target || $source === $target ) {
+					continue;
+				}
+				if ( ! isset( $families[ $target ] ) ) {
+					continue;
+				}
+				$aliases[ $source ] = $target;
+			}
+		}
+		self::$shield = array(
+			'families' => $families,
+			'aliases'  => $aliases,
+		);
+		return self::$shield;
 	}
 
 	/**
