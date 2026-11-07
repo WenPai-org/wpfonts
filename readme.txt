@@ -4,7 +4,7 @@ Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 2.0.0-rc.21
+Stable tag: 2.0.0-rc.22
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ System font stacks, plus an optional Windfonts CDN link. Release candidate: CI d
 
 WPFonts adds Chinese, English, Japanese, and Korean system font stacks to the WordPress Font Library. Those stacks use fonts already installed on each visitor's device. The collections are named 系统 · 中文, 系统 · 英文, 系统 · 日文, and 系统 · 韩文.
 
-Version 2.0.0-rc.21 can print one allowlisted Windfonts stylesheet for each confirmed cloud face. Settings can also assign an enabled package or a confirmed cloud face to body text, headings, and a site Chinese fallback. The fallback is appended to Latin stacks, including `.has-*-font-family` rules, by plugin CSS and a filter on the generated global stylesheet. That path does not edit theme.json or the user Global Styles post. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML, and it is not included in a settings export. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick fontFamily values from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and every confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Removing one cloud face, or disabling a package, removes only that WPFonts entry. System font collections can be turned off per language. The plugin does not edit theme files, and uninstall does not delete Global Styles. A package can also be installed, replaced, or deleted with WP-CLI (`wp fonts package`). After a successful install or replace, and before a package directory is removed, other plugins may listen for that change. This plugin does not upload the package anywhere else.
+Version 2.0.0-rc.22 can print one allowlisted Windfonts stylesheet for each confirmed cloud face. Settings can also assign an enabled package or a confirmed cloud face to body text, headings, and a site Chinese fallback. The fallback is appended to Latin stacks, including `.has-*-font-family` rules, by plugin CSS and a filter on the generated global stylesheet. That path does not edit theme.json or the user Global Styles post. The CDN is off until a site owner turns it on and a server-side key check succeeds. The API key is not printed in HTML, and it is not included in a settings export. The plugin does not upload font files, slice them, or pull CSS into PHP. Settings pick fontFamily values from a local JSON snapshot of the app.windfonts.com directory. Opening settings does not call that directory. A new install queues one immediate snapshot refresh when none exists yet. Enabled on-site packages and every confirmed cloud face are registered in the Font Library and copied into user Global Styles, so they show under Typography. Removing one cloud face, or disabling a package, removes only that WPFonts entry. System font collections can be turned off per language. The plugin does not edit theme files, and uninstall does not delete Global Styles. A package can also be installed, replaced, or deleted with WP-CLI (`wp fonts package`). After a successful install or replace, and before a package directory is removed, other plugins may listen for that change. This plugin does not upload the package anywhere else.
 
 The public CSS URL needs a font name (`family`) or a project name. Without either, the front stays on system fonts. Servers are only cn.windfonts.com, hk.windfonts.com, and en.windfonts.com.
 
@@ -26,7 +26,7 @@ The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPr
 
 1. Install and activate WPFonts on WordPress 6.5 or later.
 2. Use a block theme and open Appearance > Editor > Styles > Typography > Fonts to install a system stack.
-3. Optional: open Settings > 文派字库 to turn on the Windfonts CDN.
+3. Optional: open Settings > 字库 to turn on the Windfonts CDN. The page brand stays 文派字库.
 
 On multisite, activate per site or network-wide. CDN settings are stored per site.
 
@@ -48,7 +48,7 @@ The collections target the WordPress Font Library. The CDN link is a normal fron
 
 = 2.0.0 =
 
-Draft notes for the stable release. Plugin version, WPFONTS_VERSION, and Stable tag stay at 2.0.0-rc.21 until Feng says ship. These notes describe behavior already in 2.0.0-rc.21. Nothing is tagged 2.0.0.
+Draft notes for the stable release. Plugin version, WPFONTS_VERSION, and Stable tag stay at 2.0.0-rc.22 until Feng says ship. These notes describe behavior already in 2.0.0-rc.22. Nothing is tagged 2.0.0.
 
 * Assign Chinese fonts from Settings after a package is enabled or a 文风云 face is confirmed. Keys on `wpfonts_settings` are `cjk_body`, `cjk_heading`, and `cjk_fallback`. Empty body and heading follow `cjk_fallback`. Stored values are `pkg:{package id}` or `cloud:{wenfeng-* token}`. The printed CSS name is the package family, or the confirmed cloud `css_face`.
 
@@ -64,6 +64,9 @@ Draft notes for the stable release. Plugin version, WPFONTS_VERSION, and Stable 
 * When a confirmed stylesheet is printed, the front also prints the fixed Windfonts license note (`CDN_LICENSE_NOTE`). That sentence is not paraphrased. The API key is not printed in HTML, and it is not included in a settings export.
 * After a font package is installed or replaced, WordPress runs `wpfonts_package_installed`. Before that package's directory is removed, it runs `wpfonts_package_deleted`. The directory is still on disk for the second action, and the package is still in the list. The directory and the list entry are removed after the action returns. If the local directory is already gone, `dir` is empty, `uploads_rel` is still set, and the filesystem is still asked to delete that prefix. Listeners receive one array: `action` (`install`, `reinstall`, or `delete`), `slug`, `package_id`, `dir`, `uploads_rel`, `local_css`, and `files`. `files` may be an empty list. Read `dir` when you need the files that are there. Installing the same package id again replaces that package and does not remove the list entry first.
 * Install, replace, and delete a package from WP-CLI without a browser upload: `wp fonts package install <zip>`, `wp fonts package delete <slug-or-id>`, and `wp fonts package list`. The packages screen still accepts a browser upload.
+
+= 2.0.0-rc.22 =
+* 设置菜单的功能名改为「字库」。页顶品牌仍是「文派字库」，页脚为「文派字库（WPFonts） · {version}」加一条文档链接（https://wpcy.com/fonts）。反馈改为 https://wpcy.com/support。仍在「设置」下面，字体包页签保留，没有「服务」页签。The Settings submenu label is 字库. The shell brand stays 文派字库. The footer is the plugin name, version, and one docs link. Feedback opens https://wpcy.com/support. The page stays under Settings, the packages tab stays, and there is no 服务 tab.
 
 = 2.0.0-rc.21 =
 * 目录刷新的 HTTP 超时从 6 秒改为 30 秒。分页的 app.windfonts.com 在较慢的主机上经常超过 6 秒，内置刷新会停在旧快照。店面名单、`status=published` 和别名不变。Catalog refresh waits 30 seconds for each directory page. A 6 second limit often expired on a slow host and left the built-in refresh stale. The storefront allowlist, `status=published`, and aliases are unchanged.

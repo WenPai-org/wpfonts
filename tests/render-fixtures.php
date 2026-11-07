@@ -280,7 +280,7 @@ function get_option( $name, $default = false ) {
 }
 
 $root = dirname( __DIR__ );
-define( 'WPFONTS_VERSION', '2.0.0-rc.21' );
+define( 'WPFONTS_VERSION', '2.0.0-rc.22' );
 define( 'WPFONTS_DIR_PATH', $root . '/' );
 define( 'WPFONTS_DIR_URL', 'https://example.test/wp-content/plugins/wpfonts/' );
 define( 'WPFONTS_BASENAME', 'wpfonts/wpfonts.php' );
@@ -714,4 +714,34 @@ if ( false === strpos( $catalog_html, '字形预览' ) || false === strpos( $cat
 if ( false === strpos( $catalog_html, '链接文字（不加载字体）' ) ) {
 	fwrite( STDERR, "style link preview was not labeled as link text.\n" );
 	exit( 1 );
+}
+$version_label = '文派字库（WPFonts） · ' . WPFONTS_VERSION;
+$docs_link     = 'href="https://wpcy.com/fonts" target="_blank" rel="noopener noreferrer">文档';
+foreach ( glob( $out . '/*.html' ) as $fixture_path ) {
+	$fixture_html = (string) file_get_contents( $fixture_path );
+	$fixture_name = basename( $fixture_path );
+	if ( false === strpos( $fixture_html, '<span class="wenpai-name">文派字库</span>' ) ) {
+		fwrite( STDERR, $fixture_name . " lost the shell brand 文派字库.\n" );
+		exit( 1 );
+	}
+	if ( 1 !== substr_count( $fixture_html, 'href="https://wpcy.com/support"' ) ) {
+		fwrite( STDERR, $fixture_name . " feedback link is not https://wpcy.com/support.\n" );
+		exit( 1 );
+	}
+	if ( false !== strpos( $fixture_html, 'github.com/WenPai-org/wpfonts/issues' ) ) {
+		fwrite( STDERR, $fixture_name . " still links feedback to GitHub issues.\n" );
+		exit( 1 );
+	}
+	if ( 1 !== substr_count( $fixture_html, $version_label ) || 1 !== substr_count( $fixture_html, $docs_link ) ) {
+		fwrite( STDERR, $fixture_name . " footer is not the plugin name, version, and one docs link.\n" );
+		exit( 1 );
+	}
+	if ( false !== strpos( $fixture_html, 'href="https://wenfeng.org"' ) ) {
+		fwrite( STDERR, $fixture_name . " footer still uses the 文风 marketing link.\n" );
+		exit( 1 );
+	}
+	if ( false === strpos( $fixture_html, '>字体包</a>' ) || false !== strpos( $fixture_html, '>服务</a>' ) ) {
+		fwrite( STDERR, $fixture_name . " packages tab must stay, and there must be no 服务 tab.\n" );
+		exit( 1 );
+	}
 }

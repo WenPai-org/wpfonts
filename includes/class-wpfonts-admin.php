@@ -35,7 +35,7 @@ class WPFonts_Admin {
 	}
 
 	/**
-	 * Settings submenu. The brand name stays in the page, not the left menu.
+	 * Settings submenu. The left menu uses the feature name; the browser title is the brand.
 	 *
 	 * @return void
 	 */
@@ -47,7 +47,7 @@ class WPFonts_Admin {
 		Wenpai_Admin_Menu::register(
 			array(
 				'slug'   => 'wpfonts',
-				'label'  => __( '文派字库', 'wpfonts' ),
+				'label'  => __( '字库', 'wpfonts' ),
 				'title'  => __( '文派字库', 'wpfonts' ),
 				'render' => array( __CLASS__, 'render' ),
 			)
@@ -362,17 +362,13 @@ class WPFonts_Admin {
 			'help_url'           => self::page_url( array( 'tab' => 'help' ) ),
 			'help_label'         => __( '帮助', 'wpfonts' ),
 			'help_icon_html'     => $icon( 'help' ),
-			'feedback_url'       => 'https://github.com/WenPai-org/wpfonts/issues',
+			'feedback_url'       => 'https://wpcy.com/support',
 			'feedback_label'     => __( '反馈', 'wpfonts' ),
 			'feedback_icon_html' => $icon( 'feedback' ),
 			'version'            => __( '文派字库（WPFonts）', 'wpfonts' ) . ' · ' . WPFONTS_VERSION,
 			'new_tab_label'      => __( '（在新标签页打开）', 'wpfonts' ),
-			'links'              => array(
-				array(
-					'url'   => WPFonts_Link::SITE_URL,
-					'label' => __( '文风', 'wpfonts' ),
-				),
-			),
+			'doc_url'            => 'https://wpcy.com/fonts',
+			'doc_label'          => __( '文档', 'wpfonts' ),
 		);
 	}
 
