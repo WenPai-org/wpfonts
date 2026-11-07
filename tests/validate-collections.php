@@ -120,8 +120,8 @@ foreach ( array( 'wp-fonts-stacks-cn', 'wp-fonts-stacks-en', 'wp-fonts-stacks-jp
 }
 $assert( false !== strpos( $main, 'Requires at least: 6.5' ), 'Requires at least 6.5.' );
 $assert( false !== strpos( $main, 'Requires PHP: 7.4' ), 'Requires PHP 7.4.' );
-$assert( false !== strpos( $main, 'Version: 2.0.0-rc.21' ), 'Version header must be 2.0.0-rc.21.' );
-$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.21' )" ), 'Version constant must be 2.0.0-rc.21.' );
+$assert( false !== strpos( $main, 'Version: 2.0.0-rc.22' ), 'Version header must be 2.0.0-rc.22.' );
+$assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.22' )" ), 'Version constant must be 2.0.0-rc.22.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
 $assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );
@@ -179,6 +179,22 @@ $assert( false !== strpos( $admin, '项目与白名单' ), 'Project disclosure t
 $assert( false !== strpos( $admin, '选填。填写后前台改用项目样式。域名白名单在文风控制台配置，不在本插件里改。' ), 'Project hint drifted.' );
 $assert( false !== strpos( $admin, '打开文风控制台' ), 'Console link label drifted.' );
 $assert( false !== strpos( $admin, '字体包' ), 'Packages tab copy is missing.' );
+$assert( false !== strpos( $admin, 'Wenpai_Admin_Menu::register' ), 'Settings menu must use Wenpai_Admin_Menu.' );
+$assert( false === strpos( $admin, 'add_menu_page' ), 'Settings menu must not be a top-level add_menu_page.' );
+$assert( false !== strpos( $admin, "'label'  => __( '字库', 'wpfonts' )" ), 'Left menu label must be 字库.' );
+$assert( false !== strpos( $admin, "'title'  => __( '文派字库', 'wpfonts' )" ), 'Options page title must stay 文派字库.' );
+$assert( false !== strpos( $admin, "'name'               => __( '文派字库', 'wpfonts' )" ), 'Shell brand must stay 文派字库.' );
+$assert( false !== strpos( $admin, "'feedback_url'       => 'https://wpcy.com/support'" ), 'Feedback must open https://wpcy.com/support.' );
+$assert( false === strpos( $admin, 'github.com/WenPai-org/wpfonts/issues' ), 'Feedback must not target GitHub issues.' );
+$assert( false !== strpos( $admin, "'doc_url'            => 'https://wpcy.com/fonts'" ), 'Footer must link to https://wpcy.com/fonts.' );
+$assert( false !== strpos( $admin, "'doc_label'          => __( '文档', 'wpfonts' )" ), 'Footer link label must be 文档.' );
+$assert( false === strpos( $admin, "__( '文风', 'wpfonts' )" ), 'Footer must not use the 文风 marketing label.' );
+$assert( false !== strpos( $admin, "__( '文派字库（WPFonts）', 'wpfonts' ) . ' · ' . WPFONTS_VERSION" ), 'Footer version must use the prototype plugin name.' );
+$assert( false !== strpos( $admin, "'id'        => 'packages'" ), 'Packages tab must stay.' );
+$assert( false === strpos( $admin, "__( '服务', 'wpfonts' )" ), 'Admin must not add a 服务 tab.' );
+$assert( false !== strpos( $admin, "'full' => true" ), 'Full shell CSS must stay on so the kit can hide #wpfooter.' );
+$wp_css = file_get_contents( $root . '/lib/wenpai-admin-ui/css/wenpai-admin-wp.css' );
+$assert( false !== strpos( $wp_css, "body.wenpai-ui-page #wpfooter {\n  display: none;\n}" ), 'Kit body class must hide #wpfooter.' );
 $assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
 $assert( false === strpos( $admin, 'confirm(' ), 'Package delete must not use confirm().' );
 $assert( false === strpos( $admin, 'onclick=' ), 'Package delete must not use an onclick confirm.' );

@@ -61,7 +61,7 @@ class WPFonts_Link {
 	const CONSOLE_URL = 'https://app.windfonts.com';
 
 	/**
-	 * WenFeng site home. Footer link only; not an upload button.
+	 * WenFeng marketing home. The settings footer does not link here.
 	 *
 	 * @var string
 	 */

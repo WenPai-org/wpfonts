@@ -2,15 +2,15 @@
 
 文派字库给 WordPress 字体库加上系统字体，分成「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」。文风云默认关闭。开启之后，每条已确认的文风云字体各加一条文风服务器上的样式链接，网页里不会出现 API Key。
 
-这一版是 `2.0.0-rc.21`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。设置里还可以指定正文、标题和中文回退。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。下面的 `2.0.0` 一节是正式版说明草稿，版本号和 Stable tag 都没有改成正式版。
+这一版是 `2.0.0-rc.22`。系统字体沿用 1.3，四种语言都可以在设置里单独关掉。设置里还可以指定正文、标题和中文回退。CI 里没有真实的文风 API Key，所以还不把这次称为正式版。下面的 `2.0.0` 一节是正式版说明草稿，版本号和 Stable tag 都没有改成正式版。
 
-WPFonts 2.0.0-rc.21 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The `2.0.0` section below is a draft. The version and Stable tag stay at `2.0.0-rc.21`. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP. A Chinese fallback is appended to Latin stacks by plugin CSS and the global stylesheet filter. That path does not edit theme.json or the user Global Styles post.
+WPFonts 2.0.0-rc.22 keeps the 1.3 system font stacks and adds an opt-in Windfonts client. The `2.0.0` section below is a draft. The version and Stable tag stay at `2.0.0-rc.22`. The front prints one allowlisted `<link>` for each confirmed cloud face. It does not upload fonts, slice them, or fetch CSS into PHP. A Chinese fallback is appended to Latin stacks by plugin CSS and the global stylesheet filter. That path does not edit theme.json or the user Global Styles post.
 
-Settings → WPFonts has four screens: Overview, Settings, Font packages, and Tools. Help stays in the header. Enabled packages register in the Font Library as 文风字体 (Windfonts in English), using the woff2 files stored at install. That tab, and 文风云, are registered before the system collections. 文风云 is registered only after the saved stylesheet URL has opened; the Font Library name is the face declared in that CSS, not the catalog token. Those same families are copied into the user Global Styles post, so Appearance → Styles lists them under typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only the entries this plugin wrote. A saved URL that returns 404 is not embedded and is not described as loading. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
+Settings → 字库 has four screens: Overview, Settings, Font packages, and Tools. The shell brand stays 文派字库. Help stays in the header. Enabled packages register in the Font Library as 文风字体 (Windfonts in English), using the woff2 files stored at install. That tab, and 文风云, are registered before the system collections. 文风云 is registered only after the saved stylesheet URL has opened; the Font Library name is the face declared in that CSS, not the catalog token. Those same families are copied into the user Global Styles post, so Appearance → Styles lists them under typography. Disabling a package, deleting it, or losing the confirmed stylesheet removes only the entries this plugin wrote. A saved URL that returns 404 is not embedded and is not described as loading. The plugin does not edit theme files, and uninstall does not delete Global Styles. The block inspector has a 文派字库 panel for the current block. It does not add an admin-bar item. A new install with no catalog snapshot queues one immediate refresh; activation itself does not call the directory.
 
 ## 后台
 
-设置 → 文派字库。四页：概览、设置（简单 / 高级）、字体包、工具。帮助在页头，不是第五个页签。
+设置 → 字库。页顶品牌是文派字库。四页：概览、设置（简单 / 高级）、字体包、工具。帮助在页头，不是第五个页签。反馈打开 https://wpcy.com/support。页脚是「文派字库（WPFonts） · {version}」，右侧只有一条文档链接（https://wpcy.com/fonts）。没有「服务」页签。
 
 壳来自 `lib/wenpai-admin-ui/`，这一份是 **0.3.1**（和 WPSlug 里同一份）。加载时谁的版本新就用谁，样式句柄固定 `wenpai-admin-ui`。套件仓库的 0.3.2 在这台环境里读不到，所以没有假装钉到 0.3.2。
 
@@ -54,9 +54,9 @@ wp fonts package list
 
 ## 2.0.0
 
-正式版说明草稿，还没有打标签，也没有把 Stable tag 改成 `2.0.0`。插件版本和 `WPFONTS_VERSION` 仍是 `2.0.0-rc.21`。下面按 rc.21 已经有的行为来写。
+正式版说明草稿，还没有打标签，也没有把 Stable tag 改成 `2.0.0`。插件版本和 `WPFONTS_VERSION` 仍是 `2.0.0-rc.22`。下面按 rc.22 已经有的行为来写。
 
-Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.21`.
+Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, and Stable tag stay at `2.0.0-rc.22`.
 
 - 两条路并存。文风云给每条已确认的字体加一条文风服务器上的样式链接。文风字体包把站长已经下载好的包装到本站，由本站托管 woff2。两条路互不影响。插件不往文风控制台上传字体，也不切字。
 - 字体目录写在 `wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。WP-Cron 大约每月更新一次。更新失败会留下上一份。新装站点还没有这份文件时，会排一次马上执行的任务去拉取。选中后写入 `fontFamily`（`wenfeng-*`）。写入和显示之前，先套用随插件附带的店面别名（`data/catalog-allowlist.json`），再丢掉不在这份名单里的家族。手填的 `wenfeng-*` 不受这份名单限制。名单这一版先随插件附带。
@@ -71,6 +71,10 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 - 字体包装上或替换之后发出 `wpfonts_package_installed`。删除目录之前发出 `wpfonts_package_deleted`，此时目录还在，列表里也还留着这个包。钩子返回后才删目录并去掉列表项。本地目录已经空了时，`dir` 为空，`uploads_rel` 仍在，并仍请求文件系统删除这个前缀。参数见上面的表。`files` 可以是空数组。再次安装同一个 id 会替换，不另存一份。
 - 命令行：`wp fonts package install <zip>`、`wp fonts package delete <slug-or-id>`、`wp fonts package list`。浏览器上传不变。
 - 设置里可以指定正文、标题和中文回退。键是 `wpfonts_settings` 里的 `cjk_body`、`cjk_heading`、`cjk_fallback`。正文或标题留空时，用中文回退。存的是 `pkg:{包 id}` 或 `cloud:{wenfeng-*}`。页面上的字体名仍是包里的 family，或已确认文风云的 `css_face`。中文回退会插进全站样式生成的西文栈，包括带 `!important` 的 `.has-*-font-family`，插在 `system-ui`、`sans-serif` 这类通用字体之前。插件自己的样式句柄是 `wpfonts-cjk`，前台和编辑器都会输出。这条路不改 `theme.json`，也不改用户的全站样式帖。已有的全站样式同步还在。
+
+## 2.0.0-rc.22
+
+- 设置菜单的功能名改为「字库」。页顶品牌仍是「文派字库」，浏览器标题也是「文派字库」。页脚为「文派字库（WPFonts） · {version}」，右侧只有文档（https://wpcy.com/fonts）。反馈改为 https://wpcy.com/support。仍挂在「设置」下，字体包页签保留，没有「服务」页签。`#wpfooter` 仍由套件的 `body.wenpai-ui-page` 隐藏。The Settings submenu label is 字库. The shell brand and browser title stay 文派字库. The footer is the plugin name, version, and one docs link. Feedback opens https://wpcy.com/support. The page stays under Settings. The packages tab stays. There is no 服务 tab.
 
 ## 2.0.0-rc.21
 
