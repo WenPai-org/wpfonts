@@ -222,7 +222,7 @@ a.scope:hover { color: var(--wenpai-accent); }
 .choice:has(input:focus-visible) { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
 .choice .t { display: block; font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
 .choice .d { display: block; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin-top: 2px; }
-.choice .hint { color: var(--wenpai-accent); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); margin-top: 6px; }
+.choice .t .hint { margin-left: var(--wenpai-space-1); color: var(--wenpai-accent); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); white-space: nowrap; }
 .choice.is-locked { opacity: .78; }
 .choice.is-locked:hover { opacity: 1; border-color: var(--wenpai-accent); }
 .seg { display: inline-flex; border: 1px solid var(--wenpai-line-strong); border-radius: var(--wenpai-radius-sm); overflow: hidden; }

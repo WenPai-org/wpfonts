@@ -12,7 +12,7 @@ Settings → 字库 has four screens: Overview, Settings, Font packages, and Too
 
 设置 → 字库。页顶品牌是文派字库。四页：概览、设置（简单 / 高级）、字体包、工具。帮助在页头，不是第五个页签。反馈打开 https://wpcy.com/support。页脚是「文派字库（WPFonts） · {version}」，右侧只有一条文档链接（https://wpcy.com/fonts）。没有「服务」页签。
 
-壳来自 `lib/wenpai-admin-ui/`，这一份是 **0.3.1**（和 WPSlug 里同一份）。加载时谁的版本新就用谁，样式句柄固定 `wenpai-admin-ui`。套件仓库的 0.3.2 在这台环境里读不到，所以没有假装钉到 0.3.2。
+壳来自 `lib/wenpai-admin-ui/`，这一份是 **0.3.2**（精确 tag 导出）。加载时谁的版本新就用谁，样式句柄固定 `wenpai-admin-ui`。
 
 ## 文风字体包
 

@@ -1616,9 +1616,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				$out .= '<label class="' . esc_attr( $cls ) . '">';
 				$out .= '<input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( $k ) . '"' . checked( $on, true, false ) . disabled( $dis, true, false ) . $inv . '>';
 				$out .= '' !== $icon ? '<span class="choice-ico" aria-hidden="true">' . $icon . '</span>' : '';
-				$out .= '<span><span class="t">' . esc_html( self::choice_label( $c ) ) . '</span>';
+				$hint = isset( $c['hint'] ) && '' !== (string) $c['hint'] ? ' <span class="hint">' . esc_html( (string) $c['hint'] ) . '</span>' : '';
+				$out .= '<span><span class="t">' . esc_html( self::choice_label( $c ) ) . $hint . '</span>';
 				$out .= isset( $c['desc'] ) && '' !== (string) $c['desc'] ? '<span class="d">' . esc_html( (string) $c['desc'] ) . '</span>' : '';
-				$out .= isset( $c['hint'] ) && '' !== (string) $c['hint'] ? '<span class="hint">' . esc_html( (string) $c['hint'] ) . '</span>' : '';
 				$out .= '</span></label>';
 			}
 			return $out . '</div>';

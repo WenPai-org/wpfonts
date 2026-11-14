@@ -135,7 +135,11 @@ $assert( false !== strpos( $main, 'lib/wenpai-admin-ui/php/load.php' ), 'Main fi
 $assert( false === strpos( $main, 'register_uninstall_hook' ), 'Uninstall must not register a data-deletion hook.' );
 $assert( ! is_dir( $root . '/lib/updatepulse-updater' ), 'UpdatePulse directory must be removed.' );
 $assert( is_dir( $root . '/lib/wenpai-admin-ui' ), 'wenpai-admin-ui must be vendored.' );
-$assert( '0.3.1' === trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) ), 'Vendored kit VERSION must be 0.3.1 or newer and recorded.' );
+$vendored_kit = trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) );
+$assert(
+	version_compare( $vendored_kit, '0.3.1', '>=' ),
+	'Vendored kit VERSION must be 0.3.1 or newer and recorded. Found ' . ( '' === $vendored_kit ? '(empty)' : $vendored_kit ) . '.'
+);
 
 $assert( false !== strpos( $main, "add_action( 'init', 'wp_fonts_register_collections', 25 )" ), 'System collections must register after 文风字体.' );
 $assert( false !== strpos( $main, '系统 · 中文' ), 'Chinese system collection was not renamed.' );

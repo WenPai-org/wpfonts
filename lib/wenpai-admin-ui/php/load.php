@@ -150,6 +150,7 @@ if ( ! function_exists( 'wenpai_admin_ui_boot' ) ) {
 			'class-wenpai-admin-icons.php',
 			'class-wenpai-admin-menu.php',
 			'class-wenpai-admin-settings.php',
+			'class-wenpai-admin-capability.php',
 		);
 		foreach ( $files as $file ) {
 			$path = $dir . $file;
@@ -215,7 +216,7 @@ if ( ! function_exists( 'wenpai_admin_ui_complete' ) ) {
 			return;
 		}
 		$dir = $GLOBALS['wenpai_admin_ui_winner']['dir'] . '/php/';
-		foreach ( array( 'class-wenpai-admin-menu.php', 'class-wenpai-admin-settings.php' ) as $file ) {
+		foreach ( array( 'class-wenpai-admin-menu.php', 'class-wenpai-admin-settings.php', 'class-wenpai-admin-capability.php' ) as $file ) {
 			$path = $dir . $file;
 			if ( is_readable( $path ) ) {
 				require_once $path;

@@ -481,7 +481,7 @@ class WPFonts_Admin {
 		if ( 'rejected' === $note ) {
 			self::notice( 'bad', __( '刚才填写的 Key 没有保存。请到文风重新复制 Key。', 'wpfonts' ) );
 		}
-		self::render_state_banner( $state );
+		self::render_state_banner( $state, 'settings' );
 
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'wpfonts' );
@@ -642,12 +642,18 @@ class WPFonts_Admin {
 	 * Top banner for the current state.
 	 *
 	 * @param string $state View state.
+	 * @param string $tab   Current tab. The settings screen answers the empty
+	 *                      state with its own switch, not a link to itself.
 	 * @return void
 	 */
-	private static function render_state_banner( $state ) {
+	private static function render_state_banner( $state, $tab = 'overview' ) {
 		$local = ( 'active' === WPFonts_Packages::presence() );
 		if ( 'empty' === $state && $local ) {
 			self::notice( 'ok', __( '文风字体包使用中。前台会加载本站这份字体样式。文风云仍可按需开启。', 'wpfonts' ) );
+			return;
+		}
+		if ( 'empty' === $state && 'settings' === $tab ) {
+			self::notice( 'info', __( '当前使用系统字体。要开启文风云，打开下方开关并保存；也可以先到字体包安装文风已切好的包。', 'wpfonts' ) );
 			return;
 		}
 		if ( 'empty' === $state ) {
@@ -694,7 +700,7 @@ class WPFonts_Admin {
 	 */
 	private static function notice( $level, $text ) {
 		echo '<div class="notice ' . esc_attr( $level ) . '">';
-		self::icon( 'ok' === $level ? 'info' : 'info' );
+		self::icon( 'info' );
 		echo '<span>' . esc_html( $text ) . '</span>';
 		echo '</div>';
 	}
@@ -1720,6 +1726,10 @@ class WPFonts_Admin {
 			self::notice( 'ok', __( '已替换本站这份字体。前台会加载新的样式。', 'wpfonts' ) );
 		} elseif ( 'enabled' === $note ) {
 			self::notice( 'ok', __( '前台会加载本站这份字体样式，也会出现在全站样式里。', 'wpfonts' ) );
+		} elseif ( 'disabled' === $note ) {
+			self::notice( 'info', __( '已停用。前台和全站样式不再使用这份字体，文件仍保留在本站。', 'wpfonts' ) );
+		} elseif ( 'deleted' === $note ) {
+			self::notice( 'ok', __( '已删除这份字体包。前台和全站样式不再使用它，本站文件也已移除。', 'wpfonts' ) );
 		} elseif ( 'failed' === $note ) {
 			self::notice( 'bad', __( '装不上。请用文风已切好的 zip（内含样式和 woff2）。', 'wpfonts' ) );
 		}
@@ -1976,11 +1986,20 @@ class WPFonts_Admin {
 		}
 		check_admin_referer( 'wpfonts_package_delete' );
 		$ack = isset( $_POST['wpfonts_delete_ack'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['wpfonts_delete_ack'] ) );
+		$code = 'noop';
 		if ( $ack ) {
-			$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
-			WPFonts_Packages::delete( $id );
+			$id   = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+			$gone = WPFonts_Packages::delete( $id );
+			$code = $gone ? 'deleted' : 'noop';
 		}
-		wp_safe_redirect( self::page_url( array( 'tab' => 'packages' ) ) );
+		wp_safe_redirect(
+			self::page_url(
+				array(
+					'tab'         => 'packages',
+					'wpfonts_pkg' => $code,
+				)
+			)
+		);
 		exit;
 	}
 
