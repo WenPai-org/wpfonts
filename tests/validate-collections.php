@@ -202,7 +202,7 @@ $assert( false !== strpos( $wp_css, "body.wenpai-ui-page #wpfooter {\n  display:
 $assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
 $assert( false === strpos( $admin, 'confirm(' ), 'Package delete must not use confirm().' );
 $assert( false === strpos( $admin, 'onclick=' ), 'Package delete must not use an onclick confirm.' );
-$assert( false !== strpos( $admin, 'wenpai-gate' ), 'Package delete must use the kit gate.' );
+$assert( false !== strpos( $admin, 'gate_html' ), 'Package delete must use the kit gate.' );
 $assert( false !== strpos( $admin, 'data-wenpai-need-apply' ), 'Delete button must stay disabled until the gate is checked.' );
 $assert( false !== strpos( $admin, '删除后本站不再提供这份字体。我已核对。' ), 'Delete gate copy drifted.' );
 $assert( false !== strpos( $admin, '未勾选不能点。' ), 'Delete gate hint drifted.' );

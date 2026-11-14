@@ -6,7 +6,9 @@
  * disabled). Products pass the sibling's plugin file or callables plus their
  * own copy; the kit only shapes three states (available, installed but not
  * ready, missing) and the permission-aware next step (install, activate,
- * settings). Referral parts can be switched off site-wide, see enabled().
+ * settings). Referral parts can be switched off site-wide, see enabled(),
+ * and each user sees them only with install_plugins and until they click
+ * 「不再提示」 for that slot (product-guidance.md P-7), see referral().
  *
  * @package Wenpai_Admin_UI
  */
@@ -32,7 +34,43 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 			'activate' => '启用',
 			'settings' => '打开设置',
 			'learn'    => '了解更多',
+			'dismiss'  => '不再提示',
 		);
+
+		/**
+		 * User meta holding the dismissed referral slots: array( slot => time ).
+		 */
+		const DISMISS_META = 'wenpai_admin_ui_dismissed';
+
+		/**
+		 * The admin-post action and nonce action prefix of 「不再提示」.
+		 */
+		const DISMISS_ACTION = 'wenpai_admin_ui_dismiss';
+
+		/**
+		 * Default 「不再提示」 failure messages by process_dismiss() code. Override or
+		 * translate them with the wenpai_admin_ui_dismiss_messages filter (array $messages).
+		 *
+		 * @var array<string, string>
+		 */
+		const MESSAGES = array(
+			'nonce' => '链接已过期，请刷新页面后再试。',
+			'cap'   => '你没有权限关闭这条推荐。',
+			'store' => '暂时无法保存，请稍后再试。',
+		);
+
+		/**
+		 * Failure messages after the wenpai_admin_ui_dismiss_messages filter.
+		 *
+		 * @return array<string, string>
+		 */
+		public static function messages() {
+			$m = self::MESSAGES;
+			if ( function_exists( 'apply_filters' ) ) {
+				$m = array_merge( $m, array_map( 'strval', (array) apply_filters( 'wenpai_admin_ui_dismiss_messages', $m ) ) );
+			}
+			return $m;
+		}
 
 		/**
 		 * Whether referral parts (recommend hint, install link, missing-state
@@ -50,6 +88,151 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 				$on = (bool) apply_filters( 'wenpai_admin_ui_referrals', $on, $args );
 			}
 			return $on;
+		}
+
+		/**
+		 * Whether the current user sees referral parts for $args (P-7): referrals
+		 * are on, the user can install plugins, and has not dismissed the slot.
+		 * Editors and authors get facts only, as with referrals off.
+		 *
+		 * @param array $args probe() args plus optional slot.
+		 * @return bool
+		 */
+		public static function referral( array $args = array() ) {
+			return self::enabled( $args ) && self::can( 'install_plugins' ) && ! self::dismissed( self::slot( $args ) );
+		}
+
+		/**
+		 * Referral slot key: $args['slot'] (product + position, e.g.
+		 * 'wpslug-mind-pinyin'), else the sibling's plugin directory, else
+		 * 'referral'. Lowercase [a-z0-9_-], at most 64 chars.
+		 *
+		 * @param array $args probe() args plus optional slot.
+		 * @return string
+		 */
+		public static function slot( array $args ) {
+			$slot = isset( $args['slot'] ) ? self::slot_key( $args['slot'] ) : '';
+			if ( '' === $slot && ! empty( $args['plugin'] ) ) {
+				$parts = explode( '/', (string) $args['plugin'] );
+				$slot  = self::slot_key( $parts[0] );
+			}
+			return '' === $slot ? 'referral' : $slot;
+		}
+
+		/**
+		 * Whether the current user dismissed this slot.
+		 *
+		 * @param string $slot Slot key.
+		 * @return bool
+		 */
+		public static function dismissed( $slot ) {
+			$slot = self::slot_key( $slot );
+			$list = self::dismissed_list();
+			return '' !== $slot && isset( $list[ $slot ] );
+		}
+
+		/**
+		 * Remember 「不再提示」 for the current user (user meta, every browser and device).
+		 *
+		 * @param string $slot Slot key.
+		 * @return bool False when there is no logged-in user or the slot is empty.
+		 */
+		public static function dismiss( $slot ) {
+			$slot = self::slot_key( $slot );
+			$uid  = self::user_id();
+			if ( '' === $slot || ! $uid || ! function_exists( 'update_user_meta' ) ) {
+				return false;
+			}
+			$list = self::dismissed_list();
+			if ( isset( $list[ $slot ] ) ) {
+				return true;
+			}
+			$list[ $slot ] = time();
+			return false !== update_user_meta( $uid, self::DISMISS_META, $list );
+		}
+
+		/**
+		 * The no-JS 「不再提示」 URL: admin-post.php with the slot and a nonce.
+		 * Kit JS posts to the same URL with wenpai_js=1.
+		 *
+		 * @param string $slot Slot key.
+		 * @return string '' outside WordPress.
+		 */
+		public static function dismiss_url( $slot ) {
+			$slot = self::slot_key( $slot );
+			if ( '' === $slot || ! function_exists( 'wp_nonce_url' ) || ! function_exists( 'admin_url' ) ) {
+				return '';
+			}
+			return wp_nonce_url( admin_url( 'admin-post.php?action=' . self::DISMISS_ACTION . '&slot=' . rawurlencode( $slot ) ), self::DISMISS_ACTION . '|' . $slot );
+		}
+
+		/**
+		 * Check and store one 「不再提示」 request. handle_dismiss() wraps it.
+		 *
+		 * @param array $req Unslashed request: slot, _wpnonce.
+		 * @return array{ok: bool, code: string, slot: string} code is '' | nonce | cap | store.
+		 */
+		public static function process_dismiss( array $req ) {
+			$slot  = isset( $req['slot'] ) && is_string( $req['slot'] ) ? self::slot_key( $req['slot'] ) : '';
+			$nonce = isset( $req['_wpnonce'] ) && is_string( $req['_wpnonce'] ) ? $req['_wpnonce'] : '';
+			$code  = '';
+			if ( '' === $slot || ! function_exists( 'wp_verify_nonce' ) || ! wp_verify_nonce( $nonce, self::DISMISS_ACTION . '|' . $slot ) ) {
+				$code = 'nonce';
+			} elseif ( ! self::can( 'install_plugins' ) ) {
+				$code = 'cap';
+			} elseif ( ! self::dismiss( $slot ) ) {
+				$code = 'store';
+			}
+			return array(
+				'ok'   => '' === $code,
+				'code' => $code,
+				'slot' => $slot,
+			);
+		}
+
+		/**
+		 * The admin_post_wenpai_admin_ui_dismiss handler. With wenpai_js=1
+		 * (kit JS) it answers JSON; without JS it redirects back to the referring
+		 * admin page (wp_safe_redirect). Bad nonce or no install_plugins: 403;
+		 * the user meta write failing: 500. Messages: messages().
+		 */
+		public static function handle_dismiss() {
+			$req = array();
+			foreach ( array( 'slot', '_wpnonce', 'wenpai_js' ) as $k ) {
+				if ( isset( $_REQUEST[ $k ] ) && is_string( $_REQUEST[ $k ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- process_dismiss() verifies the nonce.
+					$req[ $k ] = sanitize_text_field( wp_unslash( $_REQUEST[ $k ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- process_dismiss() verifies the nonce.
+				}
+			}
+			$js  = ! empty( $req['wenpai_js'] );
+			$res = self::process_dismiss( $req );
+			if ( ! $res['ok'] ) {
+				$all    = self::messages();
+				$msg    = isset( $all[ $res['code'] ] ) ? $all[ $res['code'] ] : $all['nonce'];
+				$status = 'store' === $res['code'] ? 500 : 403;
+				if ( $js ) {
+					wp_send_json_error(
+						array(
+							'message' => $msg,
+							'code'    => $res['code'],
+						),
+						$status
+					);
+				}
+				wp_die(
+					esc_html( $msg ),
+					'',
+					array(
+						'response'  => (int) $status,
+						'back_link' => true,
+					)
+				);
+			}
+			if ( $js ) {
+				wp_send_json_success( array( 'slot' => $res['slot'] ) );
+			}
+			$to = function_exists( 'wp_get_referer' ) ? wp_get_referer() : false;
+			wp_safe_redirect( $to ? $to : admin_url() );
+			exit;
 		}
 
 		/**
@@ -94,8 +277,9 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 		/**
 		 * Next step for the current user, as a status link, or null.
 		 *
-		 * When missing: install_url if the user can install plugins (and referrals
-		 * are on), else learn_url in a new tab. Installed but inactive: a nonce
+		 * When missing, only for referral() users (install_plugins, not
+		 * dismissed, referrals on): install_url, else learn_url in a new tab;
+		 * everyone else gets null (P-7). Installed but inactive: a nonce
 		 * activate link when the user can activate plugins. Active (ready or
 		 * not): settings_url when the user can manage options.
 		 *
@@ -106,10 +290,10 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 			$probe  = self::probe( $args );
 			$labels = array_merge( self::LABELS, isset( $args['labels'] ) ? (array) $args['labels'] : array() );
 			if ( 'missing' === $probe['state'] ) {
-				if ( ! self::enabled( $args ) ) {
+				if ( ! self::referral( $args ) ) {
 					return null;
 				}
-				if ( ! empty( $args['install_url'] ) && self::can( 'install_plugins' ) ) {
+				if ( ! empty( $args['install_url'] ) ) {
 					return array(
 						'url'   => (string) $args['install_url'],
 						'label' => $labels['install'],
@@ -145,14 +329,16 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 		 * Status payload for field type `status`.
 		 *
 		 * Each state's array may set level/text/desc/link; a missing link is
-		 * filled from action(). With referrals off, the missing state keeps
-		 * only its pill text (a fact, no pitch): no desc, no link.
+		 * filled from action(). Without referral() (referrals off, no
+		 * install_plugins, or dismissed) the missing state keeps only its pill
+		 * text (a fact, no pitch): no desc, no link. With a pitch it carries
+		 * dismiss: array( url, label, slot ) for the 「不再提示」 control.
 		 * Installed and active but not ready uses setup_status when given,
 		 * else installed_status.
 		 *
 		 * @param array $args probe() / action() args plus available_status,
 		 *                    installed_status, setup_status, missing_status.
-		 * @return array{level: string, text: string, desc: string[], link?: array}
+		 * @return array{level: string, text: string, desc: string[], link?: array, dismiss?: array}
 		 */
 		public static function status( array $args ) {
 			$probe = self::probe( $args );
@@ -166,7 +352,7 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 				'text'  => isset( $st['text'] ) ? (string) $st['text'] : '',
 				'desc'  => isset( $st['desc'] ) ? array_values( (array) $st['desc'] ) : array(),
 			);
-			if ( 'missing' === $probe['state'] && ! self::enabled( $args ) ) {
+			if ( 'missing' === $probe['state'] && ! self::referral( $args ) ) {
 				$out['desc'] = array();
 				return $out;
 			}
@@ -174,29 +360,95 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 			if ( $link ) {
 				$out['link'] = $link;
 			}
+			if ( 'missing' === $probe['state'] && ( $out['desc'] || $link ) ) {
+				$dismiss = self::dismiss_link( $args );
+				if ( $dismiss ) {
+					$out['dismiss'] = $dismiss;
+				}
+			}
 			return $out;
 		}
 
 		/**
 		 * Choice-card overlay for a capability-gated option.
 		 *
-		 * When missing: disabled, with hint_missing (e.g. 推荐) so the card stays as
-		 * a referral; with referrals off it is hidden instead (the product
-		 * drops the choice). installed / available: enabled, product copy owns
-		 * the label; runtime fallback stays with the product.
+		 * When missing: disabled, with hint_missing (e.g. 推荐) for referral()
+		 * users only; with referrals off it is hidden instead (the product
+		 * drops the choice). After 「不再提示」 or without install_plugins the
+		 * choice stays (P-1), only the hint goes. installed / available:
+		 * enabled, product copy owns the label; runtime fallback stays with the
+		 * product. dismiss is set with the hint (same slot as status()).
 		 *
-		 * @param array $args probe() args plus optional hint_missing.
-		 * @return array{disabled: bool, hint: string, hidden: bool}
+		 * @param array $args probe() args plus optional hint_missing, slot.
+		 * @return array{disabled: bool, hint: string, hidden: bool, dismiss: array|null}
 		 */
 		public static function choice_gate( array $args ) {
 			$probe   = self::probe( $args );
 			$missing = 'missing' === $probe['state'];
 			$on      = self::enabled( $args );
+			$hint    = $missing && isset( $args['hint_missing'] ) && self::referral( $args ) ? (string) $args['hint_missing'] : '';
 			return array(
 				'disabled' => $missing,
-				'hint'     => $missing && $on && isset( $args['hint_missing'] ) ? (string) $args['hint_missing'] : '',
+				'hint'     => $hint,
 				'hidden'   => $missing && ! $on,
+				'dismiss'  => '' !== $hint ? self::dismiss_link( $args ) : null,
 			);
+		}
+
+		/**
+		 * The dismiss part of status() / choice_gate(), or null outside WordPress
+		 * or without a logged-in user. context is $args['product'] (the
+		 * recommended product's name, for the control's accessible name), or ''.
+		 *
+		 * @param array $args probe() args plus optional slot, labels, product.
+		 * @return array{url: string, label: string, slot: string, context: string}|null
+		 */
+		private static function dismiss_link( array $args ) {
+			$slot = self::slot( $args );
+			$url  = self::user_id() ? self::dismiss_url( $slot ) : '';
+			if ( '' === $url ) {
+				return null;
+			}
+			$labels = array_merge( self::LABELS, isset( $args['labels'] ) ? (array) $args['labels'] : array() );
+			return array(
+				'url'     => $url,
+				'label'   => (string) $labels['dismiss'],
+				'slot'    => $slot,
+				'context' => isset( $args['product'] ) && is_scalar( $args['product'] ) ? (string) $args['product'] : '',
+			);
+		}
+
+		/**
+		 * Dismissed slots of the current user.
+		 *
+		 * @return array<string, int>
+		 */
+		private static function dismissed_list() {
+			$uid = self::user_id();
+			if ( ! $uid || ! function_exists( 'get_user_meta' ) ) {
+				return array();
+			}
+			$list = get_user_meta( $uid, self::DISMISS_META, true );
+			return is_array( $list ) ? $list : array();
+		}
+
+		/**
+		 * Current user id, 0 outside WordPress.
+		 *
+		 * @return int
+		 */
+		private static function user_id() {
+			return function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
+		}
+
+		/**
+		 * Normalize a slot key.
+		 *
+		 * @param mixed $slot Raw slot.
+		 * @return string
+		 */
+		private static function slot_key( $slot ) {
+			return is_scalar( $slot ) ? substr( (string) preg_replace( '/[^a-z0-9_-]/', '', strtolower( (string) $slot ) ), 0, 64 ) : '';
 		}
 
 		/**
@@ -257,5 +509,9 @@ if ( ! class_exists( 'Wenpai_Admin_Capability', false ) ) {
 			}
 			return (bool) $v;
 		}
+	}
+
+	if ( function_exists( 'add_action' ) ) {
+		add_action( 'admin_post_' . Wenpai_Admin_Capability::DISMISS_ACTION, array( 'Wenpai_Admin_Capability', 'handle_dismiss' ) );
 	}
 }

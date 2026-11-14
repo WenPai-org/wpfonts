@@ -32,6 +32,40 @@ if ( ! class_exists( 'Wenpai_Admin_Icons', false ) ) {
 		}
 
 		/**
+		 * Remix fill paths from icons/paths.php, read once per request.
+		 *
+		 * @return array<string, string>
+		 */
+		private static function fill_paths() {
+			static $paths = null;
+			if ( null === $paths ) {
+				$dir   = function_exists( 'wenpai_admin_ui_winner_dir' ) ? wenpai_admin_ui_winner_dir() : dirname( __DIR__ );
+				$file  = $dir . '/icons/paths.php';
+				$paths = is_readable( $file ) ? include $file : array();
+				if ( ! is_array( $paths ) ) {
+					$paths = array();
+				}
+			}
+			return $paths;
+		}
+
+		/**
+		 * Whether a semantic icon name exists (svg() falls back to info; this does not).
+		 *
+		 * @param string $name Semantic key.
+		 * @return bool
+		 */
+		public static function has( $name ) {
+			$name = (string) $name;
+			if ( '' === $name ) {
+				return false;
+			}
+			$lucide = self::lucide_paths();
+			$paths  = self::fill_paths();
+			return isset( $lucide[ $name ] ) || ! empty( $paths[ $name ] );
+		}
+
+		/**
 		 * Inline SVG markup for a semantic icon name.
 		 *
 		 * @param string $name  Semantic key from icons/map.json.
@@ -47,13 +81,8 @@ if ( ! class_exists( 'Wenpai_Admin_Icons', false ) ) {
 				}
 				return '<svg class="' . esc_attr( $class ) . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $inner . '</svg>';
 			}
-			$dir   = function_exists( 'wenpai_admin_ui_winner_dir' ) ? wenpai_admin_ui_winner_dir() : dirname( __DIR__ );
-			$file  = $dir . '/icons/paths.php';
-			$paths = is_readable( $file ) ? include $file : array();
-			if ( ! is_array( $paths ) ) {
-				$paths = array();
-			}
-			$d = isset( $paths[ $name ] ) ? $paths[ $name ] : ( isset( $paths['info'] ) ? $paths['info'] : '' );
+			$paths = self::fill_paths();
+			$d     = isset( $paths[ $name ] ) ? $paths[ $name ] : ( isset( $paths['info'] ) ? $paths['info'] : '' );
 			if ( '' === $d ) {
 				return '';
 			}

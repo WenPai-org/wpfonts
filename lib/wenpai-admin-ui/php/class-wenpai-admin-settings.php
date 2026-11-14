@@ -48,6 +48,11 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		const SAVED_CODE = 'wenpai_saved';
 
 		/**
+		 * Stored schema version key. Written only when register() was given 'version'.
+		 */
+		const SCHEMA_KEY = '_schema';
+
+		/**
 		 * Instances keyed by option name.
 		 *
 		 * @var array<string, Wenpai_Admin_Settings>
@@ -134,11 +139,40 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		private $importing = false;
 
 		/**
+		 * Schema version from register(). 1 when the caller omitted 'version'.
+		 *
+		 * @var int
+		 */
+		private $version = 1;
+
+		/**
+		 * Whether register() was given an explicit 'version' (then sanitize writes _schema).
+		 *
+		 * @var bool
+		 */
+		private $version_explicit = false;
+
+		/**
+		 * Upgrade callbacks keyed by target version.
+		 *
+		 * @var array<int, callable>
+		 */
+		private $upgrades = array();
+
+		/**
+		 * Tools instance when register() was given 'tools'; otherwise null.
+		 *
+		 * @var Wenpai_Admin_Tools|null
+		 */
+		private $tools = null;
+
+		/**
 		 * Create and register a settings instance for one option.
 		 *
 		 * @param string $option Option name.
 		 * @param array  $fields Field schema keyed by field id.
-		 * @param array  $args   Optional. Supports 'group', 'strings', 'layout' (row|stack, default row).
+		 * @param array  $args   Optional. Supports 'group', 'strings', 'layout' (row|stack, default row),
+		 *                       'version', 'upgrades', 'tools'.
 		 * @return Wenpai_Admin_Settings
 		 */
 		public static function register( $option, array $fields, array $args = array() ) {
@@ -146,6 +180,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			self::$registry[ $option ] = $inst;
 			if ( function_exists( 'add_action' ) ) {
 				add_action( 'admin_init', array( $inst, 'register_setting' ) );
+				add_action( 'admin_init', array( $inst, 'maybe_upgrade' ) );
 				// in_admin_header runs before options-head.php's settings_errors() and before every
 				// admin_notices callback (admin-header.php), so neither core nor a plugin calling
 				// settings_errors() there prints this option's entries; the page shows one kit notice.
@@ -173,35 +208,77 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 */
 		public static function default_strings() {
 			return array(
-				'on'               => '已开启',
-				'off'              => '未开启',
-				'secret_saved'     => '已保存一个值，出于安全不会显示。留空表示不修改。',
-				'secret_empty'     => '还没有填写。',
-				'secret_clear'     => '清除已保存的值',
-				'saved'            => '设置已保存。',
-				'saving'           => '正在保存…',
-				'partial_saved'    => '其余设置已保存。',
+				'on'                     => '已开启',
+				'off'                    => '未开启',
+				'secret_saved'           => '已保存一个值，出于安全不会显示。留空表示不修改。',
+				'secret_empty'           => '还没有填写。',
+				'secret_clear'           => '清除已保存的值',
+				'secret_show'            => '显示',
+				'secret_hide'            => '隐藏',
+				'saved'                  => '设置已保存。',
+				'saving'                 => '正在保存…',
+				'partial_saved'          => '其余设置已保存。',
 				/* translators: %d: number of fields that were not saved. */
-				'invalid'          => '暂时无法保存 %d 项设置，请按字段下的提示修改。',
+				'invalid'                => '暂时无法保存 %d 项设置，请按字段下的提示修改。',
 				/* translators: %d: total number of fields with errors. */
-				'invalid_more'     => '等 %d 项',
-				'invalid_value'    => '这一项的值无效，已保留原来的设置。',
-				'follow_global'    => '跟随全局设置',
+				'invalid_more'           => '等 %d 项',
+				'invalid_value'          => '这一项的值无效，已保留原来的设置。',
+				'follow_global'          => '跟随全局设置',
 				/* translators: %s: what would be listed, e.g. 文章类型. */
-				'empty_choices'    => '还没有可选的%s。',
+				'empty_choices'          => '还没有可选的%s。',
 				/* translators: 1: hidden tab label, 2: first tab label. */
-				'tab_hidden'       => '当前模式不需要%1$s的设置，已切回%2$s。',
+				'tab_hidden'             => '当前模式不需要%1$s的设置，已切回%2$s。',
 				// In-progress copy without the trailing 「…」: kit JS appends it.
-				'action_busy'      => '正在处理',
-				'action_ok'        => '已完成。',
+				'action_busy'            => '正在处理',
+				'action_ok'              => '已完成。',
 				// Global fallback only. A handler names the service in its WP_Error message.
-				'action_failed'    => '暂时无法完成操作，请稍后再试。',
-				'tab_expired'      => '暂时无法保存，页面已过期，请刷新后再试。',
-				'action_denied'    => '暂时无法完成操作，请刷新页面后再试。',
+				'action_failed'          => '暂时无法完成操作，请稍后再试。',
+				'tab_expired'            => '暂时无法保存，页面已过期，请刷新后再试。',
+				'action_denied'          => '暂时无法完成操作，请刷新页面后再试。',
+				'confirm_needed'         => '暂时无法完成操作，请先勾选确认。',
+				'invalid_email'          => '请填写有效的邮箱地址。',
+				'invalid_url'            => '请填写以 http:// 或 https:// 开头的地址。',
 				// Screen-reader hint after a status link with target=_blank.
-				'new_tab'          => '（在新标签页打开）',
+				'new_tab'                => '（在新标签页打开）',
+				// P-7 「不再提示」 on a referral (status field). Capability labels['dismiss'] wins when set.
+				'dismiss'                => '不再提示',
+				/* translators: %s: the recommended product (status dismiss context, else the field label). Screen-reader only. */
+				'dismiss_context'        => '：%s的推荐',
+				// Announced (aria-live) after kit JS removed the referral.
+				'dismissed'              => '已关闭这条推荐。',
 				// A secret can only be one line (password inputs drop line breaks).
-				'secret_multiline' => '暂时无法保存密钥，请填写单行的值。',
+				'secret_multiline'       => '暂时无法保存密钥，请填写单行的值。',
+				'imported'               => '已导入设置。',
+				/* translators: %d: number of fields that were not imported. */
+				'imported-partial'       => '已导入设置，其中 %d 项无效，已保留原来的值。',
+				'import-invalid'         => '暂时无法导入这份文件，请确认它是本插件导出的设置。',
+				'import-newer'           => '暂时无法导入较新版本的设置，请先升级插件。',
+				'import-size'            => '暂时无法导入这份文件，请确认文件小于 256 KB。',
+				'reset'                  => '已恢复默认设置。',
+				'reset-confirm'          => '暂时无法重置，请先勾选确认。',
+				'import-confirm'         => '暂时无法导入，请先勾选确认。',
+				'reset_confirm'          => '我已确认要把本插件的设置恢复为默认值',
+				'tools_export_title'     => '导出设置',
+				'tools_export_sub'       => '下载一份设置文件（JSON），不含密钥。',
+				'tools_export_button'    => '导出设置',
+				'tools_import_title'     => '导入设置',
+				'tools_import_sub'       => '用之前导出的文件恢复设置。密钥保持不变。',
+				'tools_import_button'    => '导入设置',
+				'tools_import_file'      => '设置文件',
+				'tools_import_confirm'   => '我已确认用这份文件覆盖当前设置',
+				'tools_import_need_file' => '先选择文件',
+				'tools_reset_title'      => '重置设置',
+				/* translators: %s: in-page link labelled 导出一份. */
+				'tools_reset_sub'        => '把本插件的设置恢复为默认值，不可撤销。建议先%s。',
+				'tools_reset_export'     => '导出一份',
+				'tools_reset_button'     => '重置设置',
+				'tools_reset_clear'      => '同时清除已保存的密钥',
+				'tools_reset_busy'       => '正在重置…',
+				'repeater_item'          => '第 %d 项',
+				'repeater_delete'        => '删除第 %d 项',
+				'repeater_add'           => '添加一项',
+				'repeater_move_up'       => '上移',
+				'repeater_move_down'     => '下移',
 			);
 		}
 
@@ -219,30 +296,37 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				self::default_strings(),
 				isset( $args['strings'] ) && is_array( $args['strings'] ) ? $args['strings'] : array()
 			);
-			// 0.3.1: row (label left, control right; stacks under 1100px) is the default again, as in 0.2.x. 'stack' opts out.
+			// 0.3.1: row (label left, control right; stacks at <=960px) is the default again, as in 0.2.x. 'stack' opts out.
 			$layout       = isset( $args['layout'] ) && 'stack' === $args['layout'] ? 'stack' : 'row';
 			$this->fields = array();
 			foreach ( $fields as $id => $f ) {
 				$f = wp_parse_args(
 					$f,
 					array(
-						'type'        => 'text',
-						'default'     => '',
-						'label'       => $id,
-						'desc'        => '',
-						'choices'     => array(),
-						'rows'        => array(),
-						'row_label'   => '',
-						'col_label'   => '',
-						'unset_value' => null,
-						'secret'      => false,
-						'validate'    => null,
-						'depends_on'  => array(),
-						'tab'         => '',
-						'layout'      => $layout,
-						'actions'     => array(),
-						'status'      => null,
-						'render'      => null,
+						'type'         => 'text',
+						'default'      => '',
+						'label'        => $id,
+						'desc'         => '',
+						'choices'      => array(),
+						'rows'         => array(),
+						'row_label'    => '',
+						'col_label'    => '',
+						'unset_value'  => null,
+						'secret'       => false,
+						'path'         => null,
+						'validate'     => null,
+						'depends_on'   => array(),
+						'tab'          => '',
+						'layout'       => $layout,
+						'actions'      => array(),
+						'instant'      => '',
+						'status'       => null,
+						'render'       => null,
+						'fields'       => array(),
+						'max_rows'     => 20,
+						'presentation' => '',
+						'prefix'       => '',
+						'suffix'       => '',
 					)
 				);
 				if ( 'secret' === $f['type'] ) {
@@ -255,11 +339,38 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					}
 					$f['type'] = 'secret';
 				}
+				$f['path'] = self::normalize_path( isset( $f['path'] ) ? $f['path'] : null, (string) $id );
+				if ( 'repeater' === $f['type'] ) {
+					$f['fields']   = self::normalize_repeater_fields( isset( $f['fields'] ) ? $f['fields'] : array() );
+					$f['max_rows'] = max( 1, (int) $f['max_rows'] );
+					if ( ! is_array( $f['default'] ) ) {
+						$f['default'] = array();
+					}
+					$pres              = sanitize_key( (string) $f['presentation'] );
+					$f['presentation'] = 'card' === $pres ? 'card' : '';
+				}
+				if ( null !== $f['path'] && ! self::stores( $f ) ) {
+					self::doing_it_wrong( sprintf( 'Field 「%s」: path is only for stored fields; ignored on type 「%s」.', $id, $f['type'] ) );
+					$f['path'] = null;
+				}
 				$tree = self::dep_tree( $f['depends_on'] );
 				if ( null !== $tree && 'disable' === $tree['mode'] && ! self::tree_has_reason( $tree ) ) {
 					self::doing_it_wrong( sprintf( 'Field 「%s」: depends_on mode 「disable」 needs a 「reason」 telling the user why and how to enable it.', $id ) );
 				}
 				$this->fields[ $id ] = $f;
+			}
+			$this->version_explicit = array_key_exists( 'version', $args );
+			$this->version          = $this->version_explicit ? max( 1, (int) $args['version'] ) : 1;
+			$this->upgrades         = isset( $args['upgrades'] ) && is_array( $args['upgrades'] ) ? $args['upgrades'] : array();
+			if ( isset( $args['tools'] ) && is_array( $args['tools'] ) ) {
+				$plugin = isset( $args['tools']['plugin'] ) ? sanitize_key( (string) $args['tools']['plugin'] ) : '';
+				if ( '' === $plugin ) {
+					self::doing_it_wrong( 'register() tools.plugin is required (used in the export filename and envelope).' );
+				} elseif ( ! class_exists( 'Wenpai_Admin_Tools', false ) ) {
+					self::doing_it_wrong( 'Wenpai_Admin_Tools is not loaded; require php/load.php so boot() / complete() load class-wenpai-admin-tools.php.' );
+				} else {
+					$this->tools = new Wenpai_Admin_Tools( $this, $args['tools'] );
+				}
 			}
 		}
 
@@ -272,87 +383,24 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @return string
 		 */
 		private static function kses( $html, $context ) {
-			if ( ! function_exists( 'wp_kses' ) ) {
-				return esc_html( $html );
+			self::ensure_ui();
+			if ( class_exists( 'Wenpai_Admin_UI', false ) ) {
+				return Wenpai_Admin_UI::kses( $html, $context );
 			}
-			$svg = array(
-				'svg'      => array(
-					'class'           => true,
-					'viewbox'         => true,
-					'width'           => true,
-					'height'          => true,
-					'fill'            => true,
-					'stroke'          => true,
-					'stroke-width'    => true,
-					'stroke-linecap'  => true,
-					'stroke-linejoin' => true,
-					'aria-hidden'     => true,
-					'focusable'       => true,
-					'role'            => true,
-					'xmlns'           => true,
-				),
-				'g'        => array(
-					'fill'      => true,
-					'stroke'    => true,
-					'transform' => true,
-				),
-				'path'     => array(
-					'd'               => true,
-					'fill'            => true,
-					'fill-rule'       => true,
-					'clip-rule'       => true,
-					'stroke'          => true,
-					'stroke-width'    => true,
-					'stroke-linecap'  => true,
-					'stroke-linejoin' => true,
-				),
-				'circle'   => array(
-					'cx' => true,
-					'cy' => true,
-					'r'  => true,
-				),
-				'ellipse'  => array(
-					'cx' => true,
-					'cy' => true,
-					'rx' => true,
-					'ry' => true,
-				),
-				'rect'     => array(
-					'x'      => true,
-					'y'      => true,
-					'width'  => true,
-					'height' => true,
-					'rx'     => true,
-					'ry'     => true,
-				),
-				'line'     => array(
-					'x1' => true,
-					'y1' => true,
-					'x2' => true,
-					'y2' => true,
-				),
-				'polyline' => array( 'points' => true ),
-				'polygon'  => array( 'points' => true ),
-				'title'    => array(),
-			);
-			// Paint attributes on every shape. defs, clipPath, mask and use are not supported.
-			$paint = array(
-				'fill'            => true,
-				'fill-opacity'    => true,
-				'fill-rule'       => true,
-				'opacity'         => true,
-				'stroke'          => true,
-				'stroke-width'    => true,
-				'stroke-opacity'  => true,
-				'stroke-linecap'  => true,
-				'stroke-linejoin' => true,
-				'transform'       => true,
-			);
-			foreach ( array( 'svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon' ) as $tag ) {
-				$svg[ $tag ] = array_merge( $svg[ $tag ], $paint );
+			return function_exists( 'esc_html' ) ? esc_html( $html ) : (string) $html;
+		}
+
+		/**
+		 * Load Wenpai_Admin_UI when Settings was required first.
+		 */
+		private static function ensure_ui() {
+			if ( class_exists( 'Wenpai_Admin_UI', false ) ) {
+				return;
 			}
-			$allowed = 'svg' === $context ? $svg : array_merge( wp_kses_allowed_html( 'post' ), $svg );
-			return wp_kses( $html, $allowed );
+			$file = __DIR__ . '/class-wenpai-admin-ui.php';
+			if ( is_readable( $file ) ) {
+				require_once $file;
+			}
 		}
 
 		/**
@@ -515,12 +563,27 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		}
 
 		/**
-		 * Stored values merged over defaults.
+		 * Stored values merged over defaults. Never includes _schema.
+		 * When register() was given version, old stored values are upgraded in memory.
 		 *
 		 * @return array
 		 */
 		public function all() {
-			return wp_parse_args( $this->stored(), $this->defaults() );
+			$stored = $this->stored();
+			$from   = $this->stored_schema( $stored );
+			unset( $stored[ self::SCHEMA_KEY ] );
+			// Upgrades see the stored values as saved, so they can tell a missing key from a default.
+			if ( $this->version_explicit && $from < $this->version ) {
+				$up = $this->run_upgrades( $stored, $from, $this->version );
+				if ( $up['ok'] ) {
+					$stored = $up['values'];
+				}
+			}
+			// Field-id view: path fields are read from nested option keys; flat fields stay top-level.
+			$values = $this->flatten_stored( $stored );
+			$values = wp_parse_args( $values, $this->defaults() );
+			unset( $values[ self::SCHEMA_KEY ] );
+			return $values;
 		}
 
 		/**
@@ -620,9 +683,10 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				$kept = array();
 				foreach ( $this->fields as $id => $f ) {
 					if ( self::stores( $f ) ) {
-						$kept[ $id ] = array_key_exists( $id, $stored ) ? $stored[ $id ] : $f['default'];
+						$kept[ $id ] = $this->stored_field_value( $stored, $id, $f['default'] );
 					}
 				}
+				$kept                 = $this->with_schema( $this->pack_values( $kept ) );
 				$this->last_sanitized = $kept;
 				return $kept;
 			}
@@ -641,8 +705,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				if ( ! self::stores( $f ) ) {
 					continue;
 				}
-				$raw  = array_key_exists( $id, $input ) ? $input[ $id ] : null;
-				$prev = array_key_exists( $id, $stored ) ? $stored[ $id ] : $f['default'];
+				$raw  = $this->input_value( $input, $id );
+				$prev = $this->stored_field_value( $stored, $id, $f['default'] );
 				if ( null !== $tab && ! self::in_tab( $f, $tab ) ) {
 					$out[ $id ] = $prev;
 					continue;
@@ -681,7 +745,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 						continue;
 					}
 				}
-				$out[ $id ] = $this->sanitize_field( $f, $raw );
+				$out[ $id ] = $this->after_sanitize_typed( $id, $f, $raw, $this->sanitize_field( $f, $raw ), $prev );
 				if ( is_callable( $f['validate'] ) ) {
 					$pending[ $id ] = true;
 				}
@@ -755,6 +819,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				// it also keeps core from adding its own general/settings_updated.
 				add_settings_error( $this->option, self::SAVED_CODE, $this->strings['saved'], 'success' );
 			}
+			$out                  = $this->with_schema( $this->pack_values( $out ) );
 			$this->last_sanitized = $out;
 			return $out;
 		}
@@ -843,7 +908,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			if ( is_callable( $f['validate'] ) ) {
 				$pending[ $id ] = true;
 			}
-			return $this->sanitize_field( $f, $raw );
+			return $this->after_sanitize_typed( $id, $f, $raw, $this->sanitize_field( $f, $raw ), $prev );
 		}
 
 		/**
@@ -986,6 +1051,43 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			$GLOBALS['wp_settings_errors'] = $keep; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- core's own settings errors list; only this option's entries and its duplicate 「Settings saved.」 are removed.
 		}
 
+
+		/**
+		 * Email/url post-sanitize check: invalid non-empty → field error + keep previous.
+		 *
+		 * @param string $id   Field id.
+		 * @param array  $f    Field schema.
+		 * @param mixed  $raw  Posted raw value.
+		 * @param mixed  $clean Sanitized value.
+		 * @param mixed  $prev Stored value.
+		 * @return mixed Value to store.
+		 */
+		private function after_sanitize_typed( $id, array $f, $raw, $clean, $prev ) {
+			if ( 'email' === $f['type'] ) {
+				$posted = is_scalar( $raw ) ? trim( (string) $raw ) : '';
+				if ( '' === $posted ) {
+					return '';
+				}
+				if ( ! function_exists( 'is_email' ) || ! is_email( (string) $clean ) ) {
+					$this->add_error( $id, $this->strings['invalid_email'] );
+					return $prev;
+				}
+				return (string) $clean;
+			}
+			if ( 'url' === $f['type'] ) {
+				$posted = is_scalar( $raw ) ? trim( (string) $raw ) : '';
+				if ( '' === $posted ) {
+					return '';
+				}
+				if ( '' === (string) $clean ) {
+					$this->add_error( $id, $this->strings['invalid_url'] );
+					return $prev;
+				}
+				return (string) $clean;
+			}
+			return $clean;
+		}
+
 		/**
 		 * Sanitize one field value by its type.
 		 *
@@ -1029,6 +1131,27 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return $res;
 				case 'textarea':
 					return null === $v ? $f['default'] : sanitize_textarea_field( (string) $v );
+				case 'email':
+					if ( null === $v || '' === $v ) {
+						return '';
+					}
+					if ( ! is_scalar( $v ) ) {
+						return $f['default'];
+					}
+					$email = function_exists( 'sanitize_email' ) ? sanitize_email( (string) $v ) : sanitize_text_field( (string) $v );
+					return $email;
+				case 'url':
+					if ( null === $v || '' === $v ) {
+						return '';
+					}
+					if ( ! is_scalar( $v ) ) {
+						return $f['default'];
+					}
+					return function_exists( 'esc_url_raw' )
+						? esc_url_raw( (string) $v, array( 'http', 'https' ) )
+						: sanitize_text_field( (string) $v );
+				case 'repeater':
+					return $this->sanitize_repeater( $f, $v );
 				default:
 					return null === $v || ! is_scalar( $v ) ? $f['default'] : sanitize_text_field( (string) $v );
 			}
@@ -1091,6 +1214,119 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		}
 
 		/**
+		 * Normalize nested repeater field schemas (Track D / E08).
+		 *
+		 * @param mixed $fields Raw fields map.
+		 * @return array<string, array>
+		 */
+		private static function normalize_repeater_fields( $fields ) {
+			if ( ! is_array( $fields ) ) {
+				return array();
+			}
+			$out = array();
+			foreach ( $fields as $fid => $sf ) {
+				$fid = sanitize_key( (string) $fid );
+				if ( '' === $fid || ! is_array( $sf ) ) {
+					continue;
+				}
+				$type = isset( $sf['type'] ) ? (string) $sf['type'] : 'text';
+				// Nested repeater / matrix / status / choice not in this lean slice.
+				if ( in_array( $type, array( 'repeater', 'matrix', 'status', 'choice', 'multicheck', 'multiselect', 'map' ), true ) ) {
+					continue;
+				}
+				$sf          = wp_parse_args(
+					$sf,
+					array(
+						'type'    => 'text',
+						'default' => ( 'toggle' === $type ? false : ( 'number' === $type ? 0 : '' ) ),
+						'label'   => $fid,
+						'desc'    => '',
+						'choices' => array(),
+						'min'     => null,
+						'max'     => null,
+					)
+				);
+				$out[ $fid ] = $sf;
+			}
+			return $out;
+		}
+
+		/**
+		 * Repeater: recursive sanitize of nested fields; drop empty rows; honor max_rows.
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value.
+		 * @return array<int, array<string, mixed>>
+		 */
+		private function sanitize_repeater( array $f, $v ) {
+			$fields = isset( $f['fields'] ) && is_array( $f['fields'] ) ? $f['fields'] : array();
+			$max    = isset( $f['max_rows'] ) ? max( 1, (int) $f['max_rows'] ) : 20;
+			$out    = array();
+			foreach ( ( is_array( $v ) ? $v : array() ) as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$clean = array();
+				foreach ( $fields as $fid => $sf ) {
+					$raw = array_key_exists( $fid, $row ) ? $row[ $fid ] : null;
+					// Absent nested toggle / unchecked → false (checkbox-like inside row).
+					if ( null === $raw && in_array( $sf['type'], array( 'toggle' ), true ) ) {
+						$raw = false;
+					}
+					if ( null === $raw ) {
+						$clean[ $fid ] = $sf['default'];
+						continue;
+					}
+					$clean[ $fid ] = $this->sanitize_field( $sf, $raw );
+				}
+				if ( self::repeater_row_empty( $clean, $fields ) ) {
+					continue;
+				}
+				$out[] = $clean;
+				if ( count( $out ) >= $max ) {
+					break;
+				}
+			}
+			return $out;
+		}
+
+		/**
+		 * Whether a sanitized repeater row is empty (all defaults / empty scalars).
+		 *
+		 * @param array $row    Clean row.
+		 * @param array $fields Nested schemas.
+		 * @return bool
+		 */
+		private static function repeater_row_empty( array $row, array $fields ) {
+			if ( array() === $fields ) {
+				return true;
+			}
+			foreach ( $fields as $fid => $sf ) {
+				$val = array_key_exists( $fid, $row ) ? $row[ $fid ] : $sf['default'];
+				$def = $sf['default'];
+				if ( 'toggle' === $sf['type'] ) {
+					if ( ! empty( $val ) ) {
+						return false;
+					}
+					continue;
+				}
+				if ( 'number' === $sf['type'] ) {
+					if ( (int) $val !== (int) $def ) {
+						return false;
+					}
+					continue;
+				}
+				if ( is_scalar( $val ) && '' !== trim( (string) $val ) && (string) $val !== (string) $def ) {
+					return false;
+				}
+				if ( is_scalar( $val ) && '' !== trim( (string) $val ) && '' === (string) $def ) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		/**
 		 * Values for export, with secret fields removed.
 		 *
 		 * @return array
@@ -1127,10 +1363,379 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			}
 			foreach ( $this->fields as $id => $f ) {
 				if ( self::is_secret( $f ) ) {
-					$clean[ $id ] = $current[ $id ];
+					$clean = $this->write_field_value( $clean, $id, $current[ $id ] );
 				}
 			}
 			return update_option( $this->option, $clean );
+		}
+
+		/**
+		 * Sanitize $input with the importing flag (no tab-marker notice) and write it.
+		 *
+		 * @param array $input Values as if posted.
+		 * @return bool Result of update_option().
+		 */
+		public function commit( array $input ) {
+			$this->importing = true;
+			try {
+				$clean = $this->sanitize( $input );
+			} finally {
+				$this->importing = false;
+			}
+			return update_option( $this->option, $clean );
+		}
+
+		/**
+		 * Registered schema version (1 when register() omitted version).
+		 *
+		 * @return int
+		 */
+		public function schema_version() {
+			return $this->version;
+		}
+
+		/**
+		 * UI strings after defaults and overrides are merged.
+		 *
+		 * @return array<string, string>
+		 */
+		public function strings() {
+			return $this->strings;
+		}
+
+		/**
+		 * Tools instance, or null when register() was not given tools.
+		 *
+		 * @return Wenpai_Admin_Tools|null
+		 */
+		public function tools() {
+			return $this->tools;
+		}
+
+		/**
+		 * Echo the three tools cards.
+		 *
+		 * @param array $args reset_confirm, reset_note.
+		 */
+		public function render_tools( $args = array() ) {
+			echo $this->tools_html( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped parts.
+		}
+
+		/**
+		 * Markup for the three tools cards. Empty (and _doing_it_wrong) without tools.
+		 *
+		 * @param array $args reset_confirm, reset_note.
+		 * @return string
+		 */
+		public function tools_html( $args = array() ) {
+			if ( ! $this->tools ) {
+				self::doing_it_wrong( 'register() with a tools.plugin argument before render_tools().', 'Wenpai_Admin_Settings::render_tools' );
+				return '';
+			}
+			return $this->tools->cards_html( is_array( $args ) ? $args : array() );
+		}
+
+		/**
+		 * Write upgraded values when stored schema is older than register() version.
+		 * No-op when version was omitted, the option is missing, or an upgrade callback fails.
+		 */
+		public function maybe_upgrade() {
+			if ( ! $this->version_explicit ) {
+				return;
+			}
+			$raw = get_option( $this->option, null );
+			if ( ! is_array( $raw ) ) {
+				return;
+			}
+			$from = $this->stored_schema( $raw );
+			if ( $from >= $this->version ) {
+				return;
+			}
+			unset( $raw[ self::SCHEMA_KEY ] );
+			$up = $this->run_upgrades( $raw, $from, $this->version );
+			if ( ! $up['ok'] ) {
+				return;
+			}
+			$this->import( $up['values'] );
+		}
+
+		/**
+		 * Run upgrades from $from+1 through $to. On throw or non-array, returns the pre-upgrade values.
+		 *
+		 * @param array $values Field values (no _schema).
+		 * @param int   $from   Stored (or file) schema version.
+		 * @param int   $to     Target schema version.
+		 * @return array{ok: bool, values: array}
+		 */
+		public function run_upgrades( array $values, $from, $to ) {
+			unset( $values[ self::SCHEMA_KEY ] );
+			$original = $values;
+			$from     = (int) $from;
+			$to       = (int) $to;
+			for ( $v = $from + 1; $v <= $to; $v++ ) {
+				if ( ! isset( $this->upgrades[ $v ] ) || ! is_callable( $this->upgrades[ $v ] ) ) {
+					continue;
+				}
+				try {
+					$next = call_user_func( $this->upgrades[ $v ], $values );
+				} catch ( Exception $e ) {
+					self::doing_it_wrong( sprintf( 'Upgrade callback for version %1$d of option 「%2$s」 threw; stored values were not written.', $v, $this->option ), 'Wenpai_Admin_Settings::run_upgrades' );
+					return array(
+						'ok'     => false,
+						'values' => $original,
+					);
+				} catch ( Error $e ) {
+					self::doing_it_wrong( sprintf( 'Upgrade callback for version %1$d of option 「%2$s」 threw; stored values were not written.', $v, $this->option ), 'Wenpai_Admin_Settings::run_upgrades' );
+					return array(
+						'ok'     => false,
+						'values' => $original,
+					);
+				}
+				if ( ! is_array( $next ) ) {
+					self::doing_it_wrong( sprintf( 'Upgrade callback for version %1$d of option 「%2$s」 did not return an array; stored values were not written.', $v, $this->option ), 'Wenpai_Admin_Settings::run_upgrades' );
+					return array(
+						'ok'     => false,
+						'values' => $original,
+					);
+				}
+				$values = $next;
+				unset( $values[ self::SCHEMA_KEY ] );
+			}
+			return array(
+				'ok'     => true,
+				'values' => $values,
+			);
+		}
+
+		/**
+		 * Schema version recorded in a stored option array; missing means 1.
+		 *
+		 * @param array $stored Stored option.
+		 * @return int
+		 */
+		private function stored_schema( array $stored ) {
+			if ( ! isset( $stored[ self::SCHEMA_KEY ] ) || ! is_numeric( $stored[ self::SCHEMA_KEY ] ) ) {
+				return 1;
+			}
+			return max( 1, (int) $stored[ self::SCHEMA_KEY ] );
+		}
+
+		/**
+		 * Attach _schema when register() was given version.
+		 *
+		 * @param array $out Sanitized values.
+		 * @return array
+		 */
+
+		/**
+		 * Normalize a field path from schema or a bracket-shaped field id.
+		 *
+		 * @param mixed  $path Schema 'path' (array|string|null).
+		 * @param string $id   Field id (fallback when it looks like a[b][c]).
+		 * @return string[]|null
+		 */
+		private static function normalize_path( $path, $id ) {
+			if ( is_array( $path ) ) {
+				$segs = array();
+				foreach ( $path as $seg ) {
+					if ( ! is_scalar( $seg ) ) {
+						continue;
+					}
+					$seg = (string) $seg;
+					if ( '' !== $seg ) {
+						$segs[] = $seg;
+					}
+				}
+				return array() === $segs ? null : $segs;
+			}
+			if ( is_string( $path ) && '' !== $path ) {
+				$parsed = self::parse_bracket_path( $path );
+				if ( null !== $parsed ) {
+					return $parsed;
+				}
+			}
+			return self::parse_bracket_path( $id );
+		}
+
+		/**
+		 * Parse 'a[b][c]' / 'a.b.c' into segments. A plain id with no brackets
+		 * or dots returns null (flat field).
+		 *
+		 * @param string $spec Path string or field id.
+		 * @return string[]|null
+		 */
+		private static function parse_bracket_path( $spec ) {
+			$spec = (string) $spec;
+			if ( '' === $spec ) {
+				return null;
+			}
+			if ( false !== strpos( $spec, '[' ) ) {
+				if ( ! preg_match( '/^([^\[\]]+)((?:\[[^\[\]]+\])+)$/', $spec, $m ) ) {
+					return null;
+				}
+				$segs = array( $m[1] );
+				if ( preg_match_all( '/\[([^\[\]]+)\]/', $m[2], $mm ) ) {
+					foreach ( $mm[1] as $seg ) {
+						$segs[] = $seg;
+					}
+				}
+				return $segs;
+			}
+			if ( false !== strpos( $spec, '.' ) ) {
+				$segs = array_values( array_filter( explode( '.', $spec ), 'strlen' ) );
+				return count( $segs ) > 1 ? $segs : null;
+			}
+			return null;
+		}
+
+		/**
+		 * Read a nested value by path segments.
+		 *
+		 * @param mixed    $data Root array.
+		 * @param string[] $path Segments.
+		 * @return mixed|null Null when missing.
+		 */
+		private static function path_get( $data, array $path ) {
+			$cur = $data;
+			foreach ( $path as $seg ) {
+				if ( ! is_array( $cur ) || ! array_key_exists( $seg, $cur ) ) {
+					return null;
+				}
+				$cur = $cur[ $seg ];
+			}
+			return $cur;
+		}
+
+		/**
+		 * Write a nested value by path segments (creates arrays as needed).
+		 *
+		 * @param array    $data Root array (by ref).
+		 * @param string[] $path Segments.
+		 * @param mixed    $value Value to set.
+		 */
+		private static function path_set( array &$data, array $path, $value ) {
+			$cur  =& $data;
+			$last = count( $path ) - 1;
+			foreach ( $path as $i => $seg ) {
+				if ( $i === $last ) {
+					$cur[ $seg ] = $value;
+					return;
+				}
+				if ( ! isset( $cur[ $seg ] ) || ! is_array( $cur[ $seg ] ) ) {
+					$cur[ $seg ] = array();
+				}
+				$cur =& $cur[ $seg ];
+			}
+		}
+
+		/**
+		 * Posted or programmatic value for a field: nested path first, then flat id.
+		 *
+		 * @param array  $input Submitted / commit values.
+		 * @param string $id    Field id.
+		 * @return mixed|null Null when absent (not on the page).
+		 */
+		private function input_value( array $input, $id ) {
+			$path = $this->field_path( $id );
+			if ( null !== $path ) {
+				$nested = self::path_get( $input, $path );
+				if ( null !== $nested ) {
+					return $nested;
+				}
+			}
+			return array_key_exists( $id, $input ) ? $input[ $id ] : null;
+		}
+
+		/**
+		 * Stored value for a field from the raw option array (nested or flat).
+		 *
+		 * @param array  $stored  Raw option.
+		 * @param string $id      Field id.
+		 * @param mixed  $fallback Default when missing.
+		 * @return mixed
+		 */
+		private function stored_field_value( array $stored, $id, $fallback ) {
+			$path = $this->field_path( $id );
+			if ( null !== $path ) {
+				$v = self::path_get( $stored, $path );
+				return null !== $v ? $v : $fallback;
+			}
+			return array_key_exists( $id, $stored ) ? $stored[ $id ] : $fallback;
+		}
+
+		/**
+		 * Flatten a stored option into field-id => value (for all()/get()/depends_on).
+		 *
+		 * @param array $stored Raw option without requiring _schema.
+		 * @return array<string, mixed>
+		 */
+		private function flatten_stored( array $stored ) {
+			$out = array();
+			foreach ( $this->fields as $id => $f ) {
+				if ( ! self::stores( $f ) ) {
+					continue;
+				}
+				$path = $this->field_path( $id );
+				if ( null !== $path ) {
+					$v = self::path_get( $stored, $path );
+					if ( null !== $v ) {
+						$out[ $id ] = $v;
+					}
+				} elseif ( array_key_exists( $id, $stored ) ) {
+					$out[ $id ] = $stored[ $id ];
+				}
+			}
+			return $out;
+		}
+
+		/**
+		 * Pack a field-id => value map into the option storage shape (nested paths).
+		 *
+		 * @param array $flat Field-id keyed values.
+		 * @return array
+		 */
+		private function pack_values( array $flat ) {
+			$out = array();
+			foreach ( $this->fields as $id => $f ) {
+				if ( ! self::stores( $f ) || ! array_key_exists( $id, $flat ) ) {
+					continue;
+				}
+				$out = $this->write_field_value( $out, $id, $flat[ $id ] );
+			}
+			return $out;
+		}
+
+		/**
+		 * Write one field's value into a storage-shaped array.
+		 *
+		 * @param array  $storage Storage array.
+		 * @param string $id      Field id.
+		 * @param mixed  $value   Value.
+		 * @return array
+		 */
+		private function write_field_value( array $storage, $id, $value ) {
+			$path = $this->field_path( $id );
+			if ( null !== $path ) {
+				self::path_set( $storage, $path, $value );
+			} else {
+				$storage[ $id ] = $value;
+			}
+			return $storage;
+		}
+
+		/**
+		 * Add the schema version to an export payload when explicitly configured.
+		 *
+		 * @param array $out Export payload.
+		 * @return array
+		 */
+		private function with_schema( array $out ) {
+			if ( $this->version_explicit ) {
+				$out[ self::SCHEMA_KEY ] = $this->version;
+			} else {
+				unset( $out[ self::SCHEMA_KEY ] );
+			}
+			return $out;
 		}
 
 		// --- Output ---
@@ -1249,8 +1854,20 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @param array  $args Optional. 'labelledby', 'describedby'.
 		 */
 		public function render_control( $id, array $args = array() ) {
+			echo $this->render_control_html( $id, $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+		}
+
+		/**
+		 * Return what render_control() echoes, e.g. for
+		 * Wenpai_Admin_UI::row( array( 'control_html' => … ) ) (0.3.4+).
+		 *
+		 * @param string $id   Field id.
+		 * @param array  $args Optional. 'labelledby', 'describedby'.
+		 * @return string Escaped HTML, or '' for an unknown field.
+		 */
+		public function render_control_html( $id, array $args = array() ) {
 			if ( ! isset( $this->fields[ $id ] ) ) {
-				return;
+				return '';
 			}
 			$f     = $this->fields[ $id ];
 			$fid   = $this->field_id( $id );
@@ -1268,8 +1885,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			} elseif ( null !== $off ) {
 				$attrs .= ' hidden inert data-wenpai-dep-hidden';
 			}
-			$out = '<span class="wenpai-control" data-wenpai-field="' . esc_attr( $id ) . '"' . $attrs . '>' . $inner . '</span>';
-			echo $out; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+			return '<span class="wenpai-control" data-wenpai-field="' . esc_attr( $id ) . '"' . $attrs . '>' . $inner . '</span>';
 		}
 
 		/**
@@ -1279,7 +1895,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @return string
 		 */
 		public function field_id( $id ) {
-			return 'wenpai-f-' . $this->option . '-' . $id;
+			// Bracket / dotted path ids must stay valid in HTML id and for= targets.
+			$safe = trim( preg_replace( '/[^A-Za-z0-9_-]+/', '-', (string) $id ), '-' );
+			return 'wenpai-f-' . $this->option . '-' . $safe;
 		}
 
 		/**
@@ -1289,7 +1907,34 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @return string
 		 */
 		public function field_name( $id ) {
-			return $this->option . '[' . $id . ']';
+			$path = $this->field_path( $id );
+			if ( null === $path ) {
+				return $this->option . '[' . $id . ']';
+			}
+			$name = $this->option;
+			foreach ( $path as $seg ) {
+				$name .= '[' . $seg . ']';
+			}
+			return $name;
+		}
+
+		/**
+		 * Nested storage path for a field, or null for a flat top-level key.
+		 *
+		 * Schema: 'path' => array( 'endpoints', 'deepseek', 'api_key' ) or the
+		 * bracket string 'endpoints[deepseek][api_key]'. A field id that itself
+		 * looks like a[b][c] is treated as path when 'path' is omitted (Track B /
+		 * E09 nested secret). Clear / depends_on / actions still use the field id.
+		 *
+		 * @param string $id Field id.
+		 * @return string[]|null
+		 */
+		public function field_path( $id ) {
+			if ( ! isset( $this->fields[ $id ] ) ) {
+				return null;
+			}
+			$path = $this->fields[ $id ]['path'];
+			return is_array( $path ) && array() !== $path ? $path : null;
 		}
 
 		/**
@@ -1309,7 +1954,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			$errors = $this->errors();
 			$err    = isset( $errors[ $id ] ) ? $errors[ $id ] : '';
 			$row    = 'row' === $f['layout'];
-			$group  = in_array( $f['type'], array( 'radio', 'choice', 'multicheck', 'multiselect', 'matrix', 'status' ), true );
+			$group  = in_array( $f['type'], array( 'radio', 'choice', 'multicheck', 'multiselect', 'matrix', 'status', 'repeater' ), true );
 			$secret = self::is_secret( $f );
 			$tree   = self::dep_tree( $f['depends_on'] );
 			$reason = null !== $tree && 'disable' === $tree['mode'];
@@ -1410,9 +2055,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @return string
 		 */
 		private function secret_extra_html( $id, $fid ) {
-			$stored = $this->stored();
-			$saved  = isset( $stored[ $id ] ) && is_scalar( $stored[ $id ] ) && '' !== (string) $stored[ $id ];
-			$html   = '<p class="wenpai-field__state ' . ( $saved ? 'is-saved' : 'is-empty' ) . '" id="' . esc_attr( $fid . '-state' ) . '">' . esc_html( $saved ? $this->strings['secret_saved'] : $this->strings['secret_empty'] ) . '</p>';
+			$val   = $this->get( $id );
+			$saved = is_scalar( $val ) && '' !== (string) $val;
+			$html  = '<p class="wenpai-field__state ' . ( $saved ? 'is-saved' : 'is-empty' ) . '" id="' . esc_attr( $fid . '-state' ) . '">' . esc_html( $saved ? $this->strings['secret_saved'] : $this->strings['secret_empty'] ) . '</p>';
 			if ( $saved ) {
 				$html .= '<label class="wenpai-field__clear"><input type="checkbox" name="' . esc_attr( $this->option . '[' . self::CLEAR_KEY . '][]' ) . '" value="' . esc_attr( $id ) . '"> ' . esc_html( $this->strings['secret_clear'] ) . '</label>';
 			}
@@ -1422,7 +2067,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		/**
 		 * Normalized action button of a field (at most one, always .btn-secondary).
 		 *
-		 * Schema: 'actions' => array( array( 'id', 'label', 'ajax' (wp_ajax action),
+		 * Schema: 'actions' => array( array( 'id', 'label', 'ajax' (wp_ajax) or 'post' (admin-post Action),
 		 * 'nonce' (defaults to the ajax action), 'include' (field ids sent along,
 		 * defaults to this field), 'busy' (in-progress copy WITHOUT the trailing
 		 * 「…」, e.g. 正在测试; kit JS appends 「…」; default action_busy 正在处理),
@@ -1441,7 +2086,12 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 */
 		private function actions( $id, array $f ) {
 			foreach ( (array) $f['actions'] as $i => $a ) {
-				if ( ! is_array( $a ) || empty( $a['ajax'] ) || empty( $a['label'] ) ) {
+				if ( ! is_array( $a ) || empty( $a['label'] ) ) {
+					continue;
+				}
+				$post = ! empty( $a['post'] ) ? sanitize_key( (string) $a['post'] ) : '';
+				$ajax = ! empty( $a['ajax'] ) ? (string) $a['ajax'] : '';
+				if ( '' === $post && '' === $ajax ) {
 					continue;
 				}
 				$aid = isset( $a['id'] ) ? sanitize_key( (string) $a['id'] ) : (string) $i;
@@ -1449,8 +2099,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					array(
 						'id'            => $aid,
 						'label'         => (string) $a['label'],
-						'ajax'          => (string) $a['ajax'],
-						'nonce'         => isset( $a['nonce'] ) ? (string) $a['nonce'] : (string) $a['ajax'],
+						'ajax'          => $ajax,
+						'post'          => $post,
+						'nonce'         => isset( $a['nonce'] ) ? (string) $a['nonce'] : ( '' !== $ajax ? $ajax : $post ),
 						'include'       => isset( $a['include'] ) ? (array) $a['include'] : array( $id ),
 						'busy'          => isset( $a['busy'] ) ? (string) $a['busy'] : $this->strings['action_busy'],
 						'data'          => isset( $a['data'] ) && is_array( $a['data'] ) ? $a['data'] : array(),
@@ -1475,6 +2126,21 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		private function actions_html( $id, array $f ) {
 			$out = '';
 			foreach ( $this->actions( $id, $f ) as $a ) {
+				if ( '' !== $a['post'] && class_exists( 'Wenpai_Admin_Action', false ) ) {
+					// Track C / E10: admin-post Action path (works without JS; single page notice).
+					$action_url = function_exists( 'admin_url' ) ? admin_url( 'admin-post.php' ) : 'admin-post.php';
+					$out       .= '<form method="post" action="' . esc_url( $action_url ) . '" class="wenpai-field__action-form">';
+					$out       .= Wenpai_Admin_Action::fields_html( $a['post'] );
+					foreach ( $a['data'] as $dk => $dv ) {
+						if ( is_scalar( $dv ) ) {
+							$out .= '<input type="hidden" name="' . esc_attr( (string) $dk ) . '" value="' . esc_attr( (string) $dv ) . '" />';
+						}
+					}
+					$out .= '<button type="submit" class="btn btn-secondary" data-wenpai-busy="' . esc_attr( $a['busy'] ) . '">'
+						. esc_html( $a['label'] ) . '</button>';
+					$out .= '</form>';
+					continue;
+				}
 				$names = array();
 				foreach ( $a['include'] as $inc ) {
 					$names[] = $this->field_name( (string) $inc );
@@ -1533,7 +2199,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				case 'status':
 					return $this->status_html( $f, $fid );
 				case 'toggle':
-					return self::switch_html(
+					$switch = self::switch_html(
 						array(
 							'id'          => $fid,
 							'name'        => $name,
@@ -1545,6 +2211,17 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 							'invalid'     => $ctl['invalid'],
 						)
 					);
+					// Track C / E06: instant module toggle via Wenpai_Admin_Action (admin-post).
+					$instant = isset( $f['instant'] ) ? sanitize_key( (string) $f['instant'] ) : '';
+					if ( '' !== $instant && class_exists( 'Wenpai_Admin_Action', false ) ) {
+						$action_url = function_exists( 'admin_url' ) ? admin_url( 'admin-post.php' ) : 'admin-post.php';
+						$html       = '<form method="post" action="' . esc_url( $action_url ) . '" class="wenpai-instant" data-wenpai-instant>';
+						$html      .= Wenpai_Admin_Action::fields_html( $instant );
+						$html      .= $switch;
+						$html      .= '<noscript><button type="submit" class="btn btn-secondary">' . esc_html( $this->strings['saved'] ) . '</button></noscript>';
+						return $html . '</form>';
+					}
+					return $switch;
 				case 'select':
 					$out .= '<select id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '"' . $aria . $inv . '>';
 					foreach ( self::resolve( $f['choices'], $f ) as $k => $lab ) {
@@ -1573,15 +2250,55 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				case 'matrix':
 					return $this->matrix_html( $f, $fid, $name, is_array( $v ) ? $v : array(), $ctl );
 				case 'number':
-					return '<input type="number" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v ) . '"' . ( isset( $f['min'] ) ? ' min="' . esc_attr( $f['min'] ) . '"' : '' ) . ( isset( $f['max'] ) ? ' max="' . esc_attr( $f['max'] ) . '"' : '' ) . $aria . $inv . '>';
+					return $this->addon_html(
+						'<input type="number" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v ) . '"' . ( isset( $f['min'] ) ? ' min="' . esc_attr( $f['min'] ) . '"' : '' ) . ( isset( $f['max'] ) ? ' max="' . esc_attr( $f['max'] ) . '"' : '' ) . $aria . $inv . '>',
+						$f
+					);
 				case 'textarea':
 					return '<textarea id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" rows="4"' . $aria . $inv . '>' . esc_textarea( $v ) . '</textarea>';
 				case 'secret':
-					$saved = is_scalar( $v ) && '' !== (string) $v;
-					return '<input type="password" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="" autocomplete="new-password" spellcheck="false" data-wenpai-secret="' . esc_attr( $id ) . '" data-wenpai-multiline="' . esc_attr( $this->strings['secret_multiline'] ) . '"' . ( $saved ? ' data-wenpai-saved' : '' ) . $aria . $inv . '>';
+					$saved  = is_scalar( $v ) && '' !== (string) $v;
+					$input  = '<input type="password" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="" autocomplete="new-password" spellcheck="false" data-wenpai-secret="' . esc_attr( $id ) . '" data-wenpai-multiline="' . esc_attr( $this->strings['secret_multiline'] ) . '"' . ( $saved ? ' data-wenpai-saved' : '' ) . $aria . $inv . '>';
+					$reveal = '<button type="button" class="btn btn-ghost wenpai-field__reveal" data-wenpai-reveal aria-pressed="false" aria-controls="' . esc_attr( $fid ) . '" aria-label="' . esc_attr( $this->strings['secret_show'] ) . '" data-wenpai-reveal-show="' . esc_attr( $this->strings['secret_show'] ) . '" data-wenpai-reveal-hide="' . esc_attr( $this->strings['secret_hide'] ) . '">' . esc_html( $this->strings['secret_show'] ) . '</button>';
+					return '<span class="wenpai-field__secret">' . $input . $reveal . '</span>';
+				case 'email':
+					return '<input type="email" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="email"' . $aria . $inv . '>';
+				case 'url':
+					return '<input type="url" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="url"' . $aria . $inv . '>';
+				case 'repeater':
+					return $this->repeater_html( $id, $f, $fid, $name, is_array( $v ) ? $v : array() );
 				default:
-					return '<input type="text" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="off"' . $aria . $inv . '>';
+					return $this->addon_html(
+						'<input type="text" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="off"' . $aria . $inv . '>',
+						$f
+					);
 			}
+		}
+
+		/**
+		 * Wrap a control in Field addon affixes (Track E / E18).
+		 *
+		 * Ban InputGroup. Prefix/suffix hang on Field, not a third family.
+		 *
+		 * @param string $inner Control HTML.
+		 * @param array  $f     Field schema.
+		 * @return string
+		 */
+		private function addon_html( $inner, array $f ) {
+			$pre = isset( $f['prefix'] ) ? (string) $f['prefix'] : '';
+			$suf = isset( $f['suffix'] ) ? (string) $f['suffix'] : '';
+			if ( '' === $pre && '' === $suf ) {
+				return $inner;
+			}
+			$html = '<span class="field-addon">';
+			if ( '' !== $pre ) {
+				$html .= '<span class="field-addon-affix">' . esc_html( $pre ) . '</span>';
+			}
+			$html .= $inner;
+			if ( '' !== $suf ) {
+				$html .= '<span class="field-addon-affix">' . esc_html( $suf ) . '</span>';
+			}
+			return $html . '</span>';
 		}
 
 		/**
@@ -1598,7 +2315,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 */
 		private function choice_html( array $f, $name, $v, $inv ) {
 			$choices = self::resolve( $f['choices'], $f );
-			$out     = '<div class="choice-cards' . ( 2 === count( $choices ) ? ' cols-2' : '' ) . '">';
+			$n       = count( $choices );
+			// Even counts (2, 4, ...) are two columns, so four cards are 2x2 instead of 3+1 (design wpslug-89-R2).
+			$out = '<div class="choice-cards' . ( $n > 0 && 0 === $n % 2 ? ' cols-2' : '' ) . '">';
 			foreach ( $choices as $k => $c ) {
 				$c    = is_array( $c ) ? $c : array( 'label' => (string) $c );
 				$on   = $v === (string) $k;
@@ -1664,13 +2383,26 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					. '</a>';
 			}
 			$lines = isset( $st['desc'] ) ? array_values( (array) $st['desc'] ) : array();
+			$notes = '';
 			foreach ( $lines as $i => $line ) {
-				$out .= '<p class="wenpai-field__note">' . esc_html( (string) $line ) . ( count( $lines ) - 1 === $i ? $link : '' ) . '</p>';
+				$notes .= '<p class="wenpai-field__note">' . esc_html( (string) $line ) . ( count( $lines ) - 1 === $i ? $link : '' ) . '</p>';
 			}
 			if ( empty( $lines ) && '' !== $link ) {
-				$out .= '<p class="wenpai-field__note">' . ltrim( $link ) . '</p>';
+				$notes .= '<p class="wenpai-field__note">' . ltrim( $link ) . '</p>';
 			}
-			return $out . '</div>';
+			// P-7: a referral (Capability::status() with dismiss) gets 「不再提示」. It is a link
+			// to admin-post (nonce) so it works without JS inside the settings form; kit JS
+			// posts it in the background, removes the referral and moves focus on.
+			if ( isset( $st['dismiss']['url'], $st['dismiss']['slot'] ) && '' !== (string) $st['dismiss']['url'] ) {
+				$d     = $st['dismiss'];
+				$label = isset( $d['label'] ) && '' !== (string) $d['label'] ? (string) $d['label'] : (string) $this->strings['dismiss'];
+				// The accessible name says what goes (WCAG 2.4.4): 「不再提示：文派心思的推荐」, so two referrals on a page differ.
+				$ctx   = isset( $d['context'] ) && '' !== (string) $d['context'] ? (string) $d['context'] : ( isset( $f['label'] ) ? (string) $f['label'] : '' );
+				$sr    = '' !== $ctx && '' !== (string) $this->strings['dismiss_context'] ? '<span class="screen-reader-text">' . esc_html( sprintf( (string) $this->strings['dismiss_context'], $ctx ) ) . '</span>' : '';
+				$notes = '<div class="wenpai-referral" data-wenpai-referral="' . esc_attr( (string) $d['slot'] ) . '">' . $notes
+					. '<p class="wenpai-field__note wenpai-referral__dismiss"><a class="btn btn-ghost" href="' . esc_url( (string) $d['url'] ) . '" data-wenpai-dismiss data-wenpai-dismissed="' . esc_attr( (string) $this->strings['dismissed'] ) . '">' . esc_html( $label ) . $sr . '</a></p></div>';
+			}
+			return $out . $notes . '</div>';
 		}
 
 		/**
@@ -1742,7 +2474,140 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		}
 
 		/**
-		 * Label of a choice or row given as a string or array('label' => ...).
+		 * Repeater control (Track D / E08): existing rows + one empty row;
+		 * each row fieldset + legend「第 N 项」; delete「删除第 N 项」.
+		 * presentation=card wraps the row body with existing .card classes
+		 * (Card composition — never EndpointCard / ModuleCard / StrategyCard).
+		 *
+		 * @param string $id   Field id.
+		 * @param array  $f    Schema.
+		 * @param string $fid  Control id prefix.
+		 * @param string $name Base input name.
+		 * @param array  $v    Current rows.
+		 * @return string
+		 */
+		private function repeater_html( $id, array $f, $fid, $name, array $v ) {
+			$fields  = isset( $f['fields'] ) && is_array( $f['fields'] ) ? $f['fields'] : array();
+			$max     = isset( $f['max_rows'] ) ? max( 1, (int) $f['max_rows'] ) : 20;
+			$card    = isset( $f['presentation'] ) && 'card' === $f['presentation'];
+			$rows    = array_values( $v );
+			$n_saved = count( $rows );
+			if ( $n_saved < $max ) {
+				$rows[] = array(); // Trailing empty row for no-JS add-one-on-save.
+			}
+			$cls   = 'wenpai-repeater' . ( $card ? ' wenpai-repeater--cards' : '' );
+			$html  = '<div class="' . esc_attr( $cls ) . '" data-wenpai-repeater data-wenpai-repeater-max="' . esc_attr( (string) $max ) . '" data-wenpai-repeater-name="' . esc_attr( $name ) . '" id="' . esc_attr( $fid ) . '-repeater">';
+			$html .= '<div class="wenpai-repeater__rows" data-wenpai-repeater-rows>';
+			foreach ( $rows as $i => $row ) {
+				$html .= $this->repeater_row_html( $id, $f, $fid, $name, $fields, $i, is_array( $row ) ? $row : array(), $card );
+			}
+			$html     .= '</div>';
+			$tpl_index = '__i__';
+			$html     .= '<template data-wenpai-repeater-template>';
+			$html     .= $this->repeater_row_html( $id, $f, $fid, $name, $fields, $tpl_index, array(), $card );
+			$html     .= '</template>';
+			$can_add   = $n_saved < $max;
+			$html     .= '<p class="wenpai-repeater__toolbar">';
+			$html     .= '<button type="button" class="btn btn-secondary" data-wenpai-repeater-add' . ( $can_add ? '' : ' disabled' ) . '>' . esc_html( $this->strings['repeater_add'] ) . '</button>';
+			$html     .= '</p>';
+			return $html . '</div>';
+		}
+
+		/**
+		 * One repeater row.
+		 *
+		 * @param string     $id       Field id.
+		 * @param array      $f        Parent schema.
+		 * @param string     $fid      Prefix.
+		 * @param string     $name     Base name.
+		 * @param array      $fields   Nested schemas.
+		 * @param int|string $index    Row index or template token.
+		 * @param array      $row      Values.
+		 * @param bool       $card     Card presentation.
+		 * @return string
+		 */
+		private function repeater_row_html( $id, array $f, $fid, $name, array $fields, $index, array $row, $card ) {
+			$n        = is_int( $index ) ? $index + 1 : 0;
+			$legend   = is_int( $index )
+				? sprintf( $this->strings['repeater_item'], $n )
+				: $this->strings['repeater_item'];
+			$del_lab  = is_int( $index )
+				? sprintf( $this->strings['repeater_delete'], $n )
+				: $this->strings['repeater_delete'];
+			$row_id   = $fid . '-r-' . $index;
+			$fs_class = 'wenpai-repeater__row' . ( $card ? ' card tight' : '' );
+			$html     = '<fieldset class="' . esc_attr( $fs_class ) . '" data-wenpai-repeater-row data-wenpai-repeater-index="' . esc_attr( (string) $index ) . '" id="' . esc_attr( $row_id ) . '">';
+			$html    .= '<legend class="wenpai-repeater__legend">' . esc_html( is_int( $index ) ? $legend : sprintf( $this->strings['repeater_item'], 0 ) ) . '</legend>';
+			if ( $card ) {
+				$html .= '<div class="card-head"><div><span class="card-title">' . esc_html( is_int( $index ) ? $legend : sprintf( $this->strings['repeater_item'], 0 ) ) . '</span></div></div>';
+			}
+			$html .= '<div class="wenpai-repeater__fields">';
+			foreach ( $fields as $sfid => $sf ) {
+				$val   = array_key_exists( $sfid, $row ) ? $row[ $sfid ] : $sf['default'];
+				$cname = $name . '[' . $index . '][' . $sfid . ']';
+				$cid   = $fid . '-' . $index . '-' . $sfid;
+				$label = isset( $sf['label'] ) ? (string) $sf['label'] : $sfid;
+				$html .= '<div class="wenpai-repeater__field wenpai-field wenpai-field--' . esc_attr( $sf['type'] ) . '">';
+				$html .= '<label class="wenpai-field__label" for="' . esc_attr( $cid ) . '">' . esc_html( $label ) . '</label>';
+				$html .= $this->repeater_subcontrol_html( $sf, $cid, $cname, $val );
+				if ( ! empty( $sf['desc'] ) ) {
+					$html .= '<p class="wenpai-field__desc">' . esc_html( (string) $sf['desc'] ) . '</p>';
+				}
+				$html .= '</div>';
+			}
+			$html .= '</div>';
+			$html .= '<div class="wenpai-repeater__row-actions">';
+			$html .= '<button type="button" class="btn btn-ghost" data-wenpai-repeater-up aria-label="' . esc_attr( $this->strings['repeater_move_up'] ) . '">' . esc_html( $this->strings['repeater_move_up'] ) . '</button>';
+			$html .= '<button type="button" class="btn btn-ghost" data-wenpai-repeater-down aria-label="' . esc_attr( $this->strings['repeater_move_down'] ) . '">' . esc_html( $this->strings['repeater_move_down'] ) . '</button>';
+			$html .= '<button type="button" class="btn btn-ghost" data-wenpai-repeater-remove>' . esc_html( is_int( $index ) ? $del_lab : sprintf( $this->strings['repeater_delete'], 0 ) ) . '</button>';
+			$html .= '</div>';
+			return $html . '</fieldset>';
+		}
+
+		/**
+		 * Nested control inside a repeater row (lean type set).
+		 *
+		 * @param array  $sf   Subfield schema.
+		 * @param string $cid  Input id.
+		 * @param string $name Input name.
+		 * @param mixed  $val  Value.
+		 * @return string
+		 */
+		private function repeater_subcontrol_html( array $sf, $cid, $name, $val ) {
+			switch ( $sf['type'] ) {
+				case 'toggle':
+					$html  = '<input type="hidden" name="' . esc_attr( $name ) . '" value="0">';
+					$html .= '<input type="checkbox" role="switch" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="1"' . checked( ! empty( $val ), true, false ) . '>';
+					return $html;
+				case 'number':
+					return $this->addon_html(
+						'<input type="number" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : 0 ) . '"'
+						. ( isset( $sf['min'] ) && null !== $sf['min'] ? ' min="' . esc_attr( $sf['min'] ) . '"' : '' )
+						. ( isset( $sf['max'] ) && null !== $sf['max'] ? ' max="' . esc_attr( $sf['max'] ) . '"' : '' ) . '>',
+						$sf
+					);
+				case 'textarea':
+					return '<textarea id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" rows="3">' . esc_textarea( is_scalar( $val ) ? (string) $val : '' ) . '</textarea>';
+				case 'email':
+					return '<input type="email" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '" autocomplete="email">';
+				case 'url':
+					return '<input type="url" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '" autocomplete="url">';
+				case 'select':
+					$html = '<select id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '">';
+					foreach ( self::resolve( $sf['choices'], $sf ) as $k => $lab ) {
+						$html .= '<option value="' . esc_attr( $k ) . '"' . selected( (string) $val, (string) $k, false ) . '>' . esc_html( self::choice_label( $lab ) ) . '</option>';
+					}
+					return $html . '</select>';
+				case 'secret':
+					$saved = is_scalar( $val ) && '' !== (string) $val;
+					return '<input type="password" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="" autocomplete="new-password" spellcheck="false"' . ( $saved ? ' data-wenpai-saved' : '' ) . '>';
+				default:
+					return '<input type="text" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '" autocomplete="off">';
+			}
+		}
+
+		/**
+		 * Return the label of a choice or row given as a string or array('label' => ...).
 		 *
 		 * @param mixed $c Choice.
 		 * @return string
@@ -2207,15 +3072,16 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				if ( ! self::stores( $f ) ) {
 					continue;
 				}
-				if ( ! array_key_exists( $id, $raw ) ) {
+				$posted = $this->input_value( is_array( $raw ) ? $raw : array(), $id );
+				if ( null === $posted ) {
 					$out[ $id ] = $saved[ $id ];
 					continue;
 				}
-				if ( self::is_secret( $f ) && is_scalar( $raw[ $id ] ) && '' === trim( (string) $raw[ $id ] ) ) {
+				if ( self::is_secret( $f ) && is_scalar( $posted ) && '' === trim( (string) $posted ) ) {
 					$out[ $id ] = $saved[ $id ];
 					continue;
 				}
-				$out[ $id ] = $this->sanitize_field( $f, $raw[ $id ] );
+				$out[ $id ] = $this->sanitize_field( $f, $posted );
 			}
 			return $out;
 		}
@@ -2236,6 +3102,17 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only flag set by options.php redirect.
 				$updated = isset( $_GET['settings-updated'] ) && 'true' === sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) );
 			}
+			// Track C: admin-post Action one-shot notice wins (single receipt; no third toast).
+			if ( class_exists( 'Wenpai_Admin_Action', false ) ) {
+				$action_notice = Wenpai_Admin_Action::notice_html();
+				if ( '' !== $action_notice ) {
+					return $action_notice;
+				}
+			}
+			$tools = $this->tools_notice_html();
+			if ( '' !== $tools ) {
+				return $tools;
+			}
 			$errs = $this->errors();
 			$icon = class_exists( 'Wenpai_Admin_Icons', false ) ? Wenpai_Admin_Icons::svg( 'info' ) : '';
 			$form = $this->form_error;
@@ -2247,7 +3124,12 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				}
 			}
 			if ( '' !== $form ) {
-				return '<div class="wenpai-notice-wrap"><div class="notice bad" role="alert">' . $icon . '<span>' . esc_html( $form ) . '</span></div></div>';
+				return self::ui_notice(
+					array(
+						'text'  => $form,
+						'level' => 'bad',
+					)
+				);
 			}
 			if ( ! empty( $errs ) ) {
 				$items = '';
@@ -2272,9 +3154,75 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			}
 			if ( $updated ) {
 				// data-wenpai-fade sits on the notice: core moves .notice out of a plain .wrap container.
-				return '<div class="wenpai-notice-wrap"><div class="notice ok" role="status" data-wenpai-announce data-wenpai-fade>' . $icon . '<span>' . esc_html( $this->strings['saved'] ) . '</span></div></div>';
+				return self::ui_notice(
+					array(
+						'text'  => $this->strings['saved'],
+						'level' => 'ok',
+						'fade'  => true,
+						'attrs' => array( 'data-wenpai-announce' => true ),
+					)
+				);
 			}
 			return '';
+		}
+
+		/**
+		 * Tools-page result from the admin-post redirect. Empty when the query
+		 * is missing, for another option, or an unknown code.
+		 *
+		 * @return string
+		 */
+		private function tools_notice_html() {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only flags set by tools redirect.
+			if ( ! isset( $_GET['wenpai_tools'], $_GET['wenpai_tools_option'] ) ) {
+				return '';
+			}
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only flags set by tools redirect.
+			$option = sanitize_text_field( wp_unslash( $_GET['wenpai_tools_option'] ) );
+			if ( $this->option !== $option ) {
+				return '';
+			}
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only flags set by tools redirect.
+			$code = sanitize_text_field( wp_unslash( $_GET['wenpai_tools'] ) );
+			$map  = array(
+				'imported'         => array( 'ok', 'status' ),
+				'imported-partial' => array( 'ok', 'status' ),
+				'import-invalid'   => array( 'bad', 'alert' ),
+				'import-newer'     => array( 'bad', 'alert' ),
+				'import-size'      => array( 'bad', 'alert' ),
+				'import-confirm'   => array( 'bad', 'alert' ),
+				'reset'            => array( 'ok', 'status' ),
+				'reset-confirm'    => array( 'bad', 'alert' ),
+			);
+			if ( ! isset( $map[ $code ], $this->strings[ $code ] ) ) {
+				return '';
+			}
+			$msg = $this->strings[ $code ];
+			if ( 'imported-partial' === $code ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only count set by tools redirect.
+				$n   = isset( $_GET['wenpai_tools_n'] ) ? absint( wp_unslash( $_GET['wenpai_tools_n'] ) ) : 0;
+				$msg = sprintf( $msg, $n );
+			}
+			$args = array(
+				'text'  => $msg,
+				'level' => $map[ $code ][0],
+			);
+			if ( 'status' === $map[ $code ][1] ) {
+				$args['fade']  = true;
+				$args['attrs'] = array( 'data-wenpai-announce' => true );
+			}
+			return self::ui_notice( $args );
+		}
+
+		/**
+		 * Notice markup via Wenpai_Admin_UI when loaded.
+		 *
+		 * @param array $args notice() args.
+		 * @return string
+		 */
+		private static function ui_notice( array $args ) {
+			self::ensure_ui();
+			return class_exists( 'Wenpai_Admin_UI', false ) ? Wenpai_Admin_UI::notice_html( $args ) : '';
 		}
 
 		// --- Tabs decided by saved values ---

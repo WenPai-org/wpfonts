@@ -149,8 +149,12 @@ if ( ! function_exists( 'wenpai_admin_ui_boot' ) ) {
 			'class-wenpai-admin-shell.php',
 			'class-wenpai-admin-icons.php',
 			'class-wenpai-admin-menu.php',
+			'class-wenpai-admin-ui.php',
 			'class-wenpai-admin-settings.php',
+			'class-wenpai-admin-action.php',
 			'class-wenpai-admin-capability.php',
+			'class-wenpai-admin-tools.php',
+			'class-wenpai-admin-collection.php',
 		);
 		foreach ( $files as $file ) {
 			$path = $dir . $file;
@@ -208,16 +212,17 @@ if ( ! function_exists( 'wenpai_admin_ui_complete' ) ) {
 	 * An older copy's boot() only requires Loader, Shell and Icons, and its
 	 * function names win when that copy is required first (network-activated
 	 * plugins load before regular ones). This runs right after boot and
-	 * requires the rest from the winning copy, so a 0.3.0 winner still gets
-	 * Settings and Menu.
+	 * requires the rest from the winning copy, so a 0.3.0+ winner still gets
+	 * Settings, Menu, UI, Action, Capability, Tools and Collection.
 	 */
 	function wenpai_admin_ui_complete() {
 		if ( empty( $GLOBALS['wenpai_admin_ui_winner']['dir'] ) ) {
 			return;
 		}
 		$dir = $GLOBALS['wenpai_admin_ui_winner']['dir'] . '/php/';
-		foreach ( array( 'class-wenpai-admin-menu.php', 'class-wenpai-admin-settings.php', 'class-wenpai-admin-capability.php' ) as $file ) {
-			$path = $dir . $file;
+		// Glob, not a hard-coded list: this function body may come from an older
+		// copy that was required first, so it must load whatever the winner ships.
+		foreach ( (array) glob( $dir . 'class-wenpai-admin-*.php' ) as $path ) {
 			if ( is_readable( $path ) ) {
 				require_once $path;
 			}

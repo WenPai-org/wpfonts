@@ -196,6 +196,33 @@ function sanitize_text_field( $text ) {
 }
 
 /**
+ * @param string $class Class name.
+ * @return string
+ */
+function sanitize_html_class( $class ) {
+	return preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $class );
+}
+
+/**
+ * @param string $context Context.
+ * @return array<string, array<string, bool>>
+ */
+function wp_kses_allowed_html( $context = '' ) {
+	return array();
+}
+
+/**
+ * Fixture stub: keeps the tag allowlist, skips attribute filtering.
+ *
+ * @param string $html    HTML.
+ * @param array  $allowed Allowed tags.
+ * @return string
+ */
+function wp_kses( $html, $allowed ) {
+	return strip_tags( (string) $html, '<' . implode( '><', array_keys( (array) $allowed ) ) . '>' );
+}
+
+/**
  * @param mixed $value Value.
  * @return mixed
  */

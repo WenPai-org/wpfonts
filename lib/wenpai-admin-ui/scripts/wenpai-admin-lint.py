@@ -14,8 +14,9 @@ from pathlib import Path
 
 TEMPLATE_SKIP_PARTS = ("gutenberg", "block-editor", "list-table")
 
-# Raw colors. Only css/wenpai-tokens.css (generated from tokens/tokens.json) may hold them.
+# Raw colors. Only token CSS generated from tokens/tokens.json may hold them.
 TOKENS_CSS = "wenpai-tokens.css"
+WPCY_TOKENS_CSS = "wpcy-tokens.css"
 _COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _URL = re.compile(r"url\([^)]*\)", re.I)
 _DECL = re.compile(r"([a-z-]+)\s*:\s*([^;{}]+)")
@@ -75,7 +76,6 @@ def lint_kit(root: Path, vendored: bool = False) -> tuple[list[dict], int, int]:
         (".wpcy-", "old wpcy prefix"),
         (".wpsss-", "product selector in kit"),
         (".wpslug-", "product selector in kit"),
-        (".stat-a", "leaf console primitive"),
         (".hero-w", "leaf hero"),
         (".eco", "leaf eco block"),
     )
@@ -92,6 +92,10 @@ def lint_kit(root: Path, vendored: bool = False) -> tuple[list[dict], int, int]:
             for line, prop, value in raw_colors(text):
                 findings.append({"file": f"{f}:{line}", "kind": "CSS", "why": f"raw color in {prop}; use a --wenpai-* token", "needle": value})
         for needle, why in banned_css:
+            # This file is generated from tokens.json for the React stack.
+            # Hand-written .wpcy-* elsewhere in the PHP kit remains invalid.
+            if needle == ".wpcy-" and f.name == WPCY_TOKENS_CSS:
+                continue
             if needle == ".eco":
                 if ".eco" in text or "eco-" in text:
                     findings.append({"file": str(f), "kind": "CSS", "why": why})
@@ -214,6 +218,42 @@ def iter_plugin_page_files(plugin_root: Path) -> list[Path]:
     return cleaned
 
 
+HELPER_LITERALS = (
+    'class="card-head"',
+    'class="simple-row',
+    'class="tile',
+    'class="pill',
+    'class="wenpai-gate"',
+    'class="seg"',
+    'class="next"',
+    'class="empty"',
+)
+
+
+def lint_plugin_helpers(plugin_root: Path) -> list[dict]:
+    """Warn when product templates hand-write kit components (0.3.x warn, 0.4 error)."""
+    out: list[dict] = []
+    for path in iter_plugin_page_files(plugin_root):
+        rel = path.relative_to(plugin_root).as_posix().lower()
+        if any(part in rel for part in TEMPLATE_SKIP_PARTS):
+            continue
+        text = path.read_text(errors="replace")
+        rel_print = path.relative_to(plugin_root).as_posix()
+        for i, line in enumerate(text.splitlines(), 1):
+            for lit in HELPER_LITERALS:
+                if lit in line:
+                    out.append(
+                        {
+                            "file": f"{rel_print}:{i}",
+                            "kind": "HELPER",
+                            "why": "hand-written kit component; use Wenpai_Admin_UI",
+                            "needle": lit,
+                        }
+                    )
+                    break
+    return out
+
+
 def lint_plugin_pages(plugin_root: Path) -> tuple[list[dict], str | None]:
     files = iter_plugin_page_files(plugin_root)
     if not files:
@@ -262,20 +302,31 @@ def lint_plugin_rules(plugin_root):
 
 
 CONSUMER_CSS_SKIP = ("lib/wenpai-admin-ui", "/vendor/", "/node_modules/", "/dist/", "/build/", ".min.css")
+# Vendored third-party code keeps its own colors; the kit cannot retoken it.
+THIRD_PARTY_CSS = ("plugin-update-checker", "/third-party/", "/puc-")
+NATIVE_EDITOR_DIRS = {"editor", "gutenberg", "block-editor"}
+NATIVE_EDITOR_FILES = {"editor.css", "gutenberg.css", "block-editor.css"}
 
 
 def lint_plugin_colors(plugin_root: Path) -> list[dict]:
     """Consumer mode: raw colors in the product's own admin CSS.
 
-    Real consumers today are wpsss and wpslug (tiers.yml A, on kit 0.2.5).
-    Default is WARN only; --strict-colors turns them into FAIL. Hex inside a
-    var(--wenpai-*, #hex) fallback is reported separately: it duplicates a
-    token value and drifts when the token changes.
+    Native editor assets follow WordPress components, not kit tokens (D-21).
+    Other product CSS defaults to WARN; --strict-colors turns it into FAIL.
+    Hex inside a var(--wenpai-*, #hex) fallback is reported separately: it
+    duplicates a token value and drifts when the token changes.
     """
     out: list[dict] = []
     for path in sorted(plugin_root.rglob("*.css")):
         posix = path.as_posix()
         if any(part in posix for part in CONSUMER_CSS_SKIP):
+            continue
+        if any(part in posix for part in THIRD_PARTY_CSS):
+            continue
+        relative = path.relative_to(plugin_root)
+        if any(part.startswith(".tmp") for part in relative.parts[:-1]):
+            continue
+        if path.name in NATIVE_EDITOR_FILES or NATIVE_EDITOR_DIRS.intersection(relative.parts[:-1]):
             continue
         text = path.read_text(errors="replace")
         rel = path.relative_to(plugin_root).as_posix()
@@ -319,11 +370,13 @@ def main() -> int:
     findings.extend(proto_findings)
 
     plugin_skip: str | None = None
+    helper_findings: list[dict] = []
     if plugin_root is not None:
         page_findings, plugin_skip = lint_plugin_pages(plugin_root)
         findings.extend(page_findings)
         findings.extend(lint_plugin_rules(plugin_root))
         color_findings = lint_plugin_colors(plugin_root)
+        helper_findings = lint_plugin_helpers(plugin_root)
     else:
         color_findings = []
 
@@ -374,6 +427,10 @@ def main() -> int:
             print(f"{level} product colors: {len(color_findings)} raw color declaration(s) outside kit tokens")
             for item in color_findings:
                 print(f"  {level} {item['file']}: {item['why']}: {item['needle']}")
+        if helper_findings:
+            print(f"WARN hand-written helpers: {len(helper_findings)} (use Wenpai_Admin_UI; error in 0.4)")
+            for item in helper_findings:
+                print(f"  WARN {item['file']}: {item['why']}: {item['needle']}")
     if args.strict_colors and color_findings:
         return 1
     return 1 if findings else 0
