@@ -109,7 +109,7 @@ class WPFonts_Admin {
 			);
 			self::enqueue_catalog_glyphs();
 		}
-		if ( 'packages' === $tab ) {
+		if ( 'tools' === $tab ) {
 			WPFonts_Packages::enqueue_admin_previews();
 		}
 	}
@@ -248,10 +248,19 @@ class WPFonts_Admin {
 			wp_die( esc_html__( '这一页暂时打不开。请重新安装插件后再试。', 'wpfonts' ) );
 		}
 
-		$tab  = self::query_key( 'tab', 'overview' );
-		$mode = self::query_key( 'mode', 'simple' );
-		if ( ! in_array( $tab, array( 'overview', 'settings', 'packages', 'tools', 'help' ), true ) ) {
+		$tab     = self::query_key( 'tab', 'overview' );
+		$section = self::query_key( 'section', '' );
+		$mode    = self::query_key( 'mode', 'simple' );
+		// Legacy ?tab=packages URLs land on 工具 → 字体包.
+		if ( 'packages' === $tab ) {
+			$tab     = 'tools';
+			$section = 'packages';
+		}
+		if ( ! in_array( $tab, array( 'overview', 'settings', 'tools', 'help' ), true ) ) {
 			$tab = 'overview';
+		}
+		if ( 'packages' !== $section ) {
+			$section = '';
 		}
 		if ( 'advanced' !== $mode ) {
 			$mode = 'simple';
@@ -265,10 +274,8 @@ class WPFonts_Admin {
 		Wenpai_Admin_Shell::open( $args );
 		if ( 'settings' === $tab ) {
 			self::render_settings( $settings, $state, $has_key, $mode );
-		} elseif ( 'packages' === $tab ) {
-			self::render_packages();
 		} elseif ( 'tools' === $tab ) {
-			self::render_tools( $settings, $state, $has_key );
+			self::render_tools( $settings, $state, $has_key, $section );
 		} elseif ( 'help' === $tab ) {
 			self::render_help();
 		} else {
@@ -345,12 +352,6 @@ class WPFonts_Admin {
 					'label'     => __( '设置', 'wpfonts' ),
 					'url'       => self::page_url( array( 'tab' => 'settings' ) ),
 					'icon_html' => $icon( 'settings' ),
-				),
-				array(
-					'id'        => 'packages',
-					'label'     => __( '字体包', 'wpfonts' ),
-					'url'       => self::page_url( array( 'tab' => 'packages' ) ),
-					'icon_html' => $icon( 'download' ),
 				),
 				array(
 					'id'        => 'tools',
@@ -481,7 +482,7 @@ class WPFonts_Admin {
 		if ( 'rejected' === $note ) {
 			self::notice( 'bad', __( '刚才填写的 Key 没有保存。请到文风重新复制 Key。', 'wpfonts' ) );
 		}
-		self::render_state_banner( $state );
+		self::render_state_banner( $state, 'settings' );
 
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'wpfonts' );
@@ -491,17 +492,20 @@ class WPFonts_Admin {
 		self::render_system_fonts( $settings );
 		self::render_cjk_fields( $settings );
 
-		echo '<div class="simple-row">';
-		echo '<span class="tile accent">';
-		self::icon( 'cloud' );
-		echo '</span>';
-		echo '<div>';
-		echo '<div class="t" id="wpfonts-cdn-t">' . esc_html__( '开启文风云', 'wpfonts' ) . '</div>';
-		echo '<div class="d" id="wpfonts-cdn-d">' . esc_html__( '默认关闭。开启后，前台才会请求文风样式。关闭后不再请求远程字体，系统字体仍然可用。', 'wpfonts' ) . '</div>';
-		echo '</div>';
-		echo '<div class="r">';
+		ob_start();
 		self::cdn_switch( ! empty( $settings['cdn_enabled'] ) );
-		echo '</div></div>';
+		$wpfonts_cdn_control = (string) ob_get_clean();
+		echo Wenpai_Admin_UI::row_html(
+			array(
+				'icon'         => 'cloud',
+				'state'        => 'accent',
+				'title'        => __( '开启文风云', 'wpfonts' ),
+				'title_id'     => 'wpfonts-cdn-t',
+				'desc'         => __( '默认关闭。开启后，前台才会请求文风样式。关闭后不再请求远程字体，系统字体仍然可用。', 'wpfonts' ),
+				'desc_id'      => 'wpfonts-cdn-d',
+				'control_html' => $wpfonts_cdn_control,
+			)
+		);
 
 		self::render_region_field( $settings );
 		echo '<div id="wpfonts-font-pick">';
@@ -515,9 +519,17 @@ class WPFonts_Admin {
 		}
 		self::render_link_field( $settings, $state, $has_key );
 
-		echo '<div class="simple-row"><div></div><div></div><div class="r">';
-		echo '<button type="submit" class="btn btn-primary">' . esc_html__( '保存设置', 'wpfonts' ) . '</button>';
-		echo '</div></div>';
+		echo Wenpai_Admin_UI::card_foot_html(
+			array(
+				'actions' => array(
+					array(
+						'label' => __( '保存设置', 'wpfonts' ),
+						'variant' => 'primary',
+						'type' => 'submit',
+					),
+				),
+			)
+		);
 		echo '</section>';
 		echo '</form>';
 
@@ -532,22 +544,39 @@ class WPFonts_Admin {
 	 * @param bool   $has_key  Whether a key is stored.
 	 * @return void
 	 */
-	private static function render_tools( array $settings, $state, $has_key ) {
+	private static function render_tools( array $settings, $state, $has_key, $section = '' ) {
 		Wenpai_Admin_Shell::page_head(
 			__( '工具', 'wpfonts' ),
-			__( '检查文风 API Key，预览样式链接，并导出或导入不含密钥的字体记录。插件不负责上传或切分字体。', 'wpfonts' )
+			__( '安装字体包，检查文风 API Key，预览样式链接，并导出或导入不含密钥的字体记录。插件不负责上传或切分字体。', 'wpfonts' )
 		);
 		echo '<div class="wenpai-stack">';
+		echo Wenpai_Admin_UI::subnav_html(
+			array(
+				'label'   => __( '工具分区', 'wpfonts' ),
+				'current' => 'packages' === $section ? 'packages' : 'tools',
+				'slug'    => 'wpfonts',
+				'query'   => array( 'tab' => 'tools' ),
+				'items'   => array(
+					array(
+						'id'    => 'tools',
+						'label' => __( '日常', 'wpfonts' ),
+					),
+					array(
+						'id'    => 'packages',
+						'label' => __( '字体包', 'wpfonts' ),
+					),
+				),
+			)
+		);
+		if ( 'packages' === $section ) {
+			self::render_packages_body();
+			echo '</div>';
+			return;
+		}
 		self::render_state_banner( $state );
 		self::render_selection_summary( $settings );
 
-		echo '<section class="card">';
-		echo '<div class="card-head"><span class="tile warn">';
-		self::icon( 'info' );
-		echo '</span><div>';
-		echo '<h2 class="card-title">' . esc_html__( '健康检查', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '在服务器上向文风验证。页面上不会显示 Key。', 'wpfonts' ) . '</p>';
-		echo '</div></div>';
+		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '健康检查', 'wpfonts' ), 'sub' => __( '在服务器上向文风验证。页面上不会显示 Key。', 'wpfonts' ), 'icon' => 'info', 'state' => 'warn' ) );
 		echo '<div class="field"><div class="field-label">' . esc_html__( '请求', 'wpfonts' ) . '</div><div class="field-ctl">';
 		echo '<div class="wenpai-code"><code>GET /api/key/status</code></div>';
 		echo '<p class="hint">' . esc_html__( '请求发往 app.windfonts.com。三台字体服务器不提供这个地址。', 'wpfonts' ) . '</p>';
@@ -562,13 +591,7 @@ class WPFonts_Admin {
 		echo '</div></div>';
 		echo '</section>';
 
-		echo '<section class="card">';
-		echo '<div class="card-head"><span class="tile">';
-		self::icon( 'external' );
-		echo '</span><div>';
-		echo '<h2 class="card-title">' . esc_html__( '样式链接', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '只显示计算得到的地址。插件不下载 CSS 正文。', 'wpfonts' ) . '</p>';
-		echo '</div></div>';
+		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '样式链接', 'wpfonts' ), 'sub' => __( '只显示计算得到的地址。插件不下载 CSS 正文。', 'wpfonts' ), 'icon' => 'external' ) );
 		self::render_link_preview( $settings, $state, $has_key, false );
 		echo '</section>';
 
@@ -642,23 +665,40 @@ class WPFonts_Admin {
 	 * Top banner for the current state.
 	 *
 	 * @param string $state View state.
+	 * @param string $tab   Current tab. The settings screen answers the empty
+	 *                      state with its own switch, not a link to itself.
 	 * @return void
 	 */
-	private static function render_state_banner( $state ) {
+	private static function render_state_banner( $state, $tab = 'overview' ) {
 		$local = ( 'active' === WPFonts_Packages::presence() );
 		if ( 'empty' === $state && $local ) {
 			self::notice( 'ok', __( '文风字体包使用中。前台会加载本站这份字体样式。文风云仍可按需开启。', 'wpfonts' ) );
 			return;
 		}
+		if ( 'empty' === $state && 'settings' === $tab ) {
+			self::notice( 'info', __( '当前使用系统字体。要开启文风云，打开下方开关并保存；也可以先到字体包安装文风已切好的包。', 'wpfonts' ) );
+			return;
+		}
 		if ( 'empty' === $state ) {
-			echo '<div class="next"><span class="tile">';
-			self::icon( 'info' );
-			echo '</span><div><strong>' . esc_html__( '网页字体尚未开启', 'wpfonts' ) . '</strong>';
-			echo '<div class="d">' . esc_html__( '当前使用系统字体。需要网页字体时，可开启文风云，或到字体包安装文风已切好的包。', 'wpfonts' ) . '</div></div>';
-			echo '<div class="next-actions">';
-			echo '<a class="btn btn-primary" href="' . esc_url( self::page_url( array( 'tab' => 'settings' ) ) ) . '">' . esc_html__( '去设置', 'wpfonts' ) . '</a>';
-			echo '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'packages' ) ) ) . '">' . esc_html__( '字体包', 'wpfonts' ) . '</a>';
-			echo '</div></div>';
+			Wenpai_Admin_UI::next(
+				array(
+					'icon'    => 'info',
+					'title'   => __( '网页字体尚未开启', 'wpfonts' ),
+					'desc'    => __( '当前使用系统字体。需要网页字体时，可开启文风云，或到字体包安装文风已切好的包。', 'wpfonts' ),
+					'actions' => array(
+						array(
+							'label'   => __( '去设置', 'wpfonts' ),
+							'variant' => 'primary',
+							'href'    => self::page_url( array( 'tab' => 'settings' ) ),
+						),
+						array(
+							'label'   => __( '字体包', 'wpfonts' ),
+							'variant' => 'secondary',
+							'href'    => self::page_url( array( 'tab' => 'tools', 'section' => 'packages' ) ),
+						),
+					),
+				)
+			);
 			return;
 		}
 		$level = 'warn';
@@ -693,10 +733,13 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function notice( $level, $text ) {
-		echo '<div class="notice ' . esc_attr( $level ) . '">';
-		self::icon( 'ok' === $level ? 'info' : 'info' );
-		echo '<span>' . esc_html( $text ) . '</span>';
-		echo '</div>';
+		echo Wenpai_Admin_UI::notice_html(
+			array(
+				'level' => $level,
+				'text'  => $text,
+				'wrap'  => false,
+			)
+		);
 	}
 
 	/**
@@ -711,14 +754,18 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function status_row( $tile, $icon, $title, $desc, $pill, $label ) {
-		echo '<div class="simple-row is-static">';
-		echo '<span class="tile ' . esc_attr( $tile ) . '">';
-		self::icon( $icon );
-		echo '</span><div>';
-		echo '<div class="t">' . esc_html( $title ) . '</div>';
-		echo '<div class="d">' . esc_html( $desc ) . '</div>';
-		echo '</div><div class="r"><span class="pill ' . esc_attr( $pill ) . '">' . esc_html( $label ) . '</span></div>';
-		echo '</div>';
+		echo Wenpai_Admin_UI::row_html(
+			array(
+				'icon'  => $icon,
+				'state' => $tile,
+				'title' => $title,
+				'desc'  => $desc,
+				'pill'  => array(
+					'text'  => $label,
+					'state' => $pill,
+				),
+			)
+		);
 	}
 
 	/**
@@ -745,13 +792,31 @@ class WPFonts_Admin {
 		echo '<div class="field-ctl">';
 		echo '<p class="field-help">' . esc_html__( '默认都开启。取消勾选后，这一组不再出现在字体库。不依赖文风云。', 'wpfonts' ) . '</p>';
 		echo '<input type="hidden" name="wpfonts_settings[system_form]" value="1">';
-		echo '<div class="chk-grid">';
+		$on_count = 0;
+		foreach ( $choices as $code => $label ) {
+			$key = 'system_' . $code;
+			if ( ! isset( $settings[ $key ] ) || ! empty( $settings[ $key ] ) ) {
+				++$on_count;
+			}
+		}
+		$count_tpl = __( '已启用 %1$d / %2$d', 'wpfonts' );
+		echo '<div class="wenpai-checkgroup" data-wenpai-checkgroup data-wenpai-count-total="' . esc_attr( (string) count( $choices ) ) . '">'
+			. '<div class="wenpai-checkgroup__head">'
+			. '<span class="wenpai-checkgroup__count" data-wenpai-count-template="' . esc_attr( $count_tpl ) . '">'
+			. esc_html( sprintf( $count_tpl, $on_count, count( $choices ) ) )
+			. '</span>'
+			. '<span class="wenpai-checkgroup__acts">'
+			. '<button type="button" data-wenpai-cg-all>' . esc_html__( '全选', 'wpfonts' ) . '</button>'
+			. '<button type="button" data-wenpai-cg-none>' . esc_html__( '清空', 'wpfonts' ) . '</button>'
+			. '</span></div>'
+			. '<ul class="wenpai-checkgroup__list">';
 		foreach ( $choices as $code => $label ) {
 			$key = 'system_' . $code;
 			$on  = ! isset( $settings[ $key ] ) || ! empty( $settings[ $key ] );
-			echo '<label><input type="checkbox" name="wpfonts_settings[' . esc_attr( $key ) . ']" value="1"' . checked( $on, true, false ) . '> ' . esc_html( $label ) . '</label>';
+			echo '<li><label class="chk"><input type="checkbox" name="wpfonts_settings[' . esc_attr( $key ) . ']" value="1"' . checked( $on, true, false ) . '> '
+				. '<span class="wenpai-checkgroup__text">' . esc_html( $label ) . '</span></label></li>';
 		}
-		echo '</div></div></div>';
+		echo '</ul></div></div></div>';
 	}
 
 	/**
@@ -900,13 +965,7 @@ class WPFonts_Admin {
 			self::notice( 'warn', __( '没有读到文件。', 'wpfonts' ) );
 		}
 
-		echo '<section class="card">';
-		echo '<div class="card-head"><span class="tile">';
-		self::icon( 'download' );
-		echo '</span><div>';
-		echo '<h2 class="card-title">' . esc_html__( '导出', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '下载不含 API Key 的 JSON，便于在另一站点恢复已启用的文风字体包和已确认的文风云。', 'wpfonts' ) . '</p>';
-		echo '</div></div>';
+		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '导出', 'wpfonts' ), 'sub' => __( '下载不含 API Key 的 JSON，便于在另一站点恢复已启用的文风字体包和已确认的文风云。', 'wpfonts' ), 'icon' => 'download' ) );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="wpfonts_export">';
 		wp_nonce_field( 'wpfonts_export' );
@@ -915,13 +974,7 @@ class WPFonts_Admin {
 		echo '<button class="btn btn-secondary" type="submit">' . esc_html__( '导出 JSON', 'wpfonts' ) . '</button>';
 		echo '</div></form></section>';
 
-		echo '<section class="card">';
-		echo '<div class="card-head"><span class="tile warn">';
-		self::icon( 'info' );
-		echo '</span><div>';
-		echo '<h2 class="card-title">' . esc_html__( '导入', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '写入已启用的字体包记录和已确认的文风云。本站没有对应文件的字体包会跳过。带密钥的文件会被拒绝。', 'wpfonts' ) . '</p>';
-		echo '</div></div>';
+		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '导入', 'wpfonts' ), 'sub' => __( '写入已启用的字体包记录和已确认的文风云。本站没有对应文件的字体包会跳过。带密钥的文件会被拒绝。', 'wpfonts' ), 'icon' => 'info', 'state' => 'warn' ) );
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="wpfonts_import">';
 		wp_nonce_field( 'wpfonts_import' );
@@ -929,9 +982,12 @@ class WPFonts_Admin {
 		echo '<div class="field-ctl">';
 		echo '<input type="file" id="wpfonts-import-file" name="wpfonts_import" accept="application/json,.json">';
 		echo '</div></div>';
-		echo '<div class="wenpai-gate">';
-		echo '<label><input type="checkbox" name="wpfonts_import_ack" value="1"> ' . esc_html__( '我确认用这份文件更新已启用的字体包，并覆盖已确认的文风云列表。', 'wpfonts' ) . '</label>';
-		echo '</div>';
+		echo Wenpai_Admin_UI::gate_html(
+			array(
+				'name'  => 'wpfonts_import_ack',
+				'label' => __( '我确认用这份文件更新已启用的字体包，并覆盖已确认的文风云列表。', 'wpfonts' ),
+			)
+		);
 		echo '<div class="card-foot start">';
 		echo '<span class="meta">' . esc_html__( '未勾选不能点。密钥不会写入。', 'wpfonts' ) . '</span>';
 		echo '<button type="submit" class="btn btn-secondary" data-wenpai-need-apply disabled>' . esc_html__( '导入 JSON', 'wpfonts' ) . '</button>';
@@ -1689,28 +1745,27 @@ class WPFonts_Admin {
 			$label = __( '已停用', 'wpfonts' );
 			$desc  = __( '已停用', 'wpfonts' );
 		}
-		echo '<div class="simple-row is-static">';
-		echo '<span class="tile ' . esc_attr( 'active' === $presence ? 'ok' : '' ) . '">';
-		self::icon( 'download' );
-		echo '</span><div>';
-		echo '<div class="t">' . esc_html__( '文风字体包', 'wpfonts' ) . '</div>';
-		echo '<div class="d">' . esc_html( $desc ) . '</div>';
-		echo '</div><div class="r">';
-		echo '<span class="pill ' . esc_attr( $pill ) . '">' . esc_html( $label ) . '</span>';
-		echo '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'packages' ) ) ) . '">' . esc_html__( '字体包', 'wpfonts' ) . '</a>';
-		echo '</div></div>';
+		echo Wenpai_Admin_UI::row_html(
+		array(
+			'icon'       => 'download',
+			'state'      => 'active' === $presence ? 'ok' : '',
+			'title'      => __( '文风字体包', 'wpfonts' ),
+			'desc'       => $desc,
+			'pill'       => array(
+				'text'  => $label,
+				'state' => $pill,
+			),
+			'right_html' => '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'tools', 'section' => 'packages' ) ) ) . '">' . esc_html__( '字体包', 'wpfonts' ) . '</a>',
+		)
+	);
 	}
 
 	/**
-	 * Install and manage local packages.
+	 * Packages body under 工具 → 字体包. Renders inside the tools stack.
 	 *
 	 * @return void
 	 */
-	private static function render_packages() {
-		Wenpai_Admin_Shell::page_head(
-			__( '字体包', 'wpfonts' ),
-			__( '把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。启用后会出现在全站样式里。', 'wpfonts' )
-		);
+	private static function render_packages_body() {
 		$note     = self::query_key( 'wpfonts_pkg', '' );
 		$packages = WPFonts_Packages::all();
 		echo '<div class="wenpai-stack">';
@@ -1720,6 +1775,10 @@ class WPFonts_Admin {
 			self::notice( 'ok', __( '已替换本站这份字体。前台会加载新的样式。', 'wpfonts' ) );
 		} elseif ( 'enabled' === $note ) {
 			self::notice( 'ok', __( '前台会加载本站这份字体样式，也会出现在全站样式里。', 'wpfonts' ) );
+		} elseif ( 'disabled' === $note ) {
+			self::notice( 'info', __( '已停用。前台和全站样式不再使用这份字体，文件仍保留在本站。', 'wpfonts' ) );
+		} elseif ( 'deleted' === $note ) {
+			self::notice( 'ok', __( '已删除这份字体包。前台和全站样式不再使用它，本站文件也已移除。', 'wpfonts' ) );
 		} elseif ( 'failed' === $note ) {
 			self::notice( 'bad', __( '装不上。请用文风已切好的 zip（内含样式和 woff2）。', 'wpfonts' ) );
 		}
@@ -1747,22 +1806,22 @@ class WPFonts_Admin {
 		echo '<input type="hidden" name="action" value="wpfonts_install_package">';
 		echo '<input type="file" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip">';
 		if ( $blank ) {
-			echo '<div class="empty">';
-			echo '<span class="tile">';
-			self::icon( 'download' );
-			echo '</span>';
-			echo '<p>' . esc_html__( '把 zip 拖到这里', 'wpfonts' ) . '</p>';
-			echo '<p class="meta">' . esc_html__( '或点击选择文件。安装后由本站托管，不依赖文风云。', 'wpfonts' ) . '</p>';
+			echo Wenpai_Admin_UI::empty_state_html(
+				array(
+					'icon' => 'download',
+					'text' => __( '把 zip 拖到这里', 'wpfonts' ),
+					'meta' => __( '或点击选择文件。安装后由本站托管，不依赖文风云。', 'wpfonts' ),
+				)
+			);
 			echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';
-			echo '</div>';
 		} else {
-			echo '<div class="simple-row is-static">';
-			echo '<span class="tile">';
-			self::icon( 'download' );
-			echo '</span><div>';
-			echo '<div class="t">' . esc_html__( '拖入 zip 安装，或点击选择', 'wpfonts' ) . '</div>';
+			echo Wenpai_Admin_UI::row_html(
+				array(
+					'icon'  => 'download',
+					'title' => __( '拖入 zip 安装，或点击选择', 'wpfonts' ),
+				)
+			);
 			echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';
-			echo '</div></div>';
 		}
 		echo '</form>';
 		echo '</section>';
@@ -1777,17 +1836,7 @@ class WPFonts_Admin {
 	private static function render_package_row( array $package ) {
 		$on = ! empty( $package['enabled'] );
 		echo '<section class="card">';
-		echo '<div class="simple-row">';
-		echo '<span class="tile ' . esc_attr( $on ? 'ok' : '' ) . '">';
-		self::icon( 'download' );
-		echo '</span><div>';
-		echo '<div class="t">' . esc_html( $package['name'] ) . '</div>';
-		$health = WPFonts_Packages::health( $package );
-		if ( '' !== $health['reason'] ) {
-			echo '<p class="d">' . esc_html( $health['reason'] ) . '</p>';
-		}
-		echo '</div><div class="r">';
-		echo '<span class="pill ' . esc_attr( $on ? 'ok' : 'mute' ) . '">' . esc_html( $on ? __( '使用中', 'wpfonts' ) : __( '已停用', 'wpfonts' ) ) . '</span>';
+		ob_start();
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_package_toggle' );
 		echo '<input type="hidden" name="action" value="wpfonts_package_toggle">';
@@ -1795,15 +1844,32 @@ class WPFonts_Admin {
 		echo '<input type="hidden" name="enabled" value="' . esc_attr( $on ? '0' : '1' ) . '">';
 		echo '<button type="submit" class="btn btn-secondary">' . esc_html( $on ? __( '停用', 'wpfonts' ) : __( '启用', 'wpfonts' ) ) . '</button>';
 		echo '</form>';
-		echo '</div></div>';
+		$wpfonts_toggle = (string) ob_get_clean();
+		$health         = WPFonts_Packages::health( $package );
+		echo Wenpai_Admin_UI::row_html(
+			array(
+				'icon'         => 'download',
+				'state'        => $on ? 'ok' : '',
+				'title'        => $package['name'],
+				'desc'         => $health['reason'],
+				'pill'         => array(
+					'text'  => $on ? __( '使用中', 'wpfonts' ) : __( '已停用', 'wpfonts' ),
+					'state' => $on ? 'ok' : 'mute',
+				),
+				'control_html' => $wpfonts_toggle,
+			)
+		);
 		self::render_package_preview( $package );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_package_delete' );
 		echo '<input type="hidden" name="action" value="wpfonts_package_delete">';
 		echo '<input type="hidden" name="id" value="' . esc_attr( $package['id'] ) . '">';
-		echo '<div class="wenpai-gate">';
-		echo '<label><input type="checkbox" name="wpfonts_delete_ack" value="1"> ' . esc_html__( '删除后本站不再提供这份字体。我已核对。', 'wpfonts' ) . '</label>';
-		echo '</div>';
+		echo Wenpai_Admin_UI::gate_html(
+			array(
+				'name'  => 'wpfonts_delete_ack',
+				'label' => __( '删除后本站不再提供这份字体。我已核对。', 'wpfonts' ),
+			)
+		);
 		echo '<div class="card-foot start">';
 		echo '<span class="meta">' . esc_html__( '未勾选不能点。', 'wpfonts' ) . '</span>';
 		echo '<button type="submit" class="btn btn-danger" data-wenpai-need-apply disabled>' . esc_html__( '删除', 'wpfonts' ) . '</button>';
@@ -1933,7 +1999,8 @@ class WPFonts_Admin {
 		wp_safe_redirect(
 			self::page_url(
 				array(
-					'tab'         => 'packages',
+					'tab'         => 'tools',
+					'section'     => 'packages',
 					'wpfonts_pkg' => $code,
 				)
 			)
@@ -1957,7 +2024,8 @@ class WPFonts_Admin {
 		wp_safe_redirect(
 			self::page_url(
 				array(
-					'tab'         => 'packages',
+					'tab'         => 'tools',
+					'section'     => 'packages',
 					'wpfonts_pkg' => $enabled ? 'enabled' : 'disabled',
 				)
 			)
@@ -1976,11 +2044,21 @@ class WPFonts_Admin {
 		}
 		check_admin_referer( 'wpfonts_package_delete' );
 		$ack = isset( $_POST['wpfonts_delete_ack'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['wpfonts_delete_ack'] ) );
+		$code = 'noop';
 		if ( $ack ) {
-			$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
-			WPFonts_Packages::delete( $id );
+			$id   = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+			$gone = WPFonts_Packages::delete( $id );
+			$code = $gone ? 'deleted' : 'noop';
 		}
-		wp_safe_redirect( self::page_url( array( 'tab' => 'packages' ) ) );
+		wp_safe_redirect(
+			self::page_url(
+				array(
+					'tab'         => 'tools',
+					'section'     => 'packages',
+					'wpfonts_pkg' => $code,
+				)
+			)
+		);
 		exit;
 	}
 

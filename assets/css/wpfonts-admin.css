@@ -205,14 +205,16 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 
 .wenpai-app #wpfonts-project > summary::before {
 	content: "";
-	width: 0;
-	height: 0;
-	border-style: solid;
-	border-width: 5px 0 5px 6px;
-	border-color: transparent transparent transparent currentColor;
+	width: 8px;
+	height: 8px;
+	margin-inline-start: auto;
+	flex: none;
+	border-right: 2px solid var(--wenpai-ink-3);
+	border-bottom: 2px solid var(--wenpai-ink-3);
+	transform: rotate(45deg);
+	transition: transform 0.15s ease;
 }
 
 .wenpai-app #wpfonts-project[open] > summary::before {
-	border-width: 6px 5px 0 5px;
-	border-color: currentColor transparent transparent transparent;
+	transform: rotate(-135deg);
 }

@@ -135,7 +135,11 @@ $assert( false !== strpos( $main, 'lib/wenpai-admin-ui/php/load.php' ), 'Main fi
 $assert( false === strpos( $main, 'register_uninstall_hook' ), 'Uninstall must not register a data-deletion hook.' );
 $assert( ! is_dir( $root . '/lib/updatepulse-updater' ), 'UpdatePulse directory must be removed.' );
 $assert( is_dir( $root . '/lib/wenpai-admin-ui' ), 'wenpai-admin-ui must be vendored.' );
-$assert( '0.3.1' === trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) ), 'Vendored kit VERSION must be 0.3.1 or newer and recorded.' );
+$vendored_kit = trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) );
+$assert(
+	version_compare( $vendored_kit, '0.3.1', '>=' ),
+	'Vendored kit VERSION must be 0.3.1 or newer and recorded. Found ' . ( '' === $vendored_kit ? '(empty)' : $vendored_kit ) . '.'
+);
 
 $assert( false !== strpos( $main, "add_action( 'init', 'wp_fonts_register_collections', 25 )" ), 'System collections must register after 文风字体.' );
 $assert( false !== strpos( $main, '系统 · 中文' ), 'Chinese system collection was not renamed.' );
@@ -198,7 +202,7 @@ $assert( false !== strpos( $wp_css, "body.wenpai-ui-page #wpfooter {\n  display:
 $assert( false === strpos( $admin, 'form-table' ), 'Admin screen must not use form-table.' );
 $assert( false === strpos( $admin, 'confirm(' ), 'Package delete must not use confirm().' );
 $assert( false === strpos( $admin, 'onclick=' ), 'Package delete must not use an onclick confirm.' );
-$assert( false !== strpos( $admin, 'wenpai-gate' ), 'Package delete must use the kit gate.' );
+$assert( false !== strpos( $admin, 'gate_html' ), 'Package delete must use the kit gate.' );
 $assert( false !== strpos( $admin, 'data-wenpai-need-apply' ), 'Delete button must stay disabled until the gate is checked.' );
 $assert( false !== strpos( $admin, '删除后本站不再提供这份字体。我已核对。' ), 'Delete gate copy drifted.' );
 $assert( false !== strpos( $admin, '未勾选不能点。' ), 'Delete gate hint drifted.' );

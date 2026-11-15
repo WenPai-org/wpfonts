@@ -1,0 +1,12 @@
+{
+  "slug": "wpfonts",
+  "out": "/tmp/wpfonts-acceptance-out",
+  "tabs": [
+    { "id": "overview", "query": "&tab=overview" },
+    { "id": "settings", "query": "&tab=settings" },
+    { "id": "packages", "query": "&tab=packages" },
+    { "id": "tools", "query": "&tab=tools" },
+    { "id": "help", "query": "&tab=help" }
+  ],
+  "widths": [1280, 782, 360]
+}
