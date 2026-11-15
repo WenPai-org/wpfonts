@@ -1263,7 +1263,7 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
   line-height: var(--wenpai-leading-meta);
   cursor: pointer;
 }
-.wenpai-file__remove:hover { color: var(--wenpai-bad); }
+.wenpai-file__remove:hover { color: var(--wenpai-bad-ink); }
 
 /* tags: chips + borderless trailing input. PHP puts the input and the hidden
    inputs as siblings of .wenpai-tags__chips inside .wenpai-tags; the chips
@@ -1293,7 +1293,7 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
   line-height: 1;
   cursor: pointer;
 }
-.wenpai-tags__chip-x:hover { color: var(--wenpai-bad); }
+.wenpai-tags__chip-x:hover { color: var(--wenpai-bad-ink); }
 .wenpai-app .wenpai-tags input.wenpai-tags__input,
 .wenpai-tags input.wenpai-tags__input {
   flex: 1 1 auto;
@@ -1362,8 +1362,8 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
   border: 1px solid transparent;
   border-radius: var(--wenpai-radius-sm);
   background: none;
-  font-size: 10px;
-  line-height: 1.3;
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
   color: var(--wenpai-ink-2);
   cursor: pointer;
   overflow: hidden;
@@ -1496,3 +1496,28 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
 .wenpai-qe__row { display: flex; gap: var(--wenpai-space-3); align-items: flex-start; padding: 4px 0; flex-wrap: wrap; }
 .wenpai-qe__row > label { min-width: 9em; flex: none; color: var(--wenpai-ink-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); padding-top: 8px; }
 .wenpai-qe__row > :not(label) { flex: 1 1 auto; min-width: 0; }
+
+/* Small text/icon controls share the kit focus ring (0.9.1 polish). */
+.wenpai-checkgroup__acts button:focus-visible,
+.wenpai-file__remove:focus-visible,
+.wenpai-tags__chip-x:focus-visible,
+.wenpai-entity__clear:focus-visible,
+.wenpai-icon__opt:focus-visible,
+.wenpai-entity__item:focus-visible,
+.wenpai-suggest__item:focus-visible {
+  outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color);
+  outline-offset: var(--wenpai-focus-offset);
+}
+
+/* depends_on disable/exclude leaves composite widgets looking active;
+   mute the drop zone to match disabled inputs. */
+.wenpai-field.is-disabled .wenpai-file__drop {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* depends_on disable also reaches the composite widgets' own buttons. */
+.wenpai-field.is-disabled :is(.wenpai-entity__clear, .wenpai-file__remove, .wenpai-tags__chip-x, .wenpai-icon__opt):disabled {
+  color: var(--wenpai-ink-3);
+  cursor: default;
+}
