@@ -282,6 +282,23 @@ PLUGIN_RULES = (
 )
 
 
+def lint_plugin_vendor_floor(plugin_root: Path) -> list[dict]:
+    """Vendored kit older than the floor breaks class loading (complete() glob fix)."""
+    ver_file = plugin_root / "lib" / "wenpai-admin-ui" / "VERSION"
+    if not ver_file.is_file():
+        return []
+    ver = ver_file.read_text(errors="replace").strip()
+    def vkey(t: str) -> tuple:
+        return tuple(int(x) for x in t.split(".") if x.isdigit())
+    try:
+        ok = vkey(ver) >= vkey(VENDOR_FLOOR)
+    except ValueError:
+        ok = False
+    if ok:
+        return []
+    return [{"file": str(ver_file.relative_to(plugin_root)), "kind": "RULE", "why": f"vendored kit {ver or '(empty)'} is below floor {VENDOR_FLOOR}; complete() class loading breaks", "needle": ver}]
+
+
 def lint_plugin_rules(plugin_root):
     findings = []
     used_shell = False
@@ -306,6 +323,7 @@ CONSUMER_CSS_SKIP = ("lib/wenpai-admin-ui", "/vendor/", "/node_modules/", "/dist
 THIRD_PARTY_CSS = ("plugin-update-checker", "/third-party/", "/puc-")
 NATIVE_EDITOR_DIRS = {"editor", "gutenberg", "block-editor"}
 NATIVE_EDITOR_FILES = {"editor.css", "gutenberg.css", "block-editor.css"}
+VENDOR_FLOOR = "0.4.2"
 
 
 def lint_plugin_colors(plugin_root: Path) -> list[dict]:
@@ -374,6 +392,7 @@ def main() -> int:
     if plugin_root is not None:
         page_findings, plugin_skip = lint_plugin_pages(plugin_root)
         findings.extend(page_findings)
+        findings.extend(lint_plugin_vendor_floor(plugin_root))
         findings.extend(lint_plugin_rules(plugin_root))
         color_findings = lint_plugin_colors(plugin_root)
         helper_findings = lint_plugin_helpers(plugin_root)

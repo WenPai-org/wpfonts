@@ -759,3 +759,9 @@ body.wenpai-ui-page .wenpai-app .wenpai-field.is-invalid input[type="radio"] {
   outline: 1px solid var(--wenpai-bad);
   outline-offset: 1px;
 }
+
+/* 0.5.5: native bulk select must keep intrinsic width; wp-scoped select rules above set width:100%. */
+body.wenpai-ui-page .wenpai-native-bulk select { width: auto; min-width: 10em; max-width: 18em; }
+
+/* 0.6.0: media/date controls keep intrinsic width; wp-scoped 100% rules above would stretch them. */
+body.wenpai-ui-page .wenpai-app .wenpai-media-row input[type="text"] { width: 16em; }

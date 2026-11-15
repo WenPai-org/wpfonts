@@ -13,11 +13,12 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 	/**
 	 * One instance per option.
 	 *
-	 * Field schema keys: type, default, label, desc, choices, rows, row_label,
-	 * col_label, unset_value, min, max, secret, sanitize, validate, depends_on,
-	 * tab, layout, actions, status, render.
+	 * Field schema keys: type, default, label, desc, choices, choices_from, rows,
+	 * row_label, col_label, unset_value, min, max, step, unit, secret, sanitize,
+	 * validate, depends_on, tab, layout, actions, status, render.
 	 * Types: toggle, select, radio, choice, number, text, textarea, multicheck,
-	 * multiselect, matrix, secret, map, status. See docs/framework/settings.md.
+	 * multiselect, matrix, secret, map, status, entity, file, tags, schedule,
+	 * icon, time, datetime-local, week, range. See docs/framework/settings.md.
 	 */
 	class Wenpai_Admin_Settings {
 
@@ -58,6 +59,22 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @var array<string, Wenpai_Admin_Settings>
 		 */
 		private static $registry = array();
+
+		/**
+		 * Whether the kit 0.8 wp_ajax endpoints were hooked this request.
+		 *
+		 * @var bool
+		 */
+		private static $ajax_endpoints = false;
+
+		/**
+		 * File-field mime whitelists for wp_ajax_wenpai_file_upload, keyed
+		 * {option}__{field id}. Populated when a file control is rendered and
+		 * backfilled from registered schemas in file_field_mimes().
+		 *
+		 * @var array<string, mixed>
+		 */
+		private static $file_fields = array();
 
 		/**
 		 * Option name in wp_options.
@@ -178,6 +195,14 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		public static function register( $option, array $fields, array $args = array() ) {
 			$inst                      = new self( $option, $fields, $args );
 			self::$registry[ $option ] = $inst;
+			foreach ( $inst->fields as $f ) {
+				if ( in_array( $f['type'], array( 'entity', 'file' ), true ) ) {
+					// Kit 0.8 pickers need their wp_ajax endpoints on every request
+					// (admin-ajax.php never renders the settings page).
+					self::ensure_ajax_endpoints();
+					break;
+				}
+			}
 			if ( function_exists( 'add_action' ) ) {
 				add_action( 'admin_init', array( $inst, 'register_setting' ) );
 				add_action( 'admin_init', array( $inst, 'maybe_upgrade' ) );
@@ -214,6 +239,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				'secret_empty'           => '还没有填写。',
 				'secret_clear'           => '清除已保存的值',
 				'secret_show'            => '显示',
+				'media_select'           => '选择',
+				'media_clear'            => '清除',
+				'media_empty'            => '未选择',
 				'secret_hide'            => '隐藏',
 				'saved'                  => '设置已保存。',
 				'saving'                 => '正在保存…',
@@ -279,6 +307,23 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				'repeater_add'           => '添加一项',
 				'repeater_move_up'       => '上移',
 				'repeater_move_down'     => '下移',
+				/* translators: 1: selected count, 2: total count (checkgroup head). */
+				'checkgroup_count'       => '已选 %1$d / %2$d',
+				'checkgroup_all'         => '全选',
+				'checkgroup_none'        => '清空',
+				'catalog_filter'         => '过滤…',
+				'entity_search'          => '搜索…',
+				'entity_empty'           => '没有匹配的结果',
+				'entity_clear'           => '清除',
+				'file_choose'            => '选择文件',
+				'file_drop'              => '拖入文件，或点击选择',
+				'file_remove'            => '移除',
+				'file_uploading'         => '上传中…',
+				'file_failed'            => '上传失败',
+				'tags_placeholder'       => '输入后回车添加',
+				/* translators: %s: human-readable next run time. */
+				'schedule_next'          => '下次运行：%s',
+				'schedule_none'          => '未安排',
 			);
 		}
 
@@ -308,6 +353,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 						'label'        => $id,
 						'desc'         => '',
 						'choices'      => array(),
+						'choices_from' => '',
 						'rows'         => array(),
 						'row_label'    => '',
 						'col_label'    => '',
@@ -346,8 +392,15 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					if ( ! is_array( $f['default'] ) ) {
 						$f['default'] = array();
 					}
-					$pres              = sanitize_key( (string) $f['presentation'] );
+				}
+				$pres = sanitize_key( (string) $f['presentation'] );
+				if ( 'repeater' === $f['type'] ) {
 					$f['presentation'] = 'card' === $pres ? 'card' : '';
+				} elseif ( in_array( $f['type'], array( 'multicheck', 'multiselect' ), true ) ) {
+					// 0.7: scrollable checklist (checkgroup) and checklist + filter (catalog).
+					$f['presentation'] = in_array( $pres, array( 'checkgroup', 'catalog' ), true ) ? $pres : '';
+				} else {
+					$f['presentation'] = '';
 				}
 				if ( null !== $f['path'] && ! self::stores( $f ) ) {
 					self::doing_it_wrong( sprintf( 'Field 「%s」: path is only for stored fields; ignored on type 「%s」.', $id, $f['type'] ) );
@@ -627,6 +680,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		public function fields_in_tab( $tab ) {
 			$out = array();
 			foreach ( $this->fields as $id => $f ) {
+				if ( isset( $f['group'] ) && '' !== $f['group'] ) {
+					continue;
+				}
 				if ( self::in_tab( $f, $tab ) ) {
 					$out[] = (string) $id;
 				}
@@ -646,6 +702,67 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				$items = call_user_func( $items, $f );
 			}
 			return is_array( $items ) ? $items : array();
+		}
+
+		/**
+		 * Choices of a field, with the 'choices_from' sugar applied. 'choices_from'
+		 * (roles | post_types | taxonomies) wins over 'choices' when both are set
+		 * (doing_it_wrong); 'choices' may still be a Closure.
+		 *
+		 * @param array $f Field schema.
+		 * @return array
+		 */
+		private static function resolve_choices( array $f ) {
+			$from = isset( $f['choices_from'] ) ? (string) $f['choices_from'] : '';
+			if ( '' === $from ) {
+				return self::resolve( isset( $f['choices'] ) ? $f['choices'] : array(), $f );
+			}
+			if ( ! empty( $f['choices'] ) ) {
+				self::doing_it_wrong( 'choices_from and choices are both set on a field; choices_from wins.' );
+			}
+			switch ( $from ) {
+				case 'roles':
+					if ( function_exists( 'wp_roles' ) ) {
+						$roles = wp_roles();
+						if ( is_object( $roles ) && method_exists( $roles, 'get_names' ) ) {
+							return (array) $roles->get_names();
+						}
+					}
+					return array();
+				case 'post_types':
+					return self::choices_from_objects( 'post' );
+				case 'taxonomies':
+					return self::choices_from_objects( 'taxonomy' );
+				default:
+					self::doing_it_wrong( sprintf( 'Unknown choices_from 「%s」; expected roles, post_types or taxonomies.', $from ) );
+					return self::resolve( isset( $f['choices'] ) ? $f['choices'] : array(), $f );
+			}
+		}
+
+		/**
+		 * The choices_from 'post_types' / 'taxonomies' sugar: public objects as slug => label,
+		 * attachment and post_format excluded.
+		 *
+		 * @param string $what 'post' or 'taxonomy'.
+		 * @return array<string, string>
+		 */
+		private static function choices_from_objects( $what ) {
+			$out   = array();
+			$names = 'post' === $what ? 'get_post_types' : 'get_taxonomies';
+			if ( ! function_exists( $names ) ) {
+				return $out;
+			}
+			$items = 'post' === $what
+				? get_post_types( array( 'public' => true ), 'objects' )
+				: get_taxonomies( array( 'public' => true ), 'objects' );
+			$skip  = 'post' === $what ? 'attachment' : 'post_format';
+			foreach ( (array) $items as $name => $obj ) {
+				if ( $skip === $name ) {
+					continue;
+				}
+				$out[ $name ] = is_object( $obj ) && isset( $obj->label ) ? (string) $obj->label : (string) $name;
+			}
+			return $out;
 		}
 
 		/**
@@ -916,7 +1033,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * A field that depends on an inactive field is inactive too.
 		 *
 		 * @param array $values Field values.
-		 * @return array<string, string> Field id => 'hide' | 'disable'.
+		 * @return array<string, string> Field id => 'hide' | 'disable' | 'exclude'.
 		 */
 		public function inactive_fields( array $values ) {
 			$off = array();
@@ -1115,10 +1232,11 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				case 'radio':
 				case 'choice':
 					$v = is_scalar( $v ) ? (string) $v : '';
-					return array_key_exists( $v, self::resolve( $f['choices'], $f ) ) ? $v : $f['default'];
+					return array_key_exists( $v, self::resolve_choices( $f ) ) ? $v : $f['default'];
 				case 'multicheck':
-					$v = is_array( $v ) ? array_values( array_filter( array_map( 'sanitize_key', $v ), 'strlen' ) ) : array();
-					return empty( $f['choices'] ) ? $v : array_values( array_intersect( $v, array_keys( self::resolve( $f['choices'], $f ) ) ) );
+					$v       = is_array( $v ) ? array_values( array_filter( array_map( 'sanitize_key', $v ), 'strlen' ) ) : array();
+					$choices = self::resolve_choices( $f );
+					return empty( $choices ) ? $v : array_values( array_intersect( $v, array_keys( $choices ) ) );
 				case 'multiselect':
 					return self::sanitize_multiselect( $f, $v );
 				case 'matrix':
@@ -1150,11 +1268,67 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return function_exists( 'esc_url_raw' )
 						? esc_url_raw( (string) $v, array( 'http', 'https' ) )
 						: sanitize_text_field( (string) $v );
+				case 'date':
+					$v = is_scalar( $v ) ? trim( (string) $v ) : '';
+					if ( '' === $v ) {
+						return '';
+					}
+					if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $v, $m ) ) {
+						return $f['default'];
+					}
+					return checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ? $v : $f['default'];
+				case 'color':
+					return self::sanitize_hex_color( $v, $f['default'] );
+				case 'media':
+					return is_scalar( $v ) ? max( 0, (int) $v ) : 0;
+				case 'group':
+					return $f['default'];
 				case 'repeater':
 					return $this->sanitize_repeater( $f, $v );
+				case 'entity':
+					return self::sanitize_entity( $f, $v );
+				case 'file':
+					return self::sanitize_file_items( $f, $v );
+				case 'tags':
+					return self::sanitize_tags( $v );
+				case 'schedule':
+					return self::sanitize_schedule( $f, $v );
+				case 'icon':
+					return self::sanitize_icon( $f, $v );
+				case 'time':
+				case 'datetime-local':
+				case 'week':
+					return self::sanitize_datetime_part( $f, $v );
+				case 'range':
+					return self::sanitize_range( $f, $v );
 				default:
 					return null === $v || ! is_scalar( $v ) ? $f['default'] : sanitize_text_field( (string) $v );
 			}
+		}
+
+		/**
+		 * Multiselect: list of choice keys, in choice order, no duplicates.
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value. The empty sentinel from the form is dropped.
+		 * @return string[]
+		 */
+		/**
+		 * Hex color: #rrggbb or #rgb, normalized to lowercase #rrggbb.
+		 *
+		 * @param mixed  $v       Raw value.
+		 * @param string $fallback Schema default.
+		 * @return string
+		 */
+		private static function sanitize_hex_color( $v, $fallback ) {
+			$v = is_scalar( $v ) ? ltrim( trim( (string) $v ), '#' ) : '';
+			if ( preg_match( '/^[0-9a-fA-F]{3}$/', $v ) ) {
+				$v = $v[0] . $v[0] . $v[1] . $v[1] . $v[2] . $v[2];
+			}
+			if ( ! preg_match( '/^[0-9a-fA-F]{6}$/', $v ) ) {
+				return $fallback;
+			}
+			return '#' . strtolower( $v );
 		}
 
 		/**
@@ -1171,7 +1345,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					$picked[] = sanitize_text_field( (string) $item );
 				}
 			}
-			$choices = self::resolve( $f['choices'], $f );
+			$choices = self::resolve_choices( $f );
 			if ( empty( $choices ) ) {
 				return array_values( array_unique( $picked ) );
 			}
@@ -1194,7 +1368,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 */
 		private static function sanitize_matrix( array $f, $v ) {
 			$rows    = self::resolve( $f['rows'], $f );
-			$choices = self::resolve( $f['choices'], $f );
+			$choices = self::resolve_choices( $f );
 			$out     = array();
 			foreach ( ( is_array( $v ) ? $v : array() ) as $row => $val ) {
 				$row = sanitize_key( (string) $row );
@@ -1324,6 +1498,311 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				}
 			}
 			return true;
+		}
+
+		/**
+		 * Entity picker kind: post | term | user (default post).
+		 *
+		 * @param array $f Field schema.
+		 * @return string
+		 */
+		private static function entity_kind( array $f ) {
+			$kind = isset( $f['kind'] ) ? sanitize_key( (string) $f['kind'] ) : 'post';
+			return in_array( $kind, array( 'post', 'term', 'user' ), true ) ? $kind : 'post';
+		}
+
+		/**
+		 * Allowed post types of an entity field (kind=post). String or array;
+		 * comma strings and empty values normalize to array( 'post' ).
+		 *
+		 * @param array $f Field schema.
+		 * @return string[]
+		 */
+		private static function entity_post_types( array $f ) {
+			$pt = isset( $f['post_type'] ) ? $f['post_type'] : 'post';
+			if ( is_string( $pt ) ) {
+				$pt = '' === trim( $pt ) ? array() : explode( ',', $pt );
+			}
+			$out = array();
+			foreach ( (array) $pt as $t ) {
+				$t = sanitize_key( (string) $t );
+				if ( '' !== $t ) {
+					$out[] = $t;
+				}
+			}
+			return array() === $out ? array( 'post' ) : array_values( array_unique( $out ) );
+		}
+
+		/**
+		 * Taxonomy of an entity field (kind=term). Default category.
+		 *
+		 * @param array $f Field schema.
+		 * @return string
+		 */
+		private static function entity_taxonomy( array $f ) {
+			$tax = isset( $f['taxonomy'] ) ? sanitize_key( (string) $f['taxonomy'] ) : '';
+			return '' === $tax ? 'category' : $tax;
+		}
+
+		/**
+		 * Whether an entity id exists for the field's kind and filters.
+		 * Posts: any post_status, post_type must be in the allowed list.
+		 *
+		 * @param array $f  Field schema.
+		 * @param mixed $id Candidate id.
+		 * @return bool
+		 */
+		private static function entity_exists( array $f, $id ) {
+			$id = absint( $id );
+			if ( $id <= 0 ) {
+				return false;
+			}
+			switch ( self::entity_kind( $f ) ) {
+				case 'term':
+					return function_exists( 'term_exists' ) && (bool) term_exists( $id, self::entity_taxonomy( $f ) );
+				case 'user':
+					return function_exists( 'get_user_by' ) && (bool) get_user_by( 'id', $id );
+				default:
+					if ( ! function_exists( 'get_post' ) ) {
+						return false;
+					}
+					$p = get_post( $id );
+					if ( null === $p || false === $p ) {
+						return false;
+					}
+					$ptype = is_object( $p ) && isset( $p->post_type ) ? (string) $p->post_type : '';
+					if ( ! in_array( $ptype, self::entity_post_types( $f ), true ) ) {
+						return false;
+					}
+					return ! function_exists( 'get_post_type_object' ) || (bool) get_post_type_object( $ptype );
+			}
+		}
+
+		/**
+		 * Entity: a single positive id that exists, '' for none, else default.
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value.
+		 * @return int|string
+		 */
+		private static function sanitize_entity( array $f, $v ) {
+			if ( null === $v || ! is_scalar( $v ) ) {
+				return $f['default'];
+			}
+			$v = trim( (string) $v );
+			if ( '' === $v ) {
+				return '';
+			}
+			$id = absint( $v );
+			return $id > 0 && self::entity_exists( $f, $id ) ? $id : $f['default'];
+		}
+
+		/**
+		 * Label and meta line of a picked entity, rendered server-side so the
+		 * saved value shows without JS.
+		 *
+		 * @param array $f  Field schema.
+		 * @param mixed $id Entity id.
+		 * @return array{0: string, 1: string}
+		 */
+		private static function entity_label_meta( array $f, $id ) {
+			$id    = absint( $id );
+			$label = '';
+			$meta  = '';
+			if ( $id <= 0 ) {
+				return array( '', '' );
+			}
+			switch ( self::entity_kind( $f ) ) {
+				case 'term':
+					if ( function_exists( 'get_term' ) ) {
+						$t = get_term( $id, self::entity_taxonomy( $f ) );
+						if ( $t && ( ! function_exists( 'is_wp_error' ) || ! is_wp_error( $t ) ) ) {
+							$label = isset( $t->name ) ? (string) $t->name : '';
+							if ( function_exists( 'get_taxonomy' ) ) {
+								$tx = get_taxonomy( self::entity_taxonomy( $f ) );
+								if ( $tx && isset( $tx->label ) ) {
+									$meta = (string) $tx->label;
+								}
+							}
+						}
+					}
+					break;
+				case 'user':
+					if ( function_exists( 'get_userdata' ) ) {
+						$u = get_userdata( $id );
+						if ( $u ) {
+							$label = isset( $u->display_name ) && '' !== (string) $u->display_name
+								? (string) $u->display_name
+								: ( isset( $u->user_login ) ? (string) $u->user_login : '' );
+							$meta  = isset( $u->user_login ) ? (string) $u->user_login : '';
+						}
+					}
+					break;
+				default:
+					if ( function_exists( 'get_post' ) ) {
+						$p = get_post( $id );
+						if ( $p ) {
+							$label = function_exists( 'get_the_title' )
+								? (string) get_the_title( $p )
+								: ( isset( $p->post_title ) ? (string) $p->post_title : '' );
+							$ptype = isset( $p->post_type ) ? (string) $p->post_type : '';
+							if ( '' !== $ptype && function_exists( 'get_post_type_object' ) ) {
+								$pto = get_post_type_object( $ptype );
+								if ( $pto && isset( $pto->labels->name ) ) {
+									$meta = (string) $pto->labels->name;
+								}
+							}
+							if ( function_exists( 'get_post_time' ) ) {
+								$d = get_post_time( 'Y-m-d', false, $p );
+								if ( $d ) {
+									$meta = trim( $meta . ( '' !== $meta ? ' · ' : '' ) . (string) $d );
+								}
+							}
+						}
+					}
+					break;
+			}
+			if ( '' === $label ) {
+				$label = '#' . $id;
+			}
+			return array( $label, $meta );
+		}
+
+		/**
+		 * File field: list of array( id, url, name, size, type ). A single assoc
+		 * item normalizes to a one-item list; multiple=false keeps the first.
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value.
+		 * @return array<int, array>
+		 */
+		private static function sanitize_file_items( array $f, $v ) {
+			if ( ! is_array( $v ) ) {
+				return array();
+			}
+			if ( isset( $v['url'] ) || isset( $v['id'] ) || isset( $v['name'] ) ) {
+				$v = array( $v );
+			}
+			$items = array();
+			foreach ( $v as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$url = isset( $item['url'] ) && is_scalar( $item['url'] ) ? trim( (string) $item['url'] ) : '';
+				if ( '' === $url ) {
+					continue;
+				}
+				$url = function_exists( 'esc_url_raw' ) ? esc_url_raw( $url ) : $url;
+				if ( '' === $url ) {
+					continue;
+				}
+				$items[] = array(
+					'id'   => isset( $item['id'] ) ? absint( $item['id'] ) : 0,
+					'url'  => $url,
+					'name' => isset( $item['name'] ) && is_scalar( $item['name'] ) ? sanitize_text_field( (string) $item['name'] ) : '',
+					'size' => isset( $item['size'] ) ? absint( $item['size'] ) : 0,
+					'type' => isset( $item['type'] ) && is_scalar( $item['type'] ) ? sanitize_text_field( (string) $item['type'] ) : '',
+				);
+			}
+			if ( empty( $f['multiple'] ) ) {
+				$items = array_slice( $items, 0, 1 );
+			}
+			return $items;
+		}
+
+		/**
+		 * Tags: list of unique non-empty strings.
+		 *
+		 * @param mixed $v Raw value.
+		 * @return string[]
+		 */
+		private static function sanitize_tags( $v ) {
+			if ( ! is_array( $v ) ) {
+				return array();
+			}
+			$out = array();
+			foreach ( $v as $t ) {
+				if ( ! is_scalar( $t ) ) {
+					continue;
+				}
+				$t = sanitize_text_field( (string) $t );
+				if ( '' !== $t && ! in_array( $t, $out, true ) ) {
+					$out[] = $t;
+				}
+			}
+			return $out;
+		}
+
+		/**
+		 * Schedule: a wp_get_schedules() key, else default.
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value.
+		 * @return string
+		 */
+		private static function sanitize_schedule( array $f, $v ) {
+			$v = is_scalar( $v ) ? (string) $v : '';
+			if ( function_exists( 'wp_get_schedules' ) && array_key_exists( $v, (array) wp_get_schedules() ) ) {
+				return $v;
+			}
+			return $f['default'];
+		}
+
+		/**
+		 * Icon: an icon name known to Wenpai_Admin_Icons, '' for none, else
+		 * default. Without the Icons class (or has()) it degrades to a
+		 * sanitize_key non-empty check.
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value.
+		 * @return string
+		 */
+		private static function sanitize_icon( array $f, $v ) {
+			$v = is_scalar( $v ) ? trim( (string) $v ) : '';
+			if ( '' === $v ) {
+				return '';
+			}
+			if ( class_exists( 'Wenpai_Admin_Icons', false ) && method_exists( 'Wenpai_Admin_Icons', 'has' ) ) {
+				return Wenpai_Admin_Icons::has( $v ) ? $v : $f['default'];
+			}
+			$k = sanitize_key( $v );
+			return '' !== $k ? $k : $f['default'];
+		}
+
+		/**
+		 * The time / datetime-local / week types: strict format check, '' when invalid.
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value.
+		 * @return string
+		 */
+		private static function sanitize_datetime_part( array $f, $v ) {
+			$v = is_scalar( $v ) ? trim( (string) $v ) : '';
+			if ( '' === $v ) {
+				return '';
+			}
+			$patterns = array(
+				'time'           => '/^([01]\d|2[0-3]):[0-5]\d$/',
+				'datetime-local' => '/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/',
+				'week'           => '/^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$/',
+			);
+			return isset( $patterns[ $f['type'] ] ) && preg_match( $patterns[ $f['type'] ], $v ) ? $v : '';
+		}
+
+		/**
+		 * Range: float clamped to min/max (defaults 0/100).
+		 *
+		 * @param array $f Field schema.
+		 * @param mixed $v Raw value.
+		 * @return float
+		 */
+		private static function sanitize_range( array $f, $v ) {
+			$min = isset( $f['min'] ) && is_numeric( $f['min'] ) ? (float) $f['min'] : 0.0;
+			$max = isset( $f['max'] ) && is_numeric( $f['max'] ) ? (float) $f['max'] : 100.0;
+			$n   = ( null === $v || '' === $v || ! is_scalar( $v ) )
+				? ( is_numeric( $f['default'] ) ? (float) $f['default'] : $min )
+				: (float) $v;
+			return max( $min, min( $max, $n ) );
 		}
 
 		/**
@@ -1879,7 +2358,10 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			$off   = $this->server_off( $f['depends_on'] );
 			$inner = $this->control_html( $id, $f, $fid, $ctl );
 			$attrs = $this->depends_attrs( $f['depends_on'] );
-			if ( null !== $off && 'disable' === $off['mode'] ) {
+			if ( null !== $off && 'exclude' === $off['mode'] ) {
+				$inner  = self::disable_controls( $inner );
+				$attrs .= ' hidden inert data-wenpai-dep-hidden data-wenpai-dep-disabled';
+			} elseif ( null !== $off && 'disable' === $off['mode'] ) {
 				$inner  = self::disable_controls( $inner );
 				$attrs .= ' data-wenpai-dep-disabled';
 			} elseif ( null !== $off ) {
@@ -1954,10 +2436,10 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			$errors = $this->errors();
 			$err    = isset( $errors[ $id ] ) ? $errors[ $id ] : '';
 			$row    = 'row' === $f['layout'];
-			$group  = in_array( $f['type'], array( 'radio', 'choice', 'multicheck', 'multiselect', 'matrix', 'status', 'repeater' ), true );
+			$group  = in_array( $f['type'], array( 'radio', 'choice', 'multicheck', 'multiselect', 'matrix', 'status', 'repeater', 'group' ), true );
 			$secret = self::is_secret( $f );
 			$tree   = self::dep_tree( $f['depends_on'] );
-			$reason = null !== $tree && 'disable' === $tree['mode'];
+			$reason = null !== $tree && 'disable' === $tree['mode']; // exclude hides the field; no reason element.
 			$rows   = 'matrix' === $f['type'] ? $this->error_rows( $id ) : array();
 			$off    = $this->server_off( $f['depends_on'] );
 
@@ -2007,7 +2489,12 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			}
 
 			$state = '';
-			if ( null !== $off && 'disable' === $off['mode'] ) {
+			if ( null !== $off && 'exclude' === $off['mode'] ) {
+				// Hidden and not submitted (0.7): controls disabled like mode=disable, plus hidden like mode=hide.
+				$control = self::disable_controls( $control );
+				$after   = self::disable_controls( $after );
+				$state   = ' hidden inert data-wenpai-dep-hidden data-wenpai-dep-disabled';
+			} elseif ( null !== $off && 'disable' === $off['mode'] ) {
 				// Disabled from saved values, controls included (hidden companions too), so nothing is submitted.
 				$control = self::disable_controls( $control );
 				$after   = self::disable_controls( $after );
@@ -2015,7 +2502,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			} elseif ( null !== $off ) {
 				$state = ' hidden inert data-wenpai-dep-hidden';
 			}
-			$cls  = 'wenpai-field wenpai-field--' . $f['type'] . ( $row ? ' field wenpai-field--row' : '' ) . ( '' !== $err ? ' is-invalid' : '' ) . ( '' !== $state && null !== $off && 'disable' === $off['mode'] ? ' is-disabled' : '' );
+			$cls  = 'wenpai-field wenpai-field--' . $f['type'] . ( $row ? ' field wenpai-field--row' : '' ) . ( '' !== $err ? ' is-invalid' : '' ) . ( '' !== $state && null !== $off && in_array( $off['mode'], array( 'disable', 'exclude' ), true ) ? ' is-disabled' : '' );
 			$open = '<div class="' . esc_attr( $cls ) . '" data-wenpai-field="' . esc_attr( $id ) . '"' . $this->depends_attrs( $f['depends_on'] ) . $state;
 			$aria = empty( $described ) ? '' : ' aria-describedby="' . esc_attr( implode( ' ', $described ) ) . '"';
 
@@ -2176,6 +2663,120 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @param array  $ctl 'labelledby', 'describedby', 'invalid'.
 		 * @return string
 		 */
+		/**
+		 * Media picker row: thumb + readonly url + hidden id + select/clear.
+		 *
+		 * @param array  $f    Field schema.
+		 * @param string $fid  Control id.
+		 * @param string $name Input name.
+		 * @param int    $v    Attachment id.
+		 * @param string $aria Aria attributes.
+		 * @param string $inv  aria-invalid attribute.
+		 * @return string
+		 */
+		private function media_html( array $f, $fid, $name, $v, $aria, $inv ) {
+			$url = '';
+			if ( $v > 0 && function_exists( 'wp_get_attachment_image_url' ) ) {
+				$url = (string) wp_get_attachment_image_url( $v, 'thumbnail' );
+			}
+			$thumb = '' !== $url
+				? '<img src="' . esc_url( $url ) . '" alt="">'
+				: esc_html( $this->strings['media_empty'] );
+			$out   = '<span class="wenpai-media-row">';
+			$out  .= '<span class="wenpai-media-thumb" data-wenpai-media-thumb data-wenpai-media-empty="' . esc_attr( $this->strings['media_empty'] ) . '">' . $thumb . '</span>';
+			$out  .= '<input type="text" readonly value="' . esc_attr( $url ) . '" data-wenpai-media-url tabindex="-1">';
+			$out  .= '<input type="hidden" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v ) . '"' . $aria . $inv . '>';
+			$out  .= '<button type="button" class="btn btn-ghost" data-wenpai-media-select aria-controls="' . esc_attr( $fid ) . '">' . esc_html( $this->strings['media_select'] ) . '</button>';
+			$out  .= '<button type="button" class="btn btn-ghost" data-wenpai-media-clear aria-controls="' . esc_attr( $fid ) . '">' . esc_html( $this->strings['media_clear'] ) . '</button>';
+			return $out . '</span>';
+		}
+
+		/**
+		 * Visual group: fieldset + legend + left rule, rows of registered fields.
+		 *
+		 * @param array $f Field schema with 'fields' => list of registered ids.
+		 * @return string
+		 */
+		private function group_html( array $f ) {
+			$out = '<fieldset class="wenpai-group"><legend class="screen-reader-text">' . esc_html( $f['label'] ) . '</legend><div class="wenpai-group-body">';
+			foreach ( (array) $f['fields'] as $sid ) {
+				$out .= $this->field_html( (string) $sid );
+			}
+			return $out . '</div></fieldset>';
+		}
+
+		/**
+		 * Scrollable checklist for multicheck/multiselect (0.7).
+		 *
+		 * Presentation checkgroup: bordered list, head with selected count and
+		 * select-all / clear buttons (kit JS). Presentation catalog adds a
+		 * filter input that hides non-matching items (kit JS). Choice arrays may
+		 * carry 'meta' for the right-aligned note.
+		 *
+		 * @param array  $f    Field schema.
+		 * @param string $name Input name (without []).
+		 * @param mixed  $v    Current value.
+		 * @param string $inv  aria-invalid attribute or ''.
+		 * @return string
+		 */
+		private function checkgroup_html( array $f, $name, $v, $inv ) {
+			$multi   = 'multicheck' === $f['type'];
+			$pres    = (string) $f['presentation'];
+			$choices = self::resolve_choices( $f );
+			$picked  = array_map( 'strval', (array) $v );
+			$total   = count( $choices );
+			$sel     = 0;
+			foreach ( $choices as $k => $lab ) {
+				if ( in_array( (string) $k, $picked, true ) ) {
+					++$sel;
+				}
+			}
+			$count_tpl = $this->strings['checkgroup_count'];
+			$out       = '';
+			if ( 'catalog' === $pres ) {
+				$out .= '<div class="wenpai-catalog" data-wenpai-catalog>';
+				$out .= '<div class="wenpai-catalog__tools">'
+					. '<input type="search" data-wenpai-catalog-filter placeholder="' . esc_attr( $this->strings['catalog_filter'] ) . '" aria-label="' . esc_attr( $this->strings['catalog_filter'] ) . '">'
+					. ( isset( $f['tools_html'] ) && '' !== (string) $f['tools_html'] ? self::kses( (string) $f['tools_html'], 'control' ) : '' )
+					. '</div>';
+			}
+			$out .= '<div class="wenpai-checkgroup" data-wenpai-checkgroup data-wenpai-count-total="' . esc_attr( $total ) . '">'
+				. '<div class="wenpai-checkgroup__head">'
+				. '<span class="wenpai-checkgroup__count" data-wenpai-count-template="' . esc_attr( $count_tpl ) . '">'
+				. esc_html( sprintf( $count_tpl, $sel, $total ) )
+				. '</span>'
+				. '<span class="wenpai-checkgroup__acts">'
+				. '<button type="button" data-wenpai-cg-all>' . esc_html( $this->strings['checkgroup_all'] ) . '</button>'
+				. '<button type="button" data-wenpai-cg-none>' . esc_html( $this->strings['checkgroup_none'] ) . '</button>'
+				. '</span></div>';
+			$out .= '<input type="hidden" name="' . esc_attr( $name . '[]' ) . '" value="">';
+			$out .= '<ul class="wenpai-checkgroup__list">';
+			foreach ( $choices as $k => $lab ) {
+				$meta = '';
+				if ( is_array( $lab ) && isset( $lab['meta'] ) ) {
+					$meta = (string) $lab['meta'];
+				}
+				$out .= '<li><label class="chk"><input type="checkbox" name="' . esc_attr( $name . '[]' ) . '" value="' . esc_attr( $k ) . '"' . checked( in_array( (string) $k, $picked, true ), true, false ) . $inv . '> '
+					. '<span class="wenpai-checkgroup__text">' . esc_html( self::choice_label( $lab ) ) . '</span>'
+					. ( '' !== $meta ? '<span class="wenpai-checkgroup__meta">' . esc_html( $meta ) . '</span>' : '' )
+					. '</label></li>';
+			}
+			$out .= '</ul></div>';
+			if ( 'catalog' === $pres ) {
+				$out .= '</div>';
+			}
+			return $out;
+		}
+
+		/**
+		 * Control markup by type.
+		 *
+		 * @param string $id  Field id.
+		 * @param array  $f   Field schema.
+		 * @param string $fid Control id.
+		 * @param array  $ctl 'labelledby', 'describedby', 'invalid'.
+		 * @return string
+		 */
 		private function control_html( $id, array $f, $fid, array $ctl ) {
 			$v    = $this->get( $id );
 			$name = $this->field_name( $id );
@@ -2189,7 +2790,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			$inv = $ctl['invalid'] ? ' aria-invalid="true"' : '';
 			$out = '';
 			if ( in_array( $f['type'], array( 'radio', 'choice', 'multicheck', 'multiselect', 'matrix' ), true ) ) {
-				$list = self::resolve( 'matrix' === $f['type'] ? $f['rows'] : $f['choices'], $f );
+				$list = 'matrix' === $f['type'] ? self::resolve( $f['rows'], $f ) : self::resolve_choices( $f );
 				if ( empty( $list ) ) {
 					$noun = isset( $f['empty_noun'] ) ? (string) $f['empty_noun'] : $f['label'];
 					return '<p class="wenpai-field__empty">' . esc_html( sprintf( $this->strings['empty_choices'], $noun ) ) . '</p>';
@@ -2224,26 +2825,37 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return $switch;
 				case 'select':
 					$out .= '<select id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '"' . $aria . $inv . '>';
-					foreach ( self::resolve( $f['choices'], $f ) as $k => $lab ) {
+					foreach ( self::resolve_choices( $f ) as $k => $lab ) {
 						$out .= '<option value="' . esc_attr( $k ) . '"' . selected( (string) $v, (string) $k, false ) . '>' . esc_html( self::choice_label( $lab ) ) . '</option>';
 					}
 					return $out . '</select>';
 				case 'radio':
+					$out .= '<div class="opts">';
+					foreach ( self::resolve_choices( $f ) as $k => $lab ) {
+						$on   = (string) $v === (string) $k;
+						$out .= '<label><input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( $k ) . '"' . checked( $on, true, false ) . $inv . '> ' . esc_html( self::choice_label( $lab ) ) . '</label>';
+					}
+					return $out . '</div>';
 				case 'multicheck':
-					$multi = 'multicheck' === $f['type'];
-					$out  .= '<div class="' . ( $multi ? 'chk' : 'opts' ) . '">';
-					foreach ( self::resolve( $f['choices'], $f ) as $k => $lab ) {
-						$on   = $multi ? in_array( (string) $k, array_map( 'strval', (array) $v ), true ) : ( (string) $v === (string) $k );
-						$out .= '<label><input type="' . ( $multi ? 'checkbox' : 'radio' ) . '" name="' . esc_attr( $name . ( $multi ? '[]' : '' ) ) . '" value="' . esc_attr( $k ) . '"' . checked( $on, true, false ) . $inv . '> ' . esc_html( self::choice_label( $lab ) ) . '</label>';
+					if ( '' !== (string) $f['presentation'] ) {
+						return $this->checkgroup_html( $f, $name, $v, $inv );
+					}
+					$out .= '<div class="chk">';
+					foreach ( self::resolve_choices( $f ) as $k => $lab ) {
+						$on   = in_array( (string) $k, array_map( 'strval', (array) $v ), true );
+						$out .= '<label><input type="checkbox" name="' . esc_attr( $name . '[]' ) . '" value="' . esc_attr( $k ) . '"' . checked( $on, true, false ) . $inv . '> ' . esc_html( self::choice_label( $lab ) ) . '</label>';
 					}
 					return $out . '</div>';
 				case 'choice':
 					return $this->choice_html( $f, $name, (string) $v, $inv );
 				case 'multiselect':
+					if ( '' !== (string) $f['presentation'] ) {
+						return $this->checkgroup_html( $f, $name, $v, $inv );
+					}
 					$picked = array_map( 'strval', (array) $v );
 					$out   .= '<div class="chk-grid">';
 					$out   .= '<input type="hidden" name="' . esc_attr( $name . '[]' ) . '" value="">';
-					foreach ( self::resolve( $f['choices'], $f ) as $k => $lab ) {
+					foreach ( self::resolve_choices( $f ) as $k => $lab ) {
 						$out .= '<label><input type="checkbox" name="' . esc_attr( $name . '[]' ) . '" value="' . esc_attr( $k ) . '"' . checked( in_array( (string) $k, $picked, true ), true, false ) . $inv . '> ' . esc_html( self::choice_label( $lab ) ) . '</label>';
 					}
 					return $out . '</div>';
@@ -2265,14 +2877,292 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return '<input type="email" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="email"' . $aria . $inv . '>';
 				case 'url':
 					return '<input type="url" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="url"' . $aria . $inv . '>';
+				case 'date':
+					return '<input type="date" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '"' . $aria . $inv . '>';
+				case 'color':
+					$hex = is_scalar( $v ) && '' !== (string) $v ? self::sanitize_hex_color( $v, '#000000' ) : '#000000';
+					return '<span class="wenpai-color-row"><input type="color" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $hex ) . '"' . $aria . $inv . '><code data-wenpai-color-hex aria-hidden="true">' . esc_html( strtoupper( $hex ) ) . '</code></span>';
+				case 'media':
+					return $this->media_html( $f, $fid, $name, (int) $v, $aria, $inv );
+				case 'group':
+					return $this->group_html( $f );
 				case 'repeater':
 					return $this->repeater_html( $id, $f, $fid, $name, is_array( $v ) ? $v : array() );
+				case 'entity':
+					return $this->entity_html( $f, $fid, $name, $v, $aria, $inv );
+				case 'file':
+					return $this->file_html( $id, $f, $fid, $name, $v, $aria, $inv );
+				case 'tags':
+					return $this->tags_html( $f, $fid, $name, $v, $aria, $inv );
+				case 'schedule':
+					return $this->schedule_html( $f, $fid, $name, $v, $aria, $inv );
+				case 'icon':
+					return $this->icon_html( $f, $fid, $name, $v, $aria, $inv );
+				case 'time':
+				case 'datetime-local':
+				case 'week':
+					return '<input type="' . esc_attr( $f['type'] ) . '" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '"' . $aria . $inv . '>';
+				case 'range':
+					return $this->range_html( $f, $fid, $name, $v, $aria, $inv );
 				default:
 					return $this->addon_html(
 						'<input type="text" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="off"' . $aria . $inv . '>',
 						$f
 					);
 			}
+		}
+
+		/**
+		 * Entity picker (kit 0.8): picked label + meta + clear, a search input,
+		 * the hidden submitted id, and the dropdown list shell (kit JS fills it
+		 * from wp_ajax_wenpai_entity_lookup).
+		 *
+		 * @param array  $f    Field schema.
+		 * @param string $fid  Control id.
+		 * @param string $name Input name.
+		 * @param mixed  $v    Current value (entity id or '').
+		 * @param string $aria Aria attributes.
+		 * @param string $inv  aria-invalid attribute.
+		 * @return string
+		 */
+		private function entity_html( array $f, $fid, $name, $v, $aria, $inv ) {
+			self::ensure_ajax_endpoints();
+			$kind                 = self::entity_kind( $f );
+			$object               = 'post' === $kind
+				? implode( ',', self::entity_post_types( $f ) )
+				: ( 'term' === $kind ? self::entity_taxonomy( $f ) : '' );
+			$id                   = absint( $v );
+			list( $label, $meta ) = self::entity_label_meta( $f, $id );
+			$ajax                 = function_exists( 'admin_url' ) ? admin_url( 'admin-ajax.php' ) : 'admin-ajax.php';
+			$nonce                = function_exists( 'wp_create_nonce' ) ? wp_create_nonce( 'wenpai_entity_lookup' ) : '';
+			$out                  = '<span class="wenpai-entity" data-wenpai-entity data-kind="' . esc_attr( $kind ) . '" data-object="' . esc_attr( $object ) . '"'
+				. ' data-ajax="' . esc_attr( $ajax ) . '" data-nonce="' . esc_attr( $nonce ) . '" data-wenpai-entity-nonce="' . esc_attr( $nonce ) . '"'
+				. ' data-empty="' . esc_attr( $this->strings['entity_empty'] ) . '">';
+			$out                 .= '<span class="wenpai-entity__picked"' . ( $id > 0 ? '' : ' hidden' ) . '>'
+				. '<span class="wenpai-entity__picked-label">' . esc_html( $label ) . '</span>'
+				. ( '' !== $meta ? '<span class="wenpai-entity__meta">' . esc_html( $meta ) . '</span>' : '' )
+				. '<button type="button" class="wenpai-entity__clear">' . esc_html( $this->strings['entity_clear'] ) . '</button></span>';
+			$out                 .= '<input class="wenpai-entity__input" type="search" id="' . esc_attr( $fid ) . '" placeholder="' . esc_attr( $this->strings['entity_search'] ) . '" autocomplete="off"' . $aria . $inv . '>';
+			$out                 .= '<input type="hidden" name="' . esc_attr( $name ) . '" value="' . esc_attr( $id > 0 ? $id : '' ) . '">';
+			$out                 .= '<span class="wenpai-entity__out" hidden><ul class="wenpai-entity__list"></ul></span>';
+			return $out . '</span>';
+		}
+
+		/**
+		 * File field (kit 0.8): drop zone + file input, saved items with hidden
+		 * inputs, and the ajax upload endpoint wiring.
+		 *
+		 * @param string $id   Field id (registry key suffix).
+		 * @param array  $f    Field schema.
+		 * @param string $fid  Control id.
+		 * @param string $name Input name.
+		 * @param mixed  $v    Current value (list of items).
+		 * @param string $aria Aria attributes.
+		 * @param string $inv  aria-invalid attribute.
+		 * @return string
+		 */
+		private function file_html( $id, array $f, $fid, $name, $v, $aria, $inv ) {
+			self::ensure_ajax_endpoints();
+			// Mime whitelist for wp_ajax_wenpai_file_upload, keyed option__field.
+			self::$file_fields[ $this->option . '__' . $id ] = isset( $f['mime'] ) ? $f['mime'] : array();
+			$items = is_array( $v ) ? array_values( $v ) : array();
+			$multi = ! empty( $f['multiple'] );
+			$ajax  = function_exists( 'admin_url' ) ? admin_url( 'admin-ajax.php' ) : 'admin-ajax.php';
+			$nonce = function_exists( 'wp_create_nonce' ) ? wp_create_nonce( 'wenpai_file_upload' ) : '';
+			$label = isset( $f['button_label'] ) && '' !== (string) $f['button_label'] ? (string) $f['button_label'] : $this->strings['file_choose'];
+			$out   = '<span class="wenpai-file" data-wenpai-file data-name="' . esc_attr( $name ) . '" data-multiple="' . ( $multi ? '1' : '0' ) . '"'
+				. ' data-field-key="' . esc_attr( $this->option . '__' . $id ) . '"'
+				. ' data-ajax="' . esc_attr( $ajax ) . '" data-nonce="' . esc_attr( $nonce ) . '"'
+				. ' data-remove="' . esc_attr( $this->strings['file_remove'] ) . '"'
+				. ' data-uploading="' . esc_attr( $this->strings['file_uploading'] ) . '" data-failed="' . esc_attr( $this->strings['file_failed'] ) . '">';
+			$out  .= '<span class="wenpai-file__drop" role="button" tabindex="0" aria-label="' . esc_attr( $label ) . '">';
+			if ( class_exists( 'Wenpai_Admin_Icons', false ) ) {
+				$out .= Wenpai_Admin_Icons::svg( 'upload' );
+			}
+			$out .= '<span>' . esc_html( $this->strings['file_drop'] ) . '</span>';
+			$out .= '<input type="file" class="wenpai-file__input" id="' . esc_attr( $fid ) . '" hidden' . ( $multi ? ' multiple' : '' ) . $aria . $inv . '>';
+			$out .= '</span>';
+			$out .= '<span class="wenpai-file__list">';
+			foreach ( $items as $i => $item ) {
+				$out .= $this->file_item_html( $name, $i, is_array( $item ) ? $item : array() );
+			}
+			return $out . '</span></span>';
+		}
+
+		/**
+		 * One saved file item: name, size, remove button, hidden inputs.
+		 *
+		 * @param string $name  Field name (without item keys).
+		 * @param int    $i     Item index.
+		 * @param array  $item  Sanitized item.
+		 * @return string
+		 */
+		private function file_item_html( $name, $i, array $item ) {
+			$out  = '<span class="wenpai-file__item">';
+			$out .= '<span class="wenpai-file__name">' . esc_html( isset( $item['name'] ) ? (string) $item['name'] : '' ) . '</span>';
+			$out .= '<span class="wenpai-file__size">' . esc_html( self::file_size( isset( $item['size'] ) ? $item['size'] : 0 ) ) . '</span>';
+			$out .= '<button type="button" class="wenpai-file__remove">' . esc_html( $this->strings['file_remove'] ) . '</button>';
+			foreach ( array( 'id', 'url', 'name', 'size', 'type' ) as $k ) {
+				$val  = isset( $item[ $k ] ) ? $item[ $k ] : '';
+				$out .= '<input type="hidden" name="' . esc_attr( $name . '[' . $i . '][' . $k . ']' ) . '" value="' . esc_attr( $val ) . '">';
+			}
+			return $out . '</span>';
+		}
+
+		/**
+		 * Human file size for the item meta line.
+		 *
+		 * @param mixed $bytes Byte count.
+		 * @return string
+		 */
+		private static function file_size( $bytes ) {
+			$bytes = max( 0, (float) $bytes );
+			if ( $bytes >= 1048576 ) {
+				return round( $bytes / 1048576, 1 ) . ' MB';
+			}
+			if ( $bytes >= 1024 ) {
+				return round( $bytes / 1024, 1 ) . ' KB';
+			}
+			return (string) (int) $bytes . ' B';
+		}
+
+		/**
+		 * Tags input (kit 0.8): chips with remove buttons, one hidden input per
+		 * tag (plus the empty sentinel when there are none), and the text input.
+		 *
+		 * @param array  $f    Field schema.
+		 * @param string $fid  Control id.
+		 * @param string $name Input name (without []).
+		 * @param mixed  $v    Current value (list of strings).
+		 * @param string $aria Aria attributes.
+		 * @param string $inv  aria-invalid attribute.
+		 * @return string
+		 */
+		private function tags_html( array $f, $fid, $name, $v, $aria, $inv ) {
+			$tags = array();
+			foreach ( (array) $v as $t ) {
+				if ( is_scalar( $t ) && '' !== trim( (string) $t ) ) {
+					$tags[] = sanitize_text_field( (string) $t );
+				}
+			}
+			$out = '<span class="wenpai-tags" data-wenpai-tags><span class="wenpai-tags__chips">';
+			foreach ( $tags as $t ) {
+				$out .= '<span class="wenpai-tags__chip">' . esc_html( $t )
+					. '<button type="button" class="wenpai-tags__chip-x" aria-label="' . esc_attr( $this->strings['file_remove'] ) . '">×</button></span>';
+			}
+			$out .= '</span>';
+			if ( array() === $tags ) {
+				$out .= '<input type="hidden" name="' . esc_attr( $name . '[]' ) . '" value="">';
+			}
+			foreach ( $tags as $t ) {
+				$out .= '<input type="hidden" name="' . esc_attr( $name . '[]' ) . '" value="' . esc_attr( $t ) . '">';
+			}
+			$out .= '<input class="wenpai-tags__input" type="text" id="' . esc_attr( $fid ) . '" placeholder="' . esc_attr( $this->strings['tags_placeholder'] ) . '" autocomplete="off"' . $aria . $inv . '>';
+			return $out . '</span>';
+		}
+
+		/**
+		 * Schedule picker (kit 0.8): a select of wp_get_schedules() plus an
+		 * optional next-run line when 'hook' and 'show_next' are set.
+		 *
+		 * @param array  $f    Field schema.
+		 * @param string $fid  Control id.
+		 * @param string $name Input name.
+		 * @param mixed  $v    Current value (schedule slug).
+		 * @param string $aria Aria attributes.
+		 * @param string $inv  aria-invalid attribute.
+		 * @return string
+		 */
+		private function schedule_html( array $f, $fid, $name, $v, $aria, $inv ) {
+			$schedules = function_exists( 'wp_get_schedules' ) ? (array) wp_get_schedules() : array();
+			$out       = '<select id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '"' . $aria . $inv . '>';
+			foreach ( $schedules as $key => $s ) {
+				$label = is_array( $s ) && isset( $s['display'] ) ? (string) $s['display'] : ( is_scalar( $s ) ? (string) $s : (string) $key );
+				$out  .= '<option value="' . esc_attr( $key ) . '"' . selected( (string) $v, (string) $key, false ) . '>' . esc_html( $label ) . '</option>';
+			}
+			$out .= '</select>';
+			if ( ! empty( $f['show_next'] ) && isset( $f['hook'] ) && '' !== (string) $f['hook'] ) {
+				$next = function_exists( 'wp_next_scheduled' ) ? wp_next_scheduled( (string) $f['hook'] ) : false;
+				if ( $next ) {
+					$when = function_exists( 'human_time_diff' ) ? human_time_diff( (int) $next, time() ) : '';
+					if ( '' === (string) $when && function_exists( 'date_i18n' ) ) {
+						$df   = function_exists( 'get_option' ) ? get_option( 'date_format' ) : false;
+						$tf   = function_exists( 'get_option' ) ? get_option( 'time_format' ) : false;
+						$when = date_i18n( ( $df ? (string) $df : 'Y-m-d' ) . ' ' . ( $tf ? (string) $tf : 'H:i' ), (int) $next );
+					}
+					$text = sprintf( $this->strings['schedule_next'], (string) $when );
+				} else {
+					$text = $this->strings['schedule_none'];
+				}
+				$out .= '<p class="wenpai-schedule__next">' . esc_html( $text ) . '</p>';
+			}
+			return $out;
+		}
+
+		/**
+		 * Icon picker (kit 0.8): text input + preview + picker grid of every
+		 * icon from Wenpai_Admin_Icons::names() (empty grid until names() lands).
+		 *
+		 * @param array  $f    Field schema.
+		 * @param string $fid  Control id.
+		 * @param string $name Input name.
+		 * @param mixed  $v    Current value (icon name or '').
+		 * @param string $aria Aria attributes.
+		 * @param string $inv  aria-invalid attribute.
+		 * @return string
+		 */
+		private function icon_html( array $f, $fid, $name, $v, $aria, $inv ) {
+			$has_icons = class_exists( 'Wenpai_Admin_Icons', false );
+			$names     = array();
+			if ( $has_icons && method_exists( 'Wenpai_Admin_Icons', 'names' ) ) {
+				$names = array_map( 'strval', (array) Wenpai_Admin_Icons::names() );
+				sort( $names );
+			}
+			$cur = is_scalar( $v ) ? trim( (string) $v ) : '';
+			$svg = '';
+			if ( $has_icons && '' !== $cur && ( ! method_exists( 'Wenpai_Admin_Icons', 'has' ) || Wenpai_Admin_Icons::has( $cur ) ) ) {
+				$svg = Wenpai_Admin_Icons::svg( $cur );
+			}
+			$out  = '<span class="wenpai-icon" data-wenpai-icon>';
+			$out .= '<input type="text" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $cur ) . '" autocomplete="off" spellcheck="false"' . $aria . $inv . '>';
+			$out .= '<span class="wenpai-icon__preview' . ( '' === $svg ? ' is-empty' : '' ) . '" aria-hidden="true">' . $svg . '</span>';
+			$out .= '<button type="button" class="btn btn-ghost wenpai-icon__pick">选择图标</button>';
+			$out .= '<span class="wenpai-icon__picker" hidden>'
+				. '<input type="search" class="wenpai-icon__filter" placeholder="' . esc_attr( $this->strings['entity_search'] ) . '" aria-label="' . esc_attr( $this->strings['entity_search'] ) . '">'
+				. '<span class="wenpai-icon__grid">';
+			foreach ( $names as $n ) {
+				$opt_svg = $has_icons ? Wenpai_Admin_Icons::svg( $n ) : '';
+				$out    .= '<button type="button" class="wenpai-icon__opt" data-name="' . esc_attr( $n ) . '" title="' . esc_attr( $n ) . '">' . $opt_svg . '<span>' . esc_html( $n ) . '</span></button>';
+			}
+			return $out . '</span></span></span>';
+		}
+
+		/**
+		 * Range slider (kit 0.8): input + live output with optional unit.
+		 *
+		 * @param array  $f    Field schema.
+		 * @param string $fid  Control id.
+		 * @param string $name Input name.
+		 * @param mixed  $v    Current value.
+		 * @param string $aria Aria attributes.
+		 * @param string $inv  aria-invalid attribute.
+		 * @return string
+		 */
+		private function range_html( array $f, $fid, $name, $v, $aria, $inv ) {
+			$min  = isset( $f['min'] ) && is_numeric( $f['min'] ) ? (float) $f['min'] : 0;
+			$max  = isset( $f['max'] ) && is_numeric( $f['max'] ) ? (float) $f['max'] : 100;
+			$step = isset( $f['step'] ) && is_numeric( $f['step'] ) && (float) $f['step'] > 0 ? (float) $f['step'] : 1;
+			$unit = isset( $f['unit'] ) ? (string) $f['unit'] : '';
+			$val  = ( null === $v || '' === $v || ! is_scalar( $v ) )
+				? ( is_numeric( $f['default'] ) ? (float) $f['default'] : $min )
+				: ( is_numeric( $v ) ? (float) $v : $min );
+			$val  = max( $min, min( $max, $val ) );
+			$disp = (string) $val;
+			$out  = '<span class="wenpai-range" data-wenpai-range data-unit="' . esc_attr( $unit ) . '">';
+			$out .= '<input type="range" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $disp ) . '"'
+				. ' min="' . esc_attr( $min ) . '" max="' . esc_attr( $max ) . '" step="' . esc_attr( $step ) . '"' . $aria . $inv . '>';
+			$out .= '<output class="wenpai-range__out">' . esc_html( $disp . $unit ) . '</output>';
+			return $out . '</span>';
 		}
 
 		/**
@@ -2314,7 +3204,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @return string
 		 */
 		private function choice_html( array $f, $name, $v, $inv ) {
-			$choices = self::resolve( $f['choices'], $f );
+			$choices = self::resolve_choices( $f );
 			$n       = count( $choices );
 			// Even counts (2, 4, ...) are two columns, so four cards are 2x2 instead of 3+1 (design wpslug-89-R2).
 			$out = '<div class="choice-cards' . ( $n > 0 && 0 === $n % 2 ? ' cols-2' : '' ) . '">';
@@ -2442,7 +3332,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @return string
 		 */
 		private function matrix_html( array $f, $fid, $name, array $v, array $ctl ) {
-			$choices = self::resolve( $f['choices'], $f );
+			$choices = self::resolve_choices( $f );
 			if ( null !== $f['unset_value'] ) {
 				// The "follow global" option always comes first.
 				$uv    = (string) $f['unset_value'];
@@ -2694,7 +3584,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			if ( empty( $dep ) || ! is_array( $dep ) ) {
 				return null;
 			}
-			$mode = isset( $dep['mode'] ) && 'disable' === $dep['mode'] ? 'disable' : 'hide';
+			$mode = isset( $dep['mode'] ) && in_array( $dep['mode'], array( 'hide', 'disable', 'exclude' ), true ) ? $dep['mode'] : 'hide';
 			$node = self::dep_node( $dep );
 			if ( null === $node ) {
 				return null;
@@ -2845,8 +3735,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				$why = '' !== $c['reason'] ? $c['reason'] : $tree['reason'];
 				return ' data-wenpai-depends-on="' . esc_attr( $this->field_name( $c['field'] ) ) . '" data-wenpai-depends-value="' . esc_attr( $val ) . '"'
 					. ( $c['not'] ? ' data-wenpai-depends-not' : '' )
-					. ( 'disable' === $tree['mode'] ? ' data-wenpai-depends-mode="disable"' : '' )
-					. ( 'disable' === $tree['mode'] && '' !== $why ? ' data-wenpai-depends-reason="' . esc_attr( $why ) . '"' : '' )
+					. ( in_array( $tree['mode'], array( 'disable', 'exclude' ), true ) ? ' data-wenpai-depends-mode="' . $tree['mode'] . '"' : '' )
+					. ( in_array( $tree['mode'], array( 'disable', 'exclude' ), true ) && '' !== $why ? ' data-wenpai-depends-reason="' . esc_attr( $why ) . '"' : '' )
 					. ( null !== $this->saved_flag( $c ) ? ' data-wenpai-depends-saved="' . ( $this->saved_flag( $c ) ? '1' : '0' ) . '"' : '' );
 			}
 			return ' data-wenpai-depends="' . esc_attr( wp_json_encode( $this->dep_json( $tree ) ) ) . '"';
@@ -2859,7 +3749,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * The condition is checked against saved values and ' hidden inert
 		 * data-wenpai-dep-hidden' is added when it fails, so the block is right
 		 * without JS. Hand-written blocks only get hide mode on the server; put
-		 * fields with mode=disable through render_field().
+		 * fields with mode=disable|exclude through render_field(). For exclude,
+		 * kit JS disables the block's controls on boot — without JS they would
+		 * still submit, so hand-written forms must validate server-side anyway.
 		 *
 		 * @param array $depends_on Same shape as the schema key.
 		 * @param array $args       Optional. 'server' (bool, kept for 0.3.0-dev callers; always on now).
@@ -2923,6 +3815,351 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		}
 
 		// --- AJAX actions (field buttons, plugin preview cards) ---
+
+		/**
+		 * Hook the kit 0.8 picker endpoints once per request. Fixed action names
+		 * (wenpai_entity_lookup / wenpai_file_upload): several plugins vendoring
+		 * this kit share one hook because the class is defined once.
+		 */
+		private static function ensure_ajax_endpoints() {
+			if ( self::$ajax_endpoints || ! function_exists( 'add_action' ) ) {
+				return;
+			}
+			self::$ajax_endpoints = true;
+			add_action( 'wp_ajax_wenpai_entity_lookup', array( __CLASS__, 'ajax_entity_lookup' ) );
+			add_action( 'wp_ajax_wenpai_file_upload', array( __CLASS__, 'ajax_file_upload' ) );
+		}
+
+		/**
+		 * The wp_ajax_wenpai_entity_lookup endpoint: entity picker search. Nonce action and
+		 * capability depend on kind (post→edit_posts, term→manage_categories,
+		 * user→list_users); failures wp_die(-1). Returns up to 20 items of
+		 * array( id, label, meta ); empty q lists the most recent 20.
+		 */
+		public static function ajax_entity_lookup() {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce verified on the next line.
+			$nonce = isset( $_REQUEST['_ajax_nonce'] ) && is_scalar( $_REQUEST['_ajax_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_REQUEST['_ajax_nonce'] ) ) : '';
+			if ( ! function_exists( 'wp_verify_nonce' ) || false === wp_verify_nonce( $nonce, 'wenpai_entity_lookup' ) ) {
+				wp_die( -1 );
+			}
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only lookup params, each sanitized.
+			$kind = isset( $_REQUEST['kind'] ) && is_scalar( $_REQUEST['kind'] ) ? sanitize_key( wp_unslash( (string) $_REQUEST['kind'] ) ) : 'post';
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only lookup params, each sanitized.
+			$object = isset( $_REQUEST['object'] ) && is_scalar( $_REQUEST['object'] ) ? sanitize_text_field( wp_unslash( (string) $_REQUEST['object'] ) ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only lookup params, each sanitized.
+			$q = isset( $_REQUEST['q'] ) && is_scalar( $_REQUEST['q'] ) ? sanitize_text_field( wp_unslash( (string) $_REQUEST['q'] ) ) : '';
+			if ( ! in_array( $kind, array( 'post', 'term', 'user' ), true ) ) {
+				wp_die( -1 );
+			}
+			$cap = 'post' === $kind ? 'edit_posts' : ( 'term' === $kind ? 'manage_categories' : 'list_users' );
+			if ( ! function_exists( 'current_user_can' ) || ! current_user_can( $cap ) ) {
+				wp_die( -1 );
+			}
+			$items = 'post' === $kind
+				? self::lookup_posts( $object, $q )
+				: ( 'term' === $kind ? self::lookup_terms( $object, $q ) : self::lookup_users( $q ) );
+			wp_send_json_success( array( 'items' => $items ) );
+		}
+
+		/**
+		 * Post lookup for ajax_entity_lookup(). object is a comma list of post
+		 * types (empty = post); q empty lists the 20 newest.
+		 *
+		 * @param string $object_name Comma-separated post types.
+		 * @param string $q      Search string.
+		 * @return array<int, array{id: int, label: string, meta: string}>
+		 */
+		private static function lookup_posts( $object_name, $q ) {
+			$types = array();
+			foreach ( explode( ',', (string) $object_name ) as $t ) {
+				$t = sanitize_key( $t );
+				if ( '' !== $t ) {
+					$types[] = $t;
+				}
+			}
+			if ( array() === $types ) {
+				$types = array( 'post' );
+			}
+			if ( ! function_exists( 'get_posts' ) ) {
+				return array();
+			}
+			$args = array(
+				'post_type'      => $types,
+				'posts_per_page' => 20,
+				'post_status'    => 'any',
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			);
+			if ( '' !== $q ) {
+				$args['s'] = $q;
+			}
+			$items = array();
+			foreach ( (array) get_posts( $args ) as $p ) {
+				$id = is_object( $p ) && isset( $p->ID ) ? (int) $p->ID : 0;
+				if ( $id <= 0 ) {
+					continue;
+				}
+				$label = function_exists( 'get_the_title' ) ? (string) get_the_title( $p ) : ( isset( $p->post_title ) ? (string) $p->post_title : '' );
+				$meta  = array();
+				$ptype = isset( $p->post_type ) ? (string) $p->post_type : '';
+				if ( '' !== $ptype && function_exists( 'get_post_type_object' ) ) {
+					$pto = get_post_type_object( $ptype );
+					if ( $pto && isset( $pto->labels->name ) ) {
+						$meta[] = (string) $pto->labels->name;
+					}
+				}
+				if ( function_exists( 'get_post_time' ) ) {
+					$d = get_post_time( 'Y-m-d', false, $p );
+					if ( $d ) {
+						$meta[] = (string) $d;
+					}
+				}
+				$items[] = array(
+					'id'    => $id,
+					'label' => $label,
+					'meta'  => implode( ' · ', $meta ),
+				);
+			}
+			return $items;
+		}
+
+		/**
+		 * Term lookup for ajax_entity_lookup(). object is the taxonomy
+		 * (empty = category).
+		 *
+		 * @param string $object_name Taxonomy name.
+		 * @param string $q      Search string.
+		 * @return array<int, array{id: int, label: string, meta: string}>
+		 */
+		private static function lookup_terms( $object_name, $q ) {
+			$tax = sanitize_key( (string) $object_name );
+			if ( '' === $tax ) {
+				$tax = 'category';
+			}
+			if ( ! function_exists( 'get_terms' ) ) {
+				return array();
+			}
+			$args = array(
+				'taxonomy'   => $tax,
+				'hide_empty' => false,
+				'number'     => 20,
+			);
+			if ( '' !== $q ) {
+				$args['search'] = $q;
+			}
+			$taxlabel = '';
+			if ( function_exists( 'get_taxonomy' ) ) {
+				$tx = get_taxonomy( $tax );
+				if ( $tx && isset( $tx->label ) ) {
+					$taxlabel = (string) $tx->label;
+				}
+			}
+			$items = array();
+			foreach ( (array) get_terms( $args ) as $t ) {
+				$id = isset( $t->term_id ) ? (int) $t->term_id : ( isset( $t->id ) ? (int) $t->id : 0 );
+				if ( $id <= 0 ) {
+					continue;
+				}
+				$items[] = array(
+					'id'    => $id,
+					'label' => isset( $t->name ) ? (string) $t->name : '',
+					'meta'  => $taxlabel,
+				);
+			}
+			return $items;
+		}
+
+		/**
+		 * User lookup for ajax_entity_lookup().
+		 *
+		 * @param string $q Search string.
+		 * @return array<int, array{id: int, label: string, meta: string}>
+		 */
+		private static function lookup_users( $q ) {
+			if ( ! function_exists( 'get_users' ) ) {
+				return array();
+			}
+			$args = array( 'number' => 20 );
+			if ( '' !== $q ) {
+				$args['search'] = '*' . $q . '*';
+			}
+			$items = array();
+			foreach ( (array) get_users( $args ) as $u ) {
+				$id = isset( $u->ID ) ? (int) $u->ID : 0;
+				if ( $id <= 0 ) {
+					continue;
+				}
+				$items[] = array(
+					'id'    => $id,
+					'label' => isset( $u->display_name ) && '' !== (string) $u->display_name
+						? (string) $u->display_name
+						: ( isset( $u->user_login ) ? (string) $u->user_login : '' ),
+					'meta'  => isset( $u->user_login ) ? (string) $u->user_login : '',
+				);
+			}
+			return $items;
+		}
+
+		/**
+		 * Mime whitelist of a file field for the upload endpoint: the render-time
+		 * registry first, then every registered schema (admin-ajax.php never
+		 * renders the page, so the registry alone would be empty there).
+		 *
+		 * @param string $key {option}__{field id} from $_POST['field'].
+		 * @return mixed|null The field's 'mime' arg, or null when unknown.
+		 */
+		private static function file_field_mimes( $key ) {
+			// The kit JS posts data-name, which is the input name
+			// "{option}[{field}]"; the registry key is "{option}__{field}".
+			$candidates = array( $key );
+			if ( false !== strpos( $key, '[' ) ) {
+				$candidates[] = (string) preg_replace( '/\[([^\]]*)\]/', '__$1', $key );
+			}
+			foreach ( $candidates as $cand ) {
+				if ( isset( self::$file_fields[ $cand ] ) ) {
+					return self::$file_fields[ $cand ];
+				}
+				foreach ( self::$registry as $option => $inst ) {
+					foreach ( $inst->fields() as $fid => $f ) {
+						if ( 'file' === $f['type'] && $option . '__' . $fid === $cand ) {
+							return isset( $f['mime'] ) ? $f['mime'] : array();
+						}
+					}
+				}
+			}
+			return null;
+		}
+
+		/**
+		 * Image-only mime subset, the fallback when a mime whitelist matches
+		 * nothing in wp_get_mime_types().
+		 *
+		 * @return array<string, string>
+		 */
+		private static function file_image_mimes() {
+			return array(
+				'jpg|jpeg|jpe' => 'image/jpeg',
+				'png'          => 'image/png',
+				'gif'          => 'image/gif',
+				'webp'         => 'image/webp',
+			);
+		}
+
+		/**
+		 * The wp_ajax_wenpai_file_upload endpoint: upload one file for a file field. The
+		 * 'field' POST param is the {option}__{field id} registry key; unknown
+		 * keys wp_die(-1). On success returns the item array the control stores.
+		 */
+		public static function ajax_file_upload() {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce verified on the next line.
+			$nonce = isset( $_REQUEST['_ajax_nonce'] ) && is_scalar( $_REQUEST['_ajax_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_REQUEST['_ajax_nonce'] ) ) : '';
+			if ( ! function_exists( 'wp_verify_nonce' ) || false === wp_verify_nonce( $nonce, 'wenpai_file_upload' ) ) {
+				wp_die( -1 );
+			}
+			if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'upload_files' ) ) {
+				wp_die( -1 );
+			}
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- registry key, resolved below.
+			$key  = isset( $_POST['field'] ) && is_scalar( $_POST['field'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['field'] ) ) : '';
+			$mime = self::file_field_mimes( $key );
+			if ( null === $mime ) {
+				wp_die( -1 );
+			}
+			if ( ! isset( $_FILES['file'] ) || ! is_array( $_FILES['file'] ) || ! function_exists( 'wp_handle_upload' ) ) {
+				wp_send_json_error( array( 'message' => '' ) );
+			}
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce checked above; wp_handle_upload validates the upload itself.
+			$uploaded = wp_handle_upload(
+				$_FILES['file'],
+				array(
+					'test_form' => false,
+					'mimes'     => self::file_allowed_mimes( $mime ),
+				)
+			);
+			if ( ! is_array( $uploaded ) || isset( $uploaded['error'] ) || empty( $uploaded['file'] ) ) {
+				wp_send_json_error(
+					array(
+						'message' => is_array( $uploaded ) && isset( $uploaded['error'] ) ? (string) $uploaded['error'] : '',
+					)
+				);
+			}
+			$file = (string) $uploaded['file'];
+			$id   = 0;
+			if ( function_exists( 'wp_insert_attachment' ) ) {
+				$base = isset( $uploaded['name'] ) ? (string) $uploaded['name'] : basename( $file );
+				$id   = (int) wp_insert_attachment(
+					array(
+						'post_mime_type' => isset( $uploaded['type'] ) ? (string) $uploaded['type'] : '',
+						'post_title'     => sanitize_text_field( (string) preg_replace( '/\.[^.]+$/', '', $base ) ),
+						'post_status'    => 'inherit',
+					),
+					$file
+				);
+				if ( $id > 0 && function_exists( 'wp_update_attachment_metadata' ) ) {
+					$meta = function_exists( 'wp_generate_attachment_metadata' ) ? wp_generate_attachment_metadata( $id, $file ) : array();
+					wp_update_attachment_metadata( $id, is_array( $meta ) ? $meta : array() );
+				}
+			}
+			$url  = $id > 0 && function_exists( 'wp_get_attachment_url' ) ? (string) wp_get_attachment_url( $id ) : '';
+			$size = function_exists( 'filesize' ) ? (int) @filesize( $file ) : 0; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- the tmp file may be gone already.
+			wp_send_json_success(
+				array(
+					'item' => array(
+						'id'   => $id,
+						'url'  => $url,
+						'name' => isset( $uploaded['name'] ) ? sanitize_text_field( (string) $uploaded['name'] ) : sanitize_text_field( basename( $file ) ),
+						'size' => $size,
+						'type' => isset( $uploaded['type'] ) ? (string) $uploaded['type'] : '',
+					),
+				)
+			);
+		}
+
+		/**
+		 * Mime whitelist for a file field's 'mime' arg: empty = everything in
+		 * wp_get_mime_types(); ext=>mime map used as-is; a list of extensions
+		 * picks the matching wp_get_mime_types() entries (image subset when
+		 * nothing matches).
+		 *
+		 * @param mixed $mime The field's 'mime' arg.
+		 * @return array<string, string>
+		 */
+		private static function file_allowed_mimes( $mime ) {
+			$all = function_exists( 'wp_get_mime_types' ) ? (array) wp_get_mime_types() : array();
+			if ( array() === $all ) {
+				$all = self::file_image_mimes();
+			}
+			if ( ! is_array( $mime ) || array() === $mime ) {
+				return $all;
+			}
+			$map = false;
+			foreach ( array_keys( $mime ) as $k ) {
+				if ( ! is_int( $k ) ) {
+					$map = true;
+					break;
+				}
+			}
+			if ( $map ) {
+				return $mime;
+			}
+			$exts = array();
+			foreach ( $mime as $e ) {
+				$e = strtolower( (string) preg_replace( '/[^a-zA-Z0-9.]/', '', (string) $e ) );
+				if ( '' !== $e ) {
+					$exts[] = $e;
+				}
+			}
+			$out = array();
+			foreach ( $all as $ext_key => $mime_type ) {
+				foreach ( explode( '|', (string) $ext_key ) as $e ) {
+					if ( in_array( strtolower( $e ), $exts, true ) ) {
+						$out[ $ext_key ] = $mime_type;
+						break;
+					}
+				}
+			}
+			return array() === $out ? self::file_image_mimes() : $out;
+		}
 
 		/**
 		 * Register a wp_ajax_{action} handler with nonce and capability checks.

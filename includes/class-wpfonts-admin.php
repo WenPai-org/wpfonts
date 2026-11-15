@@ -109,7 +109,7 @@ class WPFonts_Admin {
 			);
 			self::enqueue_catalog_glyphs();
 		}
-		if ( 'packages' === $tab ) {
+		if ( 'tools' === $tab ) {
 			WPFonts_Packages::enqueue_admin_previews();
 		}
 	}
@@ -248,10 +248,19 @@ class WPFonts_Admin {
 			wp_die( esc_html__( '这一页暂时打不开。请重新安装插件后再试。', 'wpfonts' ) );
 		}
 
-		$tab  = self::query_key( 'tab', 'overview' );
-		$mode = self::query_key( 'mode', 'simple' );
-		if ( ! in_array( $tab, array( 'overview', 'settings', 'packages', 'tools', 'help' ), true ) ) {
+		$tab     = self::query_key( 'tab', 'overview' );
+		$section = self::query_key( 'section', '' );
+		$mode    = self::query_key( 'mode', 'simple' );
+		// Legacy ?tab=packages URLs land on 工具 → 字体包.
+		if ( 'packages' === $tab ) {
+			$tab     = 'tools';
+			$section = 'packages';
+		}
+		if ( ! in_array( $tab, array( 'overview', 'settings', 'tools', 'help' ), true ) ) {
 			$tab = 'overview';
+		}
+		if ( 'packages' !== $section ) {
+			$section = '';
 		}
 		if ( 'advanced' !== $mode ) {
 			$mode = 'simple';
@@ -265,10 +274,8 @@ class WPFonts_Admin {
 		Wenpai_Admin_Shell::open( $args );
 		if ( 'settings' === $tab ) {
 			self::render_settings( $settings, $state, $has_key, $mode );
-		} elseif ( 'packages' === $tab ) {
-			self::render_packages();
 		} elseif ( 'tools' === $tab ) {
-			self::render_tools( $settings, $state, $has_key );
+			self::render_tools( $settings, $state, $has_key, $section );
 		} elseif ( 'help' === $tab ) {
 			self::render_help();
 		} else {
@@ -345,12 +352,6 @@ class WPFonts_Admin {
 					'label'     => __( '设置', 'wpfonts' ),
 					'url'       => self::page_url( array( 'tab' => 'settings' ) ),
 					'icon_html' => $icon( 'settings' ),
-				),
-				array(
-					'id'        => 'packages',
-					'label'     => __( '字体包', 'wpfonts' ),
-					'url'       => self::page_url( array( 'tab' => 'packages' ) ),
-					'icon_html' => $icon( 'download' ),
 				),
 				array(
 					'id'        => 'tools',
@@ -543,12 +544,35 @@ class WPFonts_Admin {
 	 * @param bool   $has_key  Whether a key is stored.
 	 * @return void
 	 */
-	private static function render_tools( array $settings, $state, $has_key ) {
+	private static function render_tools( array $settings, $state, $has_key, $section = '' ) {
 		Wenpai_Admin_Shell::page_head(
 			__( '工具', 'wpfonts' ),
-			__( '检查文风 API Key，预览样式链接，并导出或导入不含密钥的字体记录。插件不负责上传或切分字体。', 'wpfonts' )
+			__( '安装字体包，检查文风 API Key，预览样式链接，并导出或导入不含密钥的字体记录。插件不负责上传或切分字体。', 'wpfonts' )
 		);
 		echo '<div class="wenpai-stack">';
+		echo Wenpai_Admin_UI::subnav_html(
+			array(
+				'label'   => __( '工具分区', 'wpfonts' ),
+				'current' => 'packages' === $section ? 'packages' : 'tools',
+				'slug'    => 'wpfonts',
+				'query'   => array( 'tab' => 'tools' ),
+				'items'   => array(
+					array(
+						'id'    => 'tools',
+						'label' => __( '日常', 'wpfonts' ),
+					),
+					array(
+						'id'    => 'packages',
+						'label' => __( '字体包', 'wpfonts' ),
+					),
+				),
+			)
+		);
+		if ( 'packages' === $section ) {
+			self::render_packages_body();
+			echo '</div>';
+			return;
+		}
 		self::render_state_banner( $state );
 		self::render_selection_summary( $settings );
 
@@ -670,7 +694,7 @@ class WPFonts_Admin {
 						array(
 							'label'   => __( '字体包', 'wpfonts' ),
 							'variant' => 'secondary',
-							'href'    => self::page_url( array( 'tab' => 'packages' ) ),
+							'href'    => self::page_url( array( 'tab' => 'tools', 'section' => 'packages' ) ),
 						),
 					),
 				)
@@ -768,13 +792,31 @@ class WPFonts_Admin {
 		echo '<div class="field-ctl">';
 		echo '<p class="field-help">' . esc_html__( '默认都开启。取消勾选后，这一组不再出现在字体库。不依赖文风云。', 'wpfonts' ) . '</p>';
 		echo '<input type="hidden" name="wpfonts_settings[system_form]" value="1">';
-		echo '<div class="chk-grid">';
+		$on_count = 0;
+		foreach ( $choices as $code => $label ) {
+			$key = 'system_' . $code;
+			if ( ! isset( $settings[ $key ] ) || ! empty( $settings[ $key ] ) ) {
+				++$on_count;
+			}
+		}
+		$count_tpl = __( '已启用 %1$d / %2$d', 'wpfonts' );
+		echo '<div class="wenpai-checkgroup" data-wenpai-checkgroup data-wenpai-count-total="' . esc_attr( (string) count( $choices ) ) . '">'
+			. '<div class="wenpai-checkgroup__head">'
+			. '<span class="wenpai-checkgroup__count" data-wenpai-count-template="' . esc_attr( $count_tpl ) . '">'
+			. esc_html( sprintf( $count_tpl, $on_count, count( $choices ) ) )
+			. '</span>'
+			. '<span class="wenpai-checkgroup__acts">'
+			. '<button type="button" data-wenpai-cg-all>' . esc_html__( '全选', 'wpfonts' ) . '</button>'
+			. '<button type="button" data-wenpai-cg-none>' . esc_html__( '清空', 'wpfonts' ) . '</button>'
+			. '</span></div>'
+			. '<ul class="wenpai-checkgroup__list">';
 		foreach ( $choices as $code => $label ) {
 			$key = 'system_' . $code;
 			$on  = ! isset( $settings[ $key ] ) || ! empty( $settings[ $key ] );
-			echo '<label><input type="checkbox" name="wpfonts_settings[' . esc_attr( $key ) . ']" value="1"' . checked( $on, true, false ) . '> ' . esc_html( $label ) . '</label>';
+			echo '<li><label class="chk"><input type="checkbox" name="wpfonts_settings[' . esc_attr( $key ) . ']" value="1"' . checked( $on, true, false ) . '> '
+				. '<span class="wenpai-checkgroup__text">' . esc_html( $label ) . '</span></label></li>';
 		}
-		echo '</div></div></div>';
+		echo '</ul></div></div></div>';
 	}
 
 	/**
@@ -1713,21 +1755,17 @@ class WPFonts_Admin {
 				'text'  => $label,
 				'state' => $pill,
 			),
-			'right_html' => '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'packages' ) ) ) . '">' . esc_html__( '字体包', 'wpfonts' ) . '</a>',
+			'right_html' => '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'tools', 'section' => 'packages' ) ) ) . '">' . esc_html__( '字体包', 'wpfonts' ) . '</a>',
 		)
 	);
 	}
 
 	/**
-	 * Install and manage local packages.
+	 * Packages body under 工具 → 字体包. Renders inside the tools stack.
 	 *
 	 * @return void
 	 */
-	private static function render_packages() {
-		Wenpai_Admin_Shell::page_head(
-			__( '字体包', 'wpfonts' ),
-			__( '把文风已切好的字体包装到本站，由本站托管。切分字体仍在文风完成，插件不切字。启用后会出现在全站样式里。', 'wpfonts' )
-		);
+	private static function render_packages_body() {
 		$note     = self::query_key( 'wpfonts_pkg', '' );
 		$packages = WPFonts_Packages::all();
 		echo '<div class="wenpai-stack">';
@@ -1961,7 +1999,8 @@ class WPFonts_Admin {
 		wp_safe_redirect(
 			self::page_url(
 				array(
-					'tab'         => 'packages',
+					'tab'         => 'tools',
+					'section'     => 'packages',
 					'wpfonts_pkg' => $code,
 				)
 			)
@@ -1985,7 +2024,8 @@ class WPFonts_Admin {
 		wp_safe_redirect(
 			self::page_url(
 				array(
-					'tab'         => 'packages',
+					'tab'         => 'tools',
+					'section'     => 'packages',
 					'wpfonts_pkg' => $enabled ? 'enabled' : 'disabled',
 				)
 			)
@@ -2013,7 +2053,8 @@ class WPFonts_Admin {
 		wp_safe_redirect(
 			self::page_url(
 				array(
-					'tab'         => 'packages',
+					'tab'         => 'tools',
+					'section'     => 'packages',
 					'wpfonts_pkg' => $code,
 				)
 			)

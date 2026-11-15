@@ -66,6 +66,21 @@ if ( ! class_exists( 'Wenpai_Admin_Icons', false ) ) {
 		}
 
 		/**
+		 * Every icon name (lucide + fill), deduplicated and sorted.
+		 *
+		 * For pickers such as the settings `icon` field; has() stays the
+		 * single-name check.
+		 *
+		 * @return string[]
+		 */
+		public static function names() {
+			$names = array_merge( array_keys( self::lucide_paths() ), array_keys( self::fill_paths() ) );
+			$names = array_values( array_unique( $names ) );
+			sort( $names, SORT_STRING );
+			return $names;
+		}
+
+		/**
 		 * Inline SVG markup for a semantic icon name.
 		 *
 		 * @param string $name  Semantic key from icons/map.json.
