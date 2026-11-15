@@ -17,6 +17,13 @@ if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 	class Wenpai_Admin_Menu {
 
 		/**
+		 * Page slugs registered through register(), for asset scoping (kit 0.9.2).
+		 *
+		 * @var array<string, true>
+		 */
+		private static $pages = array();
+
+		/**
 		 * Register the settings page under Settings.
 		 *
 		 * @param array $args {
@@ -39,7 +46,28 @@ if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 			if ( '' === $slug ) {
 				return false;
 			}
+			self::$pages[ $slug ] = true;
 			return add_options_page( $title, $label, $cap, $slug, $cb );
+		}
+
+		/**
+		 * Whether a `page` query arg belongs to a kit-registered plugin page.
+		 * Submenu pages share the `{slug}-` / `{slug}_` prefix convention.
+		 *
+		 * @param string $page `$_GET['page']` value.
+		 * @return bool
+		 */
+		public static function owns_page( $page ) {
+			$page = sanitize_key( (string) $page );
+			if ( '' === $page ) {
+				return false;
+			}
+			foreach ( array_keys( self::$pages ) as $slug ) {
+				if ( $page === $slug || 0 === strpos( $page, $slug . '-' ) || 0 === strpos( $page, $slug . '_' ) ) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		/**

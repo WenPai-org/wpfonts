@@ -77,6 +77,14 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		private static $file_fields = array();
 
 		/**
+		 * Whether any registered schema has a media field this request; gates
+		 * the scoped wp_enqueue_media() in maybe_enqueue_media() (kit 0.9.2).
+		 *
+		 * @var bool
+		 */
+		private static $needs_media = false;
+
+		/**
 		 * Option name in wp_options.
 		 *
 		 * @var string
@@ -195,12 +203,25 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		public static function register( $option, array $fields, array $args = array() ) {
 			$inst                      = new self( $option, $fields, $args );
 			self::$registry[ $option ] = $inst;
+			$needs_media               = false;
 			foreach ( $inst->fields as $f ) {
 				if ( in_array( $f['type'], array( 'entity', 'file' ), true ) ) {
 					// Kit 0.8 pickers need their wp_ajax endpoints on every request
 					// (admin-ajax.php never renders the settings page).
 					self::ensure_ajax_endpoints();
-					break;
+				}
+				if ( 'media' === $f['type'] ) {
+					$needs_media = true;
+				}
+			}
+			if ( $needs_media && ! self::$needs_media ) {
+				// The media picker needs wp.media; enqueue it only on this
+				// plugin's admin pages (kit 0.9.2). Products rendering the form
+				// on a page outside Wenpai_Admin_Menu call wp_enqueue_media()
+				// themselves.
+				self::$needs_media = true;
+				if ( function_exists( 'add_action' ) ) {
+					add_action( 'admin_enqueue_scripts', array( __CLASS__, 'maybe_enqueue_media' ) );
 				}
 			}
 			if ( function_exists( 'add_action' ) ) {
@@ -324,6 +345,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				/* translators: %s: human-readable next run time. */
 				'schedule_next'          => '下次运行：%s',
 				'schedule_none'          => '未安排',
+				'generate'               => '生成',
 			);
 		}
 
@@ -365,6 +387,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 						'tab'          => '',
 						'layout'       => $layout,
 						'actions'      => array(),
+						'generate'     => null,
 						'instant'      => '',
 						'status'       => null,
 						'render'       => null,
@@ -2468,9 +2491,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			);
 
 			$control = $this->control_html( $id, $f, $fid, $ctl );
-			$actions = $this->actions_html( $id, $f );
-			if ( '' !== $actions ) {
-				$control = '<div class="field-ctl-row wenpai-field__row">' . $control . $actions . '</div>';
+			$extra   = $this->actions_html( $id, $f ) . $this->generate_html( $f, $fid );
+			if ( '' !== $extra ) {
+				$control = '<div class="field-ctl-row wenpai-field__row">' . $control . $extra . '</div>';
 			}
 			$after = '';
 			if ( '' !== $err ) {
@@ -2655,6 +2678,34 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		}
 
 		/**
+		 * Client-side random generator button (kit 0.9.2). Field arg `generate`:
+		 * true or array( 'length' => 8..128 (default 32), 'charset' =>
+		 * 'hex'|'base64url'|'alnum' (default 'hex'), 'label' ). Only on
+		 * single-line text-like types; kit JS fills the control by id and
+		 * fires input/change so depends_on and dirty guards see it.
+		 *
+		 * @param array  $f   Field schema.
+		 * @param string $fid Control id.
+		 * @return string
+		 */
+		private function generate_html( array $f, $fid ) {
+			$g = $f['generate'];
+			if ( empty( $g ) || ! in_array( $f['type'], array( 'text', 'secret' ), true ) ) {
+				return '';
+			}
+			$g       = true === $g ? array() : (array) $g;
+			$length  = isset( $g['length'] ) ? (int) $g['length'] : 32;
+			$length  = max( 8, min( 128, $length ) );
+			$charset = isset( $g['charset'] ) && in_array( $g['charset'], array( 'hex', 'base64url', 'alnum' ), true ) ? $g['charset'] : 'hex';
+			$label   = isset( $g['label'] ) && '' !== (string) $g['label'] ? (string) $g['label'] : $this->strings['generate'];
+			return '<button type="button" class="btn btn-ghost wenpai-generate"'
+				. ' data-wenpai-generate-for="' . esc_attr( $fid ) . '"'
+				. ' data-wenpai-generate-length="' . esc_attr( (string) $length ) . '"'
+				. ' data-wenpai-generate-charset="' . esc_attr( $charset ) . '">'
+				. esc_html( $label ) . '</button>';
+		}
+
+		/**
 		 * Control markup by type.
 		 *
 		 * @param string $id  Field id.
@@ -2685,9 +2736,13 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			$out   = '<span class="wenpai-media-row">';
 			$out  .= '<span class="wenpai-media-thumb" data-wenpai-media-thumb data-wenpai-media-empty="' . esc_attr( $this->strings['media_empty'] ) . '">' . $thumb . '</span>';
 			$out  .= '<input type="text" readonly value="' . esc_attr( $url ) . '" data-wenpai-media-url tabindex="-1">';
-			$out  .= '<input type="hidden" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v ) . '"' . $aria . $inv . '>';
-			$out  .= '<button type="button" class="btn btn-ghost" data-wenpai-media-select aria-controls="' . esc_attr( $fid ) . '">' . esc_html( $this->strings['media_select'] ) . '</button>';
-			$out  .= '<button type="button" class="btn btn-ghost" data-wenpai-media-clear aria-controls="' . esc_attr( $fid ) . '">' . esc_html( $this->strings['media_clear'] ) . '</button>';
+
+			// The visible number input is the submitted control (kit 0.9.2):
+			// without JS or wp.media the user can still type an attachment ID;
+			// kit JS keeps it in sync with the media frame selection.
+			$out .= '<input type="number" class="wenpai-media-id" min="0" step="1" inputmode="numeric" data-wenpai-media-id id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v > 0 ? $v : '' ) . '"' . $aria . $inv . '>';
+			$out .= '<button type="button" class="btn btn-ghost" data-wenpai-media-select aria-controls="' . esc_attr( $fid ) . '">' . esc_html( $this->strings['media_select'] ) . '</button>';
+			$out .= '<button type="button" class="btn btn-ghost" data-wenpai-media-clear aria-controls="' . esc_attr( $fid ) . '">' . esc_html( $this->strings['media_clear'] ) . '</button>';
 			return $out . '</span>';
 		}
 
@@ -3828,6 +3883,26 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			self::$ajax_endpoints = true;
 			add_action( 'wp_ajax_wenpai_entity_lookup', array( __CLASS__, 'ajax_entity_lookup' ) );
 			add_action( 'wp_ajax_wenpai_file_upload', array( __CLASS__, 'ajax_file_upload' ) );
+		}
+
+		/**
+		 * Enqueue the media modal assets, but only on pages that belong to a
+		 * kit-registered plugin (Wenpai_Admin_Menu::owns_page). Schemas with a
+		 * `media` field need wp.media for the picker; loading it on every admin
+		 * page would cost every plugin visitor the media stack for nothing.
+		 * Products rendering the form outside a kit-registered page call
+		 * wp_enqueue_media() themselves.
+		 */
+		public static function maybe_enqueue_media() {
+			if ( ! self::$needs_media || wp_doing_ajax() || ! function_exists( 'wp_enqueue_media' ) ) {
+				return;
+			}
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only asset scoping, not form processing.
+			$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+			if ( '' === $page || ! class_exists( 'Wenpai_Admin_Menu', false ) || ! Wenpai_Admin_Menu::owns_page( $page ) ) {
+				return;
+			}
+			wp_enqueue_media();
 		}
 
 		/**
