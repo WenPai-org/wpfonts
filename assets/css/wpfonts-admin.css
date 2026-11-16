@@ -29,22 +29,35 @@
 	display: none;
 }
 
-/* Cloud face list: same full-width card strip. Cover was cropping it square. */
-.wenpai-app .wpfonts-catalog-list .choice > span {
+/* Cloud face list: compact rows — checkbox, thumb, text column. */
+.wenpai-app .wpfonts-catalog-list .choice {
+	align-items: center;
+	padding: var(--wenpai-space-3) 14px;
+}
+
+.wenpai-app .wpfonts-catalog-list .wpfonts-choice-text {
 	flex: 1 1 auto;
 	min-width: 0;
+	display: flex;
+	flex-direction: column;
 }
 
 .wenpai-app .wpfonts-catalog-list .wpfonts-specimen {
 	display: block;
-	width: 100%;
-	max-width: none;
-	height: auto;
-	max-height: none;
-	object-fit: contain;
+	width: 140px;
+	height: 64px;
+	flex: none;
+	object-fit: cover;
 	object-position: left center;
-	margin: 0 0 var(--wenpai-space-2);
+	margin: 0;
 	background: var(--wenpai-card);
+	border-radius: var(--wenpai-radius-md, 6px);
+}
+
+.wenpai-app .wpfonts-catalog-list .choice .t {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* A CDN specimen already shows the face. Do not restyle the name as live type. */
@@ -157,9 +170,15 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 	overflow-wrap: anywhere;
 }
 
-.wenpai-app .wpfonts-preview-link {
-	margin-left: var(--wenpai-space-2);
-	font-size: var(--wenpai-text-meta);
+.wenpai-app .wpfonts-catalog-list .choice .d {
+	display: flex;
+	align-items: center;
+	gap: var(--wenpai-space-2);
+}
+
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-preview-link {
+	margin-left: 0;
+	white-space: nowrap;
 }
 
 .wenpai-app #wpfonts-project-wrap {

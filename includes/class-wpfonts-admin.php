@@ -1370,17 +1370,18 @@ class WPFonts_Admin {
 		}
 		echo '>';
 		echo '<input type="checkbox" name="wpfonts_settings[families][]" value="' . esc_attr( $id ) . '"' . checked( $on, true, false ) . '>';
-		echo '<span>';
 		if ( $has_img ) {
 			self::render_specimen_image( $card, $name );
 		}
+		echo '<span class="wpfonts-choice-text">';
 		echo '<span class="t wpfonts-glyph"';
 		if ( $has_css && ! $has_img ) {
 			echo ' style="' . esc_attr( $style ) . '"';
 		}
 		echo '>' . esc_html( $name ) . '</span>';
-		echo '<span class="d">' . esc_html( $id ) . '</span>';
+		echo '<span class="d">' . esc_html( $id );
 		echo '<a class="wpfonts-preview-link" href="' . esc_url( add_query_arg( array( 'wpfonts_preview' => $id ), home_url( '/' ) ) ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( '预览', 'wpfonts' ) . '</a>';
+		echo '</span>';
 		if ( $has_css ) {
 			echo '<span class="wpfonts-specimen-fallback"';
 			if ( $has_img ) {

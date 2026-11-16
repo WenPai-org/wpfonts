@@ -758,8 +758,10 @@ if ( false === strpos( $admin_css, '.wenpai-app .wpfonts-preview .wpfonts-specim
 	fwrite( STDERR, "package specimen CSS does not show the full-width card strip.\n" );
 	exit( 1 );
 }
-if ( false !== strpos( $admin_css, 'object-fit: cover' ) ) {
-	fwrite( STDERR, "admin specimen CSS still crops with object-fit: cover.\n" );
+// The catalog thumb intentionally crops the wide banner to 140x64; the
+// full-width strips above must stay object-fit: contain.
+if ( false === strpos( $admin_css, '.wenpai-app .wpfonts-catalog-list .wpfonts-specimen' ) || false === strpos( $admin_css, 'object-fit: cover' ) ) {
+	fwrite( STDERR, "catalog specimen thumb CSS missing.\n" );
 	exit( 1 );
 }
 if ( 1 !== substr_count( $packages_html, 'class="wpfonts-specimen"' ) ) {

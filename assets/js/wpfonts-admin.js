@@ -408,6 +408,25 @@
 			input.value = row.fontFamily;
 			input.checked = !!selected[row.fontFamily];
 			var text = document.createElement("span");
+			text.className = "wpfonts-choice-text";
+			var title = document.createElement("span");
+			title.className = "t wpfonts-glyph";
+			title.textContent = row.name || row.fontFamily;
+			var meta = document.createElement("span");
+			meta.className = "d";
+			meta.textContent = row.fontFamily;
+			if (previewBase) {
+				var pv = document.createElement("a");
+				pv.className = "wpfonts-preview-link";
+				pv.href = previewBase + (previewBase.indexOf("?") === -1 ? "?" : "&") + "wpfonts_preview=" + encodeURIComponent(row.fontFamily);
+				pv.target = "_blank";
+				pv.rel = "noopener noreferrer";
+				pv.textContent = previewLabel;
+				meta.appendChild(pv);
+			}
+			text.appendChild(title);
+			text.appendChild(meta);
+			label.appendChild(input);
 			if (cardUrl) {
 				var img = document.createElement("img");
 				img.className = "wpfonts-specimen";
@@ -419,26 +438,8 @@
 					img.setAttribute("data-fallback", png);
 				}
 				img.src = cardUrl;
-				text.appendChild(img);
+				label.appendChild(img);
 			}
-			var title = document.createElement("span");
-			title.className = "t wpfonts-glyph";
-			title.textContent = row.name || row.fontFamily;
-			var meta = document.createElement("span");
-			meta.className = "d";
-			meta.textContent = row.fontFamily;
-			text.appendChild(title);
-			text.appendChild(meta);
-			if (previewBase) {
-				var pv = document.createElement("a");
-				pv.className = "wpfonts-preview-link";
-				pv.href = previewBase + (previewBase.indexOf("?") === -1 ? "?" : "&") + "wpfonts_preview=" + encodeURIComponent(row.fontFamily);
-				pv.target = "_blank";
-				pv.rel = "noopener noreferrer";
-				pv.textContent = previewLabel;
-				text.appendChild(pv);
-			}
-			label.appendChild(input);
 			label.appendChild(text);
 			if (row.cssFace && !cardUrl) {
 				markGlyph(label, row.cssFace);
