@@ -600,7 +600,7 @@ class WPFonts_Admin {
 
 		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '健康检查', 'wpfonts' ), 'sub' => __( '在服务器上向文风验证。页面上不会显示 Key。', 'wpfonts' ), 'icon' => 'info', 'state' => 'warn' ) );
 		echo '<div class="field"><div class="field-label">' . esc_html__( '请求', 'wpfonts' ) . '</div><div class="field-ctl">';
-		echo '<div class="wenpai-code"><code>GET /api/key/status</code></div>';
+		echo Wenpai_Admin_UI::code_inline_html( array( 'code' => 'GET /api/key/status', 'copy' => false ) );
 		echo '<p class="hint">' . esc_html__( '验证请求发往 app.windfonts.com，不走字体 CDN。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 		echo '<div class="field"><div class="field-label">' . esc_html__( '结果', 'wpfonts' ) . '</div><div class="field-ctl">';
@@ -1572,7 +1572,7 @@ class WPFonts_Admin {
 		if ( '' === $family ) {
 			echo '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'settings' ) ) ) . '">' . esc_html__( '去设置', 'wpfonts' ) . '</a>';
 		} else {
-			echo '<div class="wenpai-code"><code>' . esc_html( $family ) . '</code></div>';
+			echo Wenpai_Admin_UI::code_inline_html( array( 'code' => $family ) );
 		}
 		echo '</div></div>';
 		echo '<div class="field">';
@@ -1674,7 +1674,7 @@ class WPFonts_Admin {
 			return;
 		}
 		echo '<p class="meta">' . esc_html__( '链接文字（不加载字体）', 'wpfonts' ) . '</p>';
-		echo '<div class="wenpai-code"><code>' . esc_html( $snippet ) . '</code></div>';
+		echo Wenpai_Admin_UI::code_block_html( array( 'code' => $snippet, 'lang' => 'html' ) );
 	}
 
 	/**
