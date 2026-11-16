@@ -80,6 +80,7 @@
   --wenpai-text-brand: 17px;
   --wenpai-text-h1: 24px;
   --wenpai-text-display: 26px;
+  --wenpai-text-stat: 32px;
 
   /* leading */
   --wenpai-leading-caption: 18px;
@@ -88,6 +89,7 @@
   --wenpai-leading-title: 24px;
   --wenpai-leading-h1: 32px;
   --wenpai-leading-display: 34px;
+  --wenpai-leading-stat: 40px;
 
   /* weight */
   --wenpai-weight-regular: 400;
@@ -113,6 +115,7 @@
   --wenpai-size-wrap: 1120px;
   --wenpai-size-head: 56px;
   --wenpai-size-control: 36px;
+  --wenpai-size-control-sm: 30px;
   --wenpai-size-control-max: 28rem;
   --wenpai-size-mark: 28px;
   --wenpai-size-tile: 36px;

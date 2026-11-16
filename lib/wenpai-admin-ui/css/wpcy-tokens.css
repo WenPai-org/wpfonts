@@ -80,6 +80,7 @@
   --wpcy-text-brand: 17px;
   --wpcy-text-h1: 24px;
   --wpcy-text-display: 26px;
+  --wpcy-text-stat: 32px;
 
   /* leading */
   --wpcy-leading-caption: 18px;
@@ -88,6 +89,7 @@
   --wpcy-leading-title: 24px;
   --wpcy-leading-h1: 32px;
   --wpcy-leading-display: 34px;
+  --wpcy-leading-stat: 40px;
 
   /* weight */
   --wpcy-weight-regular: 400;
@@ -113,6 +115,7 @@
   --wpcy-size-wrap: 1120px;
   --wpcy-size-head: 56px;
   --wpcy-size-control: 36px;
+  --wpcy-size-control-sm: 30px;
   --wpcy-size-control-max: 28rem;
   --wpcy-size-mark: 28px;
   --wpcy-size-tile: 36px;

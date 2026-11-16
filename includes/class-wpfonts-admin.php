@@ -1036,10 +1036,17 @@ class WPFonts_Admin {
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="wpfonts_import">';
 		wp_nonce_field( 'wpfonts_import' );
-		echo '<div class="field"><label class="field-label" for="wpfonts-import-file">' . esc_html__( 'JSON 文件', 'wpfonts' ) . '</label>';
-		echo '<div class="field-ctl">';
-		echo '<input type="file" id="wpfonts-import-file" name="wpfonts_import" accept="application/json,.json">';
-		echo '</div></div>';
+		echo '<div class="wenpai-field"><label class="wenpai-field__label" for="wpfonts-import-file">' . esc_html__( 'JSON 文件', 'wpfonts' ) . '</label>';
+		echo '<span class="wenpai-file" data-wenpai-file data-wenpai-file-local data-multiple="0" data-name="wpfonts_import" data-remove="' . esc_attr__( '移除', 'wpfonts' ) . '">';
+		echo '<span class="wenpai-file__drop" role="button" tabindex="0" aria-label="' . esc_attr__( '拖入 JSON 文件，或点击选择', 'wpfonts' ) . '">';
+		self::icon( 'upload' );
+		echo '<span>' . esc_html__( '拖入 JSON 文件，或点击选择', 'wpfonts' ) . '</span>';
+		echo '<input type="file" class="wenpai-file__input" id="wpfonts-import-file" name="wpfonts_import" accept="application/json,.json" hidden>';
+		echo '</span>';
+		echo '<span class="wenpai-file__list"></span>';
+		echo '</span>';
+		echo '<p class="wenpai-field__desc">' . esc_html__( '选择 .json 文件后随表单一起提交。', 'wpfonts' ) . '</p>';
+		echo '</div>';
 		echo Wenpai_Admin_UI::gate_html(
 			array(
 				'name'  => 'wpfonts_import_ack',
@@ -1875,25 +1882,18 @@ class WPFonts_Admin {
 		echo '<form id="wpfonts-install-form" method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpfonts_install_package' );
 		echo '<input type="hidden" name="action" value="wpfonts_install_package">';
-		echo '<input type="file" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip">';
-		if ( $blank ) {
-			echo Wenpai_Admin_UI::empty_state_html(
-				array(
-					'icon' => 'download',
-					'text' => __( '把 zip 拖到这里', 'wpfonts' ),
-					'meta' => __( '或点击选择文件。安装后由本站托管、直接加载。', 'wpfonts' ),
-				)
-			);
-			echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';
-		} else {
-			echo Wenpai_Admin_UI::row_html(
-				array(
-					'icon'  => 'download',
-					'title' => __( '拖入 zip 安装，或点击选择', 'wpfonts' ),
-				)
-			);
-			echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';
+		echo '<span class="wenpai-file" data-wenpai-file data-wenpai-file-local data-multiple="0" data-name="wpfonts_package" data-remove="' . esc_attr__( '移除', 'wpfonts' ) . '">';
+		echo '<span class="wenpai-file__drop" role="button" tabindex="0" aria-label="' . esc_attr__( '拖入字体包 zip，或点击选择', 'wpfonts' ) . '">';
+		self::icon( 'upload' );
+		echo '<span>' . esc_html( $blank ? __( '把 zip 拖到这里，或点击选择文件', 'wpfonts' ) : __( '拖入 zip 安装，或点击选择', 'wpfonts' ) ) . '</span>';
+		echo '<input type="file" class="wenpai-file__input" id="wpfonts-package-file" name="wpfonts_package" accept=".zip,application/zip" hidden>';
+		echo '</span>';
+		echo '<span class="wenpai-file__list"></span>';
+		echo '</span>';
+		if ( ! $blank ) {
+			echo '<p class="meta" style="margin-top:var(--wenpai-space-3);">' . esc_html__( '安装后由本站托管、直接加载。', 'wpfonts' ) . '</p>';
 		}
+		echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';
 		echo '</form>';
 		echo '</section>';
 	}

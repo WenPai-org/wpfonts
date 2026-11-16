@@ -16,6 +16,8 @@
 .wenpai-app svg { max-width: 24px; max-height: 24px; }
 .wenpai-ico { display: inline-block; flex: none; vertical-align: -0.2em; }
 .wenpai-app svg.wenpai-ico { max-width: none; max-height: none; }
+/* 裸用兜底尺寸：1em 随父字号缩放；:where 零优先级，任何上下文规则（.tile svg 等）照常覆盖。 */
+.wenpai-app :where(svg.wenpai-ico) { width: 1em; height: 1em; }
 
 /* --- 壳 --- */
 
@@ -130,6 +132,8 @@ a.btn-primary:is(:hover, :active) { color: var(--wenpai-on-accent); }
 a.btn-secondary:is(:hover, :active) { color: var(--wenpai-ink); }
 a.btn-ghost:is(:hover, :active) { color: var(--wenpai-accent); }
 a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
+.btn-sm { height: var(--wenpai-size-control-sm); padding: 0 var(--wenpai-space-3); font-size: var(--wenpai-text-meta); }
+.btn-sm svg { width: 14px; height: 14px; }
 .btn[disabled],
 .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
 .btn:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); box-shadow: none; }
@@ -270,13 +274,6 @@ a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
   .wenpai-subnav .seg { overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; max-width: 100%; }
   .wenpai-subnav .seg a { white-space: nowrap; flex: none; }
 }
-.toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 24px; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink); appearance: none; background: transparent; border: 0; padding: 0; margin: 0; box-shadow: none; cursor: pointer; font-family: inherit; }
-.toggle i { display: inline-block; width: 36px; height: 20px; border-radius: var(--wenpai-radius-lg); background: var(--wenpai-track-off); position: relative; flex: none; transition: background var(--wenpai-motion-base) var(--wenpai-motion-ease); }
-.toggle i::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--wenpai-card); transition: left var(--wenpai-motion-base) var(--wenpai-motion-ease); }
-.toggle.on i { background: var(--wenpai-accent); } .toggle.on i::after { inset-inline-start: 18px; }
-.toggle:focus-visible { outline: none; }
-.toggle:focus-visible i { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
-.toggle.off-dis, .toggle[disabled] { opacity: .55; cursor: default; color: var(--wenpai-ink-2); }
 .chk { display: grid; gap: 10px; }
 .chk label { display: flex; align-items: center; gap: var(--wenpai-space-2); min-height: 24px; } /* The whole row is the target (WCAG 2.5.8). */
 .chk input { width: 16px; height: 16px; accent-color: var(--wenpai-accent); margin: 0; }
@@ -407,7 +404,6 @@ a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
 .notice[data-wenpai-fade].is-gone { opacity: 0; transition: opacity var(--wenpai-motion-fade) var(--wenpai-motion-ease); }
 .wenpai-app form.is-busy,
 .wenpai-app .is-busy { pointer-events: none; } /* No dimming: pair with aria-busy="true" and an in-progress line (.spin + 「正在…」). */
-.simple-row.is-static .toggle { pointer-events: none; }
 .simple-row.is-action { cursor: pointer; }
 a.simple-row { color: inherit; }
 /* P-7 「不再提示」 (.btn-ghost) lines its text up with the referral copy above it. */
@@ -415,14 +411,6 @@ a.simple-row { color: inherit; }
 a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: calc(-1 * var(--wenpai-focus-width)); }
 .simple-row.is-action:hover { background: var(--wenpai-line-soft); }
 .simple-row .d.is-url { max-width: none; overflow-wrap: anywhere; word-break: break-all; }
-.toggle.is-locked,
-.toggle.is-locked:hover {
-  opacity: 1;
-  cursor: not-allowed;
-  color: var(--wenpai-ink-3);
-}
-.toggle.is-locked i { background: var(--wenpai-track-locked); }
-.toggle.is-locked.on i { background: var(--wenpai-accent-soft); }
 .field-ctl-row input[type="url"],
 .field-ctl-row input[type="search"],
 .field-ctl-row input[type="email"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
@@ -480,6 +468,10 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
 .tbl .t { font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); }
 .tbl .d { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
 .tbl select { width: auto; max-width: 16rem; }
+
+/* Wide tables: wrap .tbl in .wenpai-table-wrap so narrow screens scroll
+   horizontally instead of breaking the page layout (layout.md §2). */
+.wenpai-table-wrap { overflow-x: auto; }
 
 /* Track 0.4-list — WP_List_Table skin (D-22). Do not restyle pagination semantics. */
 .list-table { margin: 0 0 var(--wenpai-space-6); }
@@ -556,14 +548,14 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
 }
 .wenpai-gate label { display: flex; align-items: flex-start; gap: var(--wenpai-space-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink); }
 .wenpai-gate input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--wenpai-accent); flex: none; }
-.wenpai-code {
+pre.wenpai-code {
   margin: var(--wenpai-space-3) 0 0;
   padding: var(--wenpai-space-3) 14px;
   border-radius: var(--wenpai-radius-md);
   background: var(--wenpai-line-soft);
   overflow-x: auto;
 }
-.wenpai-code code {
+pre.wenpai-code code {
   font-family: var(--wenpai-font-mono);
   font-size: var(--wenpai-text-caption);
   line-height: var(--wenpai-leading-caption);
@@ -587,7 +579,7 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
 @media (prefers-reduced-motion: reduce) {
   .wenpai-notice-wrap.is-gone,
   .notice[data-wenpai-fade].is-gone { transition: none; opacity: 1; }
-  .toggle i, .toggle i::after, .wenpai-switch__track, .wenpai-switch__track::after, .choice { transition: none; }
+  .wenpai-switch__track, .wenpai-switch__track::after, .choice { transition: none; }
   .spin { animation: none; border-top-color: var(--wenpai-line); }
 }
 
@@ -692,6 +684,9 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
   .card, .field, .field-ctl, .wenpai-stack, .wenpai-main {
     overflow: visible;
   }
+  /* 卡头动作组在窄屏换行，避免按钮行撑破卡片。 */
+  .card-head { flex-wrap: wrap; }
+  .wenpai-actions { flex-wrap: wrap; }
 }
 
 
@@ -798,10 +793,10 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
 .wenpai-app .stat-a .k {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--wenpai-space-2);
   color: var(--wenpai-ink-2);
   font-weight: var(--wenpai-weight-regular);
-  font-size: 14px;
+  font-size: var(--wenpai-text-body);
 }
 .wenpai-app .stat-a .k svg {
   width: 18px;
@@ -811,37 +806,37 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
   color: var(--wenpai-ink-3);
 }
 .wenpai-app .stat-a .v {
-  font-size: 32px;
-  line-height: 40px;
+  font-size: var(--wenpai-text-stat);
+  line-height: var(--wenpai-leading-stat);
   font-weight: var(--wenpai-weight-regular);
   letter-spacing: -0.02em;
-  margin-top: 14px;
+  margin-top: var(--wenpai-space-3);
   font-variant-numeric: tabular-nums;
 }
 .wenpai-app .stat-a .v small {
-  font-size: 13px;
+  font-size: var(--wenpai-text-meta);
   font-weight: var(--wenpai-weight-regular);
   color: var(--wenpai-ink-3);
-  margin-inline-start: 6px;
+  margin-inline-start: var(--wenpai-space-2);
   letter-spacing: 0;
 }
 .wenpai-app .stat-a .d {
   color: var(--wenpai-ink-3);
-  font-size: 13px;
+  font-size: var(--wenpai-text-meta);
   margin-top: 2px;
-  line-height: 20px;
+  line-height: var(--wenpai-leading-meta);
 }
 .wenpai-app .stat-a .delta {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 13px;
+  font-size: var(--wenpai-text-meta);
   font-weight: var(--wenpai-weight-regular);
   color: var(--wenpai-ok-ink);
   background: var(--wenpai-ok-soft);
   padding: 1px 8px;
-  border-radius: 10px;
-  margin-inline-start: 8px;
+  border-radius: var(--wenpai-radius-lg);
+  margin-inline-start: var(--wenpai-space-2);
   vertical-align: 6px;
   letter-spacing: 0;
 }
@@ -854,7 +849,7 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
 .wenpai-app .stat-a .area {
   width: 100%;
   height: 44px;
-  margin-top: 18px;
+  margin-top: var(--wenpai-space-4);
   display: block;
   max-width: none;
   max-height: none;
@@ -862,7 +857,7 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
 .wenpai-app .stat-a .v.none {
   color: var(--wenpai-ink-3);
   font-weight: var(--wenpai-weight-regular);
-  font-size: 20px;
+  font-size: var(--wenpai-text-title);
 }
 .wenpai-app .stat-a .stat-a-busy {
   display: inline-flex;
@@ -870,7 +865,7 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
   gap: 8px;
   margin-top: 10px;
   color: var(--wenpai-ink-3);
-  font-size: 13px;
+  font-size: var(--wenpai-text-meta);
 }
 
 /* Track D / E08 — repeater (fieldset rows; optional Card composition via .wenpai-repeater--cards) */
@@ -1013,7 +1008,7 @@ a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenp
 .wenpai-log li { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--wenpai-line-soft); }
 .wenpai-log li:first-child { border-top: 0; }
 .wenpai-log .n { display: flex; gap: var(--wenpai-space-2); align-items: center; }
-.wenpai-log .when { grid-column: 2; color: var(--wenpai-ink-3); font-size: 11px; }
+.wenpai-log .when { grid-column: 2; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
 .wenpai-log .p { grid-column: 2; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); overflow-wrap: anywhere; }
 
 /* 0.5.1: native-screen module (media column, metabox) and wizard contract.
@@ -1236,6 +1231,7 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
   cursor: pointer;
   text-align: center;
 }
+.wenpai-file__drop > svg { width: 22px; height: 22px; flex: none; }
 .wenpai-file__drop:hover,
 .wenpai-file__drop.is-drag { border-color: var(--wenpai-accent); background: var(--wenpai-accent-soft); color: var(--wenpai-accent); }
 .wenpai-file__drop:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
@@ -1392,7 +1388,7 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
 .wenpai-copy.is-done { color: var(--wenpai-ok-ink); }
 
 /* code block: bar (lang + copy) over scrollable pre. */
-.wenpai-code {
+div.wenpai-code {
   border: 1px solid var(--wenpai-line-soft);
   border-radius: var(--wenpai-radius-md);
   background: var(--wenpai-line-soft);
@@ -1401,14 +1397,17 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
 .wenpai-code__bar { display: flex; align-items: center; gap: var(--wenpai-space-2); padding: 6px 10px; }
 .wenpai-code__lang { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
 .wenpai-code__bar > :last-child:not(.wenpai-code__lang) { margin-inline-start: auto; }
-.wenpai-code pre { margin: 0; padding: var(--wenpai-space-3) var(--wenpai-space-4); overflow: auto; font-family: var(--wenpai-font-mono); font-size: var(--wenpai-text-meta); line-height: 1.6; }
-.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta); }
+div.wenpai-code pre { margin: 0; padding: var(--wenpai-space-3) var(--wenpai-space-4); overflow: auto; font-family: var(--wenpai-font-mono); font-size: var(--wenpai-text-meta); line-height: 1.6; }
+div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta); }
 
 /* code_inline (0.9): one-line value + ghost copy on a single row. */
 .wenpai-code-row { display: inline-flex; align-items: center; gap: var(--wenpai-space-2); max-width: 100%; }
 .wenpai-code-row > .wenpai-code {
   margin: 0;
   padding: 4px 10px;
+  border: 1px solid var(--wenpai-line-soft);
+  border-radius: var(--wenpai-radius-md);
+  background: var(--wenpai-line-soft);
   font-family: var(--wenpai-font-mono);
   font-size: var(--wenpai-text-meta);
   line-height: var(--wenpai-leading-meta);
@@ -1535,9 +1534,6 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
   .pill { border: 1px solid CanvasText; }
   .choice.is-on { outline: 2px solid Highlight; outline-offset: 1px; box-shadow: none; }
   .seg a.on { box-shadow: inset 0 -2px 0 Highlight; }
-  .toggle i { border: 1px solid CanvasText; }
-  .toggle.on i { background: Highlight; }
-  .toggle.on i::after { background: ButtonFace; }
   .wenpai-icon__opt.is-current,
   .wenpai-entity__item.is-active { outline: 2px solid Highlight; outline-offset: -2px; }
   .wenpai-field.is-invalid .field-ctl input,
