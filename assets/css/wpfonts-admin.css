@@ -44,10 +44,11 @@
 
 .wenpai-app .wpfonts-catalog-list .wpfonts-specimen {
 	display: block;
-	width: 140px;
+	width: auto;
 	height: 64px;
+	max-width: 320px;
 	flex: none;
-	object-fit: cover;
+	object-fit: contain;
 	object-position: left center;
 	margin: 0;
 	background: var(--wenpai-card);
