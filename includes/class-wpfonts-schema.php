@@ -178,7 +178,7 @@ class WPFonts_Schema {
 					'default'    => 'cn',
 					'mode'       => 'advanced',
 					'label'      => __( '区域', 'wpfonts' ),
-					'desc'       => __( '选择文风服务器。只有这三台。', 'wpfonts' ),
+					'desc'       => __( '选择文风云字体的 CDN 加速服务器。可选中国大陆、中国香港、国际三区域，香港节点兼顾国内外访问。', 'wpfonts' ),
 					'choices'    => array(
 						'cn' => array( 'label' => __( '中国大陆', 'wpfonts' ), 'desc' => 'cn.windfonts.com' ),
 						'hk' => array( 'label' => __( '中国香港', 'wpfonts' ), 'desc' => 'hk.windfonts.com' ),

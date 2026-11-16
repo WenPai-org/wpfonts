@@ -167,7 +167,7 @@ $assert( false === strpos( $admin, '本站字体包' ), 'Admin UI must not say �
 $assert( false !== strpos( $admin, '文风云' ), 'Admin UI lost 文风云.' );
 $assert( false !== strpos( $admin, '文风字体包' ), 'Admin UI lost 文风字体包.' );
 $assert( false !== strpos( $admin, '选用字体' ), 'Font picker title is missing.' );
-$assert( false !== strpos( $admin, '从文风目录挑选，或手动填写字体名。选中的名字会写进公开样式地址。' ), 'Font picker description drifted.' );
+$assert( false !== strpos( $admin, '从下方目录勾选字体，或在「字体名」里手动填写。' ), 'Font picker description drifted.' );
 $assert( false !== strpos( $admin, '搜索字体名' ), 'Catalog search placeholder drifted.' );
 $assert( false !== strpos( $admin, '正在加载字体目录…' ), 'Catalog loading copy drifted.' );
 $assert( false !== strpos( $admin, '暂时读不到字体目录。你可以手动填写字体名，稍后再试。' ), 'Catalog failure copy drifted.' );
@@ -194,7 +194,7 @@ $assert( false !== strpos( $admin, "'doc_url'            => 'https://wpcy.com/fo
 $assert( false !== strpos( $admin, "'doc_label'          => __( '文档', 'wpfonts' )" ), 'Footer link label must be 文档.' );
 $assert( false === strpos( $admin, "__( '文风', 'wpfonts' )" ), 'Footer must not use the 文风 marketing label.' );
 $assert( false !== strpos( $admin, "__( '文派字库（WPFonts）', 'wpfonts' ) . ' · ' . WPFONTS_VERSION" ), 'Footer version must use the prototype plugin name.' );
-$assert( false !== strpos( $admin, "'id'        => 'packages'" ), 'Packages tab must stay.' );
+$assert( false !== strpos( $admin, "'id'    => 'packages'" ), 'Packages tab must stay.' );
 $assert( false === strpos( $admin, "__( '服务', 'wpfonts' )" ), 'Admin must not add a 服务 tab.' );
 $assert( false !== strpos( $admin, "'full' => true" ), 'Full shell CSS must stay on so the kit can hide #wpfooter.' );
 $wp_css = file_get_contents( $root . '/lib/wenpai-admin-ui/css/wenpai-admin-wp.css' );

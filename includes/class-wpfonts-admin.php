@@ -1063,7 +1063,7 @@ class WPFonts_Admin {
 		echo '>';
 		echo '<div class="field-label">' . esc_html__( '区域', 'wpfonts' ) . '</div>';
 		echo '<div class="field-ctl">';
-		echo '<p class="field-help">' . esc_html__( '选择文风服务器。只有这三台。', 'wpfonts' ) . '</p>';
+		echo '<p class="field-help">' . esc_html__( '选择文风云字体的 CDN 加速服务器。可选中国大陆、中国香港、国际三区域，香港节点兼顾国内外访问。', 'wpfonts' ) . '</p>';
 		echo '<div class="choice-cards">';
 		foreach ( $regions as $id => $label ) {
 			$on = $settings['region'] === $id;
@@ -1145,7 +1145,7 @@ class WPFonts_Admin {
 			'updating' => __( '正在更新字体目录…', 'wpfonts' ),
 			'updated'  => __( '字体目录已更新。', 'wpfonts' ),
 			'stale'    => __( '暂时更新不了，仍显示上次保存的目录。稍后再试。', 'wpfonts' ),
-			'note'     => __( '目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。', 'wpfonts' ),
+			'note'     => __( '目录保存在本站，每月自动更新一次；点「更新字体目录」可立即刷新。', 'wpfonts' ),
 			'refresh'  => __( '更新字体目录', 'wpfonts' ),
 			'missing'  => __( '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。', 'wpfonts' ),
 		);
@@ -1257,8 +1257,8 @@ class WPFonts_Admin {
 			echo '<input type="hidden" name="wpfonts_settings[families][]" value="' . esc_attr( $token ) . '">';
 		}
 		echo '</div>';
-		echo '<p class="field-help">' . esc_html__( '从文风目录挑选，或手动填写字体名。选中的名字会写进公开样式地址。', 'wpfonts' ) . '</p>';
-		echo '<p class="hint">' . esc_html__( '可以勾选多个已确认的文风云。取消勾选并保存后，只从全站样式去掉这一项。', 'wpfonts' ) . '</p>';
+		echo '<p class="field-help">' . esc_html__( '从下方目录勾选字体，或在「字体名」里手动填写。选中的字体会写进前台加载的样式地址。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '可同时勾选多个。取消勾选并保存后，该字体不再加载。', 'wpfonts' ) . '</p>';
 		echo '<p class="hint" id="wpfonts-catalog-note">' . esc_html( $messages['note'] ) . '</p>';
 		echo '<p class="wpfonts-catalog-actions"><button type="button" class="btn btn-secondary" id="wpfonts-catalog-refresh">' . esc_html( $messages['refresh'] ) . '</button></p>';
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" aria-label="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
