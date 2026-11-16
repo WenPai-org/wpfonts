@@ -2921,9 +2921,36 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					}
 					return $switch;
 				case 'select':
-					$out .= '<select id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '"' . $aria . $inv . '>';
-					foreach ( self::resolve_choices( $f ) as $k => $lab ) {
-						$out .= '<option value="' . esc_attr( $k ) . '"' . selected( (string) $v, (string) $k, false ) . '>' . esc_html( self::choice_label( $lab ) ) . '</option>';
+					$out    .= '<select id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '"' . $aria . $inv . '>';
+					$groups  = isset( $f['groups'] ) && is_array( $f['groups'] ) ? $f['groups'] : array();
+					$choices = self::resolve_choices( $f );
+					$render  = function ( $k, $lab ) use ( $v ) {
+						return '<option value="' . esc_attr( $k ) . '"' . selected( (string) $v, (string) $k, false ) . '>' . esc_html( self::choice_label( $lab ) ) . '</option>';
+					};
+					if ( empty( $groups ) ) {
+						foreach ( $choices as $k => $lab ) {
+							$out .= $render( $k, $lab );
+						}
+						return $out . '</select>';
+					}
+					$by_group = array();
+					foreach ( $choices as $k => $lab ) {
+						$g = is_array( $lab ) && isset( $lab['group'] ) ? (string) $lab['group'] : '';
+						if ( '' !== $g && isset( $groups[ $g ] ) ) {
+							$by_group[ $g ][ $k ] = $lab;
+						} else {
+							$out .= $render( $k, $lab );
+						}
+					}
+					foreach ( $groups as $gid => $glabel ) {
+						if ( empty( $by_group[ $gid ] ) ) {
+							continue;
+						}
+						$out .= '<optgroup label="' . esc_attr( (string) $glabel ) . '">';
+						foreach ( $by_group[ $gid ] as $k => $lab ) {
+							$out .= $render( $k, $lab );
+						}
+						$out .= '</optgroup>';
 					}
 					return $out . '</select>';
 				case 'radio':

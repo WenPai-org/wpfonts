@@ -270,7 +270,7 @@ a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
   .wenpai-subnav .seg { overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; max-width: 100%; }
   .wenpai-subnav .seg a { white-space: nowrap; flex: none; }
 }
-.toggle { display: inline-flex; align-items: center; gap: 10px; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink); appearance: none; background: transparent; border: 0; padding: 0; margin: 0; box-shadow: none; cursor: pointer; font-family: inherit; }
+.toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 24px; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink); appearance: none; background: transparent; border: 0; padding: 0; margin: 0; box-shadow: none; cursor: pointer; font-family: inherit; }
 .toggle i { display: inline-block; width: 36px; height: 20px; border-radius: var(--wenpai-radius-lg); background: var(--wenpai-track-off); position: relative; flex: none; transition: background var(--wenpai-motion-base) var(--wenpai-motion-ease); }
 .toggle i::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--wenpai-card); transition: left var(--wenpai-motion-base) var(--wenpai-motion-ease); }
 .toggle.on i { background: var(--wenpai-accent); } .toggle.on i::after { inset-inline-start: 18px; }
@@ -1097,7 +1097,7 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
 .wenpai-checkgroup { border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-md); overflow: hidden; }
 .wenpai-checkgroup__head { display: flex; align-items: center; gap: var(--wenpai-space-2); padding: 8px 12px; border-bottom: 1px solid var(--wenpai-line-soft); background: var(--wenpai-line-soft); font-size: var(--wenpai-text-meta); color: var(--wenpai-ink-3); }
 .wenpai-checkgroup__acts { margin-inline-start: auto; display: flex; gap: var(--wenpai-space-3); }
-.wenpai-checkgroup__acts button { background: none; border: 0; color: var(--wenpai-accent); font-size: var(--wenpai-text-meta); cursor: pointer; padding: 0; }
+.wenpai-checkgroup__acts button { background: none; border: 0; color: var(--wenpai-accent); font-size: var(--wenpai-text-meta); cursor: pointer; padding: 0; display: inline-flex; align-items: center; min-height: 24px; }
 .wenpai-checkgroup__acts button:hover { text-decoration: underline; }
 .wenpai-checkgroup__list { list-style: none; margin: 0; padding: 4px; max-height: 190px; overflow: auto; }
 .wenpai-checkgroup__list li { display: flex; gap: var(--wenpai-space-2); align-items: flex-start; padding: 6px 8px; border-radius: var(--wenpai-radius-sm); font-size: var(--wenpai-text-body); }
