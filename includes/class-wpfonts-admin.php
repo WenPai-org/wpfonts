@@ -1626,9 +1626,14 @@ class WPFonts_Admin {
 			self::notice( 'warn', __( '尚未填写文风 API Key。前台暂不加载远程样式。', 'wpfonts' ) );
 			return;
 		}
+		$faces = WPFonts_Settings::confirmed_faces( $settings );
 		if ( ! WPFonts_Link::has_target( $settings ) ) {
-			self::notice( 'warn', __( '还不能放到前台。请填写字体名，或填写项目名。', 'wpfonts' ) );
-			echo '<p class="hint">' . esc_html__( '公开样式地址需要字体名或项目名。填写后这里显示前台加载的地址。', 'wpfonts' ) . '</p>';
+			if ( array() === $faces ) {
+				self::notice( 'warn', __( '还不能放到前台。请填写字体名，或填写项目名。', 'wpfonts' ) );
+				echo '<p class="hint">' . esc_html__( '公开样式地址需要字体名或项目名。填写后这里显示前台加载的地址。', 'wpfonts' ) . '</p>';
+				return;
+			}
+			self::render_face_links( $settings, $faces );
 			return;
 		}
 
@@ -1680,6 +1685,38 @@ class WPFonts_Admin {
 		}
 		echo '<p class="meta">' . esc_html__( '链接文字（不加载字体）', 'wpfonts' ) . '</p>';
 		echo Wenpai_Admin_UI::code_block_html( array( 'code' => $snippet, 'lang' => 'html' ) );
+	}
+
+	/**
+	 * Per-face stylesheet preview for catalog-only selections.
+	 *
+	 * @param array $settings Public settings.
+	 * @param array $faces    Confirmed faces from WPFonts_Settings::confirmed_faces().
+	 * @return void
+	 */
+	private static function render_face_links( array $settings, array $faces ) {
+		echo '<p class="hint">';
+		echo esc_html(
+			sprintf(
+				/* translators: %d: number of confirmed cloud fonts. */
+				__( '前台按已确认字体各加载一条样式，共 %d 条。链接中没有 API Key。', 'wpfonts' ),
+				count( $faces )
+			)
+		);
+		echo '</p>';
+		foreach ( $faces as $face ) {
+			$furl = WPFonts_Link::family_stylesheet_url(
+				$settings,
+				isset( $face['family'] ) ? $face['family'] : '',
+				isset( $face['subset'] ) ? $face['subset'] : ''
+			);
+			if ( '' === $furl || ! WPFonts_Link::is_allowlisted( $furl ) ) {
+				continue;
+			}
+			$label = '' !== (string) ( $face['name'] ?? '' ) ? (string) $face['name'] : (string) $face['family'];
+			echo '<p class="meta">' . esc_html( $label ) . '</p>';
+			echo Wenpai_Admin_UI::code_inline_html( array( 'code' => $furl ) );
+		}
 	}
 
 	/**

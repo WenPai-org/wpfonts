@@ -1475,3 +1475,7 @@ msgstr "Open Tools to check again"
 #: includes/class-wpfonts-admin.php
 msgid "迁移"
 msgstr "Migration"
+
+#: includes/class-wpfonts-admin.php
+msgid "前台按已确认字体各加载一条样式，共 %d 条。链接中没有 API Key。"
+msgstr "The front end loads one stylesheet per confirmed font, %d in total. The links contain no API Key."

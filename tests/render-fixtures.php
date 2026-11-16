@@ -570,6 +570,30 @@ $screens = array(
 		),
 		'catalog' => wpfonts_sample_catalog(),
 	),
+	'tools-faces'      => array(
+		'title'   => '工具 · 只勾目录字体',
+		'tab'     => 'tools',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => array_merge(
+				$public,
+				array(
+					'cdn_enabled' => 1,
+					'key_status'  => 'valid',
+					'key_checked' => 1700000000,
+					'faces'       => array(
+						array(
+							'family'   => 'wenfeng-ibmps',
+							'name'     => 'IBM Plex Sans SC',
+							'css_face' => 'windfonts-ibmps',
+							'subset'   => 'zh-common',
+						),
+					),
+				)
+			),
+			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
+		),
+	),
 	'migration'       => array(
 		'title'   => '工具 · 迁移',
 		'tab'     => 'tools',

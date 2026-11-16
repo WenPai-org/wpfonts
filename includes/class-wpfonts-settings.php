@@ -380,7 +380,7 @@ class WPFonts_Settings {
 		if ( 'valid' !== $status ) {
 			return 'unchecked';
 		}
-		if ( ! WPFonts_Link::has_target( $settings ) ) {
+		if ( ! WPFonts_Link::has_target( $settings ) && array() === self::confirmed_faces( $settings ) ) {
 			return 'incomplete';
 		}
 		if ( isset( $settings['css_status'] ) && 'missing' === $settings['css_status'] ) {
