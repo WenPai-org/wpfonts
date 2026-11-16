@@ -119,7 +119,7 @@
 	}
 
 	function allowedLicense(url) {
-		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/license\/original\.txt$/.test(url || "");
+		return /^https:\/\/wenfeng\.org\/license\/[a-z0-9-]+\/$/.test(url || "");
 	}
 
 	function pngSibling(url) {

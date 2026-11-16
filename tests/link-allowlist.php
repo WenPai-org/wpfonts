@@ -265,6 +265,12 @@ $assert( 'en' === $advanced['region'], 'advanced save ignored the region field' 
 $assert( 'full' === $advanced['subset'], 'advanced save ignored the subset field' );
 $assert( 'valid' === $advanced['key_status'], 'advanced save trusted posted key_status' );
 
+$lic = WPFonts_Link::package_license_url( 'wenfeng-hcwjt' );
+$assert( 'https://wenfeng.org/license/hcwjt/' === $lic, 'license URL mismatch: ' . $lic );
+$assert( '' === WPFonts_Link::package_license_url( 'not-a-family' ), 'non-wenfeng slug produced a license URL' );
+$alias = WPFonts_Link::package_license_url( 'wenfeng-xxzt' );
+$assert( '' === $alias || 0 === strpos( $alias, 'https://wenfeng.org/license/' ), 'alias license URL escaped wenfeng.org: ' . $alias );
+
 if ( array() !== $failures ) {
 	fwrite( STDERR, implode( "\n", $failures ) . "\n" );
 	exit( 1 );
