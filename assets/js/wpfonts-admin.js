@@ -105,6 +105,8 @@
 	var previewLabel = root.getAttribute("data-preview-label") || "前台预览";
 	var sourceLabel = root.getAttribute("data-source-label") || "字体详情";
 	var licenseLabel = root.getAttribute("data-license-label") || "授权协议";
+	var copyDone = root.getAttribute("data-copy-done") || "已复制";
+	var copyTitle = root.getAttribute("data-copy-title") || "点击复制";
 
 	function safeFace(value) {
 		return String(value || "").replace(/["'\\<>{};]/g, "").replace(/^\s+|\s+$/g, "");
@@ -420,7 +422,14 @@
 			title.textContent = row.name || row.fontFamily;
 			var meta = document.createElement("span");
 			meta.className = "d";
-			meta.textContent = row.fontFamily;
+			var token = document.createElement("button");
+			token.type = "button";
+			token.className = "wpfonts-token";
+			token.setAttribute("data-wenpai-copy-text", row.fontFamily);
+			token.setAttribute("data-done-label", copyDone);
+			token.setAttribute("title", copyTitle);
+			token.textContent = row.fontFamily;
+			meta.appendChild(token);
 			if (previewBase) {
 				var pv = document.createElement("a");
 				pv.className = "wpfonts-preview-link";

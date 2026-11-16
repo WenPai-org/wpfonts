@@ -178,6 +178,20 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 	gap: var(--wenpai-space-2);
 }
 
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-token {
+	padding: 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	color: inherit;
+	cursor: copy;
+}
+
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-token:hover {
+	text-decoration: underline dotted;
+	text-underline-offset: 3px;
+}
+
 .wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-preview-link,
 .wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-source-link,
 .wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-license-link {
