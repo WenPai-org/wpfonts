@@ -22,7 +22,7 @@ class WPFonts_Embed {
 	public static function init() {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 		add_action( 'wp_head', array( __CLASS__, 'print_license_note' ), 7 );
-		add_action( 'wp_footer', array( __CLASS__, 'print_preview_badge' ) );
+		add_action( 'admin_bar_menu', array( __CLASS__, 'preview_admin_bar' ), 100 );
 	}
 
 	/**
@@ -149,11 +149,12 @@ class WPFonts_Embed {
 	}
 
 	/**
-	 * Fixed badge marking an active admin font preview.
+	 * Admin bar node marking an active font preview; click exits the preview.
 	 *
+	 * @param WP_Admin_Bar $wp_admin_bar Admin bar instance.
 	 * @return void
 	 */
-	public static function print_preview_badge() {
+	public static function preview_admin_bar( $wp_admin_bar ) {
 		$token = self::preview_request();
 		if ( '' === $token ) {
 			return;
@@ -162,17 +163,20 @@ class WPFonts_Embed {
 		if ( '' === self::preview_url( $settings, $token ) ) {
 			return;
 		}
-		$exit = remove_query_arg( 'wpfonts_preview' );
-		echo '<div style="position:fixed;left:12px;bottom:12px;z-index:99999;max-width:70vw;padding:8px 12px;border-radius:6px;background:#1d2327;color:#f0f0f1;font:13px/1.4 -apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3);">';
-		echo esc_html(
-			sprintf(
-				/* translators: %s: previewed font family token. */
-				__( '字体预览：%s（仅管理员可见）', 'wpfonts' ),
-				$token
+		$wp_admin_bar->add_node(
+			array(
+				'id'    => 'wpfonts-preview',
+				'title' => esc_html(
+					sprintf(
+						/* translators: %s: previewed font family token. */
+						__( '字体预览：%s', 'wpfonts' ),
+						$token
+					)
+				),
+				'href'  => esc_url( remove_query_arg( 'wpfonts_preview' ) ),
+				'meta'  => array( 'title' => esc_attr__( '退出预览', 'wpfonts' ) ),
 			)
 		);
-		echo ' · <a href="' . esc_url( $exit ) . '" style="color:#72aee6;">' . esc_html__( '退出预览', 'wpfonts' ) . '</a>';
-		echo '</div>';
 	}
 }
 

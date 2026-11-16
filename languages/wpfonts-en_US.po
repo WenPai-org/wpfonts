@@ -1521,12 +1521,12 @@ msgstr ""
 msgid "安装后由本站托管、直接加载。"
 msgstr ""
 
-#. translators: %s: previewed font family token.
-#: includes/class-wpfonts-embed.php:170
-#, php-format
-msgid "字体预览：%s（仅管理员可见）"
-msgstr "Font preview: %s (admins only)"
-
-#: includes/class-wpfonts-embed.php:174
+#: includes/class-wpfonts-embed.php:177
 msgid "退出预览"
 msgstr "Exit preview"
+
+#. translators: %s: previewed font family token.
+#: includes/class-wpfonts-embed.php:172
+#, php-format
+msgid "字体预览：%s"
+msgstr "Font preview: %s"

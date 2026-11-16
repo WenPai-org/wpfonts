@@ -148,6 +148,29 @@ function esc_html__( $text, $domain = 'default' ) {
 }
 
 /**
+ * @param string $text Text.
+ * @param string $domain Text domain.
+ * @return string
+ */
+function esc_attr__( $text, $domain = 'default' ) {
+	unset( $domain );
+	return (string) $text;
+}
+
+/**
+ * Records admin bar nodes for assertions.
+ */
+class WP_Admin_Bar {
+	/**
+	 * @param array $args Node args.
+	 * @return void
+	 */
+	public function add_node( $args ) {
+		$GLOBALS['wpfonts_adminbar_nodes'][] = $args;
+	}
+}
+
+/**
  * @param array $query Query args.
  * @return string
  */
@@ -193,36 +216,35 @@ $assert = static function ( $condition, $message ) use ( &$failures ) {
 };
 
 $reset = static function () {
-	$GLOBALS['wpfonts_enqueued']  = array();
-	$GLOBALS['wpfonts_inline']    = array();
-	$GLOBALS['wpfonts_logged_in'] = false;
-	$GLOBALS['wpfonts_can_admin'] = false;
+	$GLOBALS['wpfonts_enqueued']      = array();
+	$GLOBALS['wpfonts_inline']        = array();
+	$GLOBALS['wpfonts_adminbar_nodes'] = array();
+	$GLOBALS['wpfonts_logged_in']     = false;
+	$GLOBALS['wpfonts_can_admin']     = false;
 	unset( $_GET['wpfonts_preview'] );
 };
 
+$bar = new WP_Admin_Bar();
+
 $expected_url = 'https://cn.windfonts.com/api/css?family=wenfeng-ibmps&subset=zh-common';
 
-// Visitor with the query arg: nothing is enqueued and no badge prints.
+// Visitor with the query arg: nothing is enqueued and no admin bar node.
 $reset();
 $_GET['wpfonts_preview'] = 'wenfeng-ibmps';
 WPFonts_Embed::enqueue();
 WPFonts_Embed::print_license_note();
-ob_start();
-WPFonts_Embed::print_preview_badge();
-$badge = ob_get_clean();
+WPFonts_Embed::preview_admin_bar( $bar );
 $assert( ! isset( $GLOBALS['wpfonts_enqueued']['wpfonts-preview'] ), 'visitor received the preview stylesheet' );
-$assert( '' === $badge, 'visitor received the preview badge' );
+$assert( array() === $GLOBALS['wpfonts_adminbar_nodes'], 'visitor received an admin bar node' );
 
 // Logged-in non-admin: same silence.
 $reset();
 $GLOBALS['wpfonts_logged_in'] = true;
 $_GET['wpfonts_preview']      = 'wenfeng-ibmps';
 WPFonts_Embed::enqueue();
-ob_start();
-WPFonts_Embed::print_preview_badge();
-$badge = ob_get_clean();
+WPFonts_Embed::preview_admin_bar( $bar );
 $assert( ! isset( $GLOBALS['wpfonts_enqueued']['wpfonts-preview'] ), 'non-admin received the preview stylesheet' );
-$assert( '' === $badge, 'non-admin received the preview badge' );
+$assert( array() === $GLOBALS['wpfonts_adminbar_nodes'], 'non-admin received an admin bar node' );
 
 // Admin without the param: nothing.
 $reset();
@@ -231,7 +253,7 @@ $GLOBALS['wpfonts_can_admin'] = true;
 WPFonts_Embed::enqueue();
 $assert( ! isset( $GLOBALS['wpfonts_enqueued']['wpfonts-preview'] ), 'admin without param received the preview stylesheet' );
 
-// Admin with a valid token: stylesheet plus scoped font CSS and badge.
+// Admin with a valid token: stylesheet plus scoped font CSS and admin bar node.
 $reset();
 $GLOBALS['wpfonts_logged_in'] = true;
 $GLOBALS['wpfonts_can_admin'] = true;
@@ -250,11 +272,13 @@ WPFonts_Embed::print_license_note();
 $note = ob_get_clean();
 $assert( false !== strpos( $note, WPFonts_Link::CDN_LICENSE_NOTE ), 'preview request lost the license comment' );
 $assert( false !== strpos( $note, 'https://cn.windfonts.com' ), 'preview request lost the preconnect origin' );
-ob_start();
-WPFonts_Embed::print_preview_badge();
-$badge = ob_get_clean();
-$assert( false !== strpos( $badge, 'wenfeng-ibmps' ), 'preview badge lacks the family token' );
-$assert( false === strpos( $badge, 'wpfonts_preview=' ), 'preview badge exit link still carries the param' );
+WPFonts_Embed::preview_admin_bar( $bar );
+$assert( 1 === count( $GLOBALS['wpfonts_adminbar_nodes'] ), 'admin bar node missing for valid preview' );
+if ( 1 === count( $GLOBALS['wpfonts_adminbar_nodes'] ) ) {
+	$node = $GLOBALS['wpfonts_adminbar_nodes'][0];
+	$assert( false !== strpos( $node['title'], 'wenfeng-ibmps' ), 'admin bar node lacks the family token' );
+	$assert( false === strpos( $node['href'], 'wpfonts_preview=' ), 'admin bar exit link still carries the param' );
+}
 
 // Invalid tokens are ignored even for admins.
 foreach ( array( 'evil', 'wenfeng-', 'https://evil.example/x', '' ) as $bad ) {
@@ -263,11 +287,9 @@ foreach ( array( 'evil', 'wenfeng-', 'https://evil.example/x', '' ) as $bad ) {
 	$GLOBALS['wpfonts_can_admin'] = true;
 	$_GET['wpfonts_preview']      = $bad;
 	WPFonts_Embed::enqueue();
-	ob_start();
-	WPFonts_Embed::print_preview_badge();
-	$badge = ob_get_clean();
+	WPFonts_Embed::preview_admin_bar( $bar );
 	$assert( ! isset( $GLOBALS['wpfonts_enqueued']['wpfonts-preview'] ), 'invalid token was accepted: ' . $bad );
-	$assert( '' === $badge, 'invalid token produced a badge: ' . $bad );
+	$assert( array() === $GLOBALS['wpfonts_adminbar_nodes'], 'invalid token produced an admin bar node: ' . $bad );
 }
 
 // Markup in the param is stripped before tokenization; the URL stays allowlisted.

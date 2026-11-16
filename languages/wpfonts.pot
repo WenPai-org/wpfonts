@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-16T14:26:04+00:00\n"
+"POT-Creation-Date: 2026-11-16T14:32:38+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpfonts\n"
@@ -1122,12 +1122,12 @@ msgid "已用在这段。"
 msgstr ""
 
 #. translators: %s: previewed font family token.
-#: includes/class-wpfonts-embed.php:170
+#: includes/class-wpfonts-embed.php:172
 #, php-format
-msgid "字体预览：%s（仅管理员可见）"
+msgid "字体预览：%s"
 msgstr ""
 
-#: includes/class-wpfonts-embed.php:174
+#: includes/class-wpfonts-embed.php:177
 msgid "退出预览"
 msgstr ""
 
