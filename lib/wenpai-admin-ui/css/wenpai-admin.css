@@ -48,6 +48,8 @@
 .wenpai-lede { color: var(--wenpai-ink-2); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); margin: 6px 0 0; }
 .wenpai-stack { display: flex; flex-direction: column; gap: var(--wenpai-space-5); }
 .wenpai-stack > form { display: flex; flex-direction: column; gap: var(--wenpai-space-5); }
+/* 子元素自带的纵向 margin 与 flex gap 叠加会造成 36px 混排；栈内统一交给 gap。 */
+.wenpai-stack > .wenpai-subnav { margin-bottom: 0; }
 .wenpai-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wenpai-space-5); align-items: start; }
 .wenpai-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--wenpai-space-5); align-items: stretch; }
 .foot { display: flex; align-items: center; gap: var(--wenpai-space-4); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin-top: var(--wenpai-space-7); padding-top: 18px; border-top: 1px solid var(--wenpai-line); }

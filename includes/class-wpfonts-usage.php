@@ -168,15 +168,15 @@ class WPFonts_Usage {
 		if ( get_user_meta( get_current_user_id(), 'wpfonts_usage_dismiss', true ) === $month ) {
 			return;
 		}
-		$count   = self::get()['visitors'];
+		$count    = self::get()['visitors'];
 		$packages = admin_url( 'options-general.php?page=wpfonts&tab=tools&section=packages' );
-		$notice  = sprintf(
-			/* translators: 1: monthly unique visitor count, 2: reminder line. */
-			__( '本月文风云字体已服务 %1$s 位独立访客，超过 %2$s/月 的提醒线。', 'wpfonts' ),
+		$notice   = sprintf(
+			/* translators: 1: estimated monthly visitor count, 2: reminder line. */
+			__( '本月约有 %1$s 位访客加载了文风字体，超过 %2$s/月 的提醒参考线。', 'wpfonts' ),
 			number_format_i18n( $count ),
 			number_format_i18n( self::LIMIT )
 		);
-		$notice .= ' ' . __( '建议到「工具 → 字体包」下载安装本地字体包（不限量），或到文风平台申请 API Key 走正式额度。', 'wpfonts' );
+		$notice .= ' ' . __( '建议到「工具 → 字体包」下载安装本地字体包（自托管，不限量）；用量大时也可以联系文风平台，把本站加入域名白名单。', 'wpfonts' );
 		$dismiss = wp_nonce_url( add_query_arg( 'wpfonts_usage_dismiss', '1' ), 'wpfonts_usage_dismiss' );
 		printf(
 			'<div class="notice notice-warning"><p>%s <a href="%s">%s</a> · <a href="%s" target="_blank" rel="noopener noreferrer">%s</a> · <a href="%s">%s</a></p></div>',
@@ -184,7 +184,7 @@ class WPFonts_Usage {
 			esc_url( $packages ),
 			esc_html__( '查看字体包', 'wpfonts' ),
 			esc_url( 'https://app.windfonts.com/' ),
-			esc_html__( '申请 API Key', 'wpfonts' ),
+			esc_html__( '文风平台', 'wpfonts' ),
 			esc_url( $dismiss ),
 			esc_html__( '本月不再提醒', 'wpfonts' )
 		);
@@ -198,8 +198,8 @@ class WPFonts_Usage {
 	public static function summary_text() {
 		$usage = self::get();
 		return sprintf(
-			/* translators: 1: monthly unique visitor count, 2: reminder line. */
-			__( '本月文风云字体已服务 %1$s 位独立访客（提醒线 %2$s/月）。', 'wpfonts' ),
+			/* translators: 1: estimated monthly visitor count, 2: reminder line. */
+			__( '本月约有 %1$s 位访客加载了文风字体（按访客 Cookie 估算，提醒线 %2$s/月）。', 'wpfonts' ),
 			number_format_i18n( $usage['visitors'] ),
 			number_format_i18n( self::LIMIT )
 		);

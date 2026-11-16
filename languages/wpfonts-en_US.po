@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPFonts 2.0.0-rc.22\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpfonts\n"
-"POT-Creation-Date: 2026-11-16T15:32:42+00:00\n"
+"POT-Creation-Date: 2026-11-16T17:01:37+00:00\n"
 "PO-Revision-Date: 2026-11-16 17:00+0800\n"
 "Last-Translator: Devin <devin@cognition.ai>\n"
 "Language-Team: English\n"
@@ -376,27 +376,34 @@ msgid "文风 API Key 尚未验证。请到工具中再检查一次。"
 msgstr "The Windfonts API Key is not verified yet. Check again under Tools."
 
 #: includes/class-wpfonts-admin.php:745
+#, fuzzy
 msgid ""
-"未填写文风 API Key，前台按免费额度加载文风字体。本月已服务的访客数见「工具」"
-"页；超过 5 万/月请下载字体包或申请 Key。"
-msgstr "No Windfonts API Key stored — the front end loads Wenfeng fonts under the free quota. See Tools for this month's visitor count; past 50,000/month, download a font package or apply for a Key."
+"未填写文风 API Key，前台按免费额度加载文风字体。本月用量见「工具」页；用量较"
+"大时请下载安装本地字体包，或联系文风平台开通域名白名单。"
+msgstr "No Windfonts API Key stored — the front end loads Wenfeng fonts under the free quota. See Tools for this month's usage; for heavy usage install a local font package or contact the Wenfeng platform about domain whitelisting."
 
 #: includes/class-wpfonts-admin.php:747
 msgid ""
 "文风 API Key 无效。前台仍按免费额度加载字体；更正 Key 后可验证正式额度。"
-msgstr "The Windfonts API Key is invalid. The front end still loads fonts under the free quota; fix the Key to verify the official quota."
+msgstr ""
+"The Windfonts API Key is invalid. The front end still loads fonts under the "
+"free quota; fix the Key to verify the official quota."
 
 #: includes/class-wpfonts-admin.php:749
 #, fuzzy
 msgid ""
 "这次未能连接文风接口，暂不判定 Key 状态。前台仍按免费额度加载字体，请稍后再检"
 "查。"
-msgstr "Could not reach the Windfonts API this time, so the Key status is undecided. The front end still loads fonts under the free quota — check again later."
+msgstr ""
+"Could not reach the Windfonts API this time, so the Key status is undecided. "
+"The front end still loads fonts under the free quota — check again later."
 
 #: includes/class-wpfonts-admin.php:751
 #, fuzzy
 msgid "还需要字体名或已确认的文风字体，前台暂不加载样式。"
-msgstr "A font name or a confirmed Wenfeng font is still needed before styles load on the front end."
+msgstr ""
+"A font name or a confirmed Wenfeng font is still needed before styles load "
+"on the front end."
 
 #: includes/class-wpfonts-admin.php:754 includes/class-wpfonts-admin.php:1655
 msgid "这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。"
@@ -406,7 +413,9 @@ msgstr ""
 
 #: includes/class-wpfonts-admin.php:756
 msgid "文风 API Key 尚未验证，前台按免费额度加载字体。请到工具中检查一次。"
-msgstr "The Windfonts API Key is not verified yet; the front end loads fonts under the free quota. Check again under Tools."
+msgstr ""
+"The Windfonts API Key is not verified yet; the front end loads fonts under "
+"the free quota. Check again under Tools."
 
 #: includes/class-wpfonts-admin.php:759
 msgid ""
@@ -777,7 +786,9 @@ msgstr "Clear the saved Key"
 #: includes/class-wpfonts-admin.php:1252
 #, fuzzy
 msgid "可留空。未填写时前台按免费额度加载文风字体；填写后可验证正式额度。"
-msgstr "Optional. Without a Key the front end loads Wenfeng fonts under the free quota; with one it verifies the official quota."
+msgstr ""
+"Optional. Without a Key the front end loads Wenfeng fonts under the free "
+"quota; with one it verifies the official quota."
 
 #: includes/class-wpfonts-admin.php:1272 includes/class-wpfonts-admin.php:1597
 #: includes/class-wpfonts-schema.php:204
@@ -879,11 +890,14 @@ msgstr "The front end will load this one. The link contains no API Key."
 
 #: includes/class-wpfonts-admin.php:1664
 msgid "前台会加载这一条（免费额度）。保存后会自动验证地址。"
-msgstr "The front end will load this one (free quota). Saving verifies the address automatically."
+msgstr ""
+"The front end will load this one (free quota). Saving verifies the address "
+"automatically."
 
 #: includes/class-wpfonts-admin.php:1666
 msgid "Key 状态未确认；地址本身可用时前台仍会加载。"
-msgstr "Key status unconfirmed; the front end still loads the address while it works."
+msgstr ""
+"Key status unconfirmed; the front end still loads the address while it works."
 
 #: includes/class-wpfonts-admin.php:1668
 msgid "开启文风云并保存后，前台才会使用。"
@@ -932,7 +946,9 @@ msgstr "Could not connect this time. Try again later."
 msgid ""
 "可能是超时或服务暂时不可用，并非 Key 无效。前台仍按免费额度加载字体，请稍后再"
 "检查。"
-msgstr "This may be a timeout or a temporary outage, not an invalid Key. The front end still loads fonts under the free quota; check again later."
+msgstr ""
+"This may be a timeout or a temporary outage, not an invalid Key. The front "
+"end still loads fonts under the free quota; check again later."
 
 #: includes/class-wpfonts-admin.php:1756
 msgid "文风 API Key 可用。"
@@ -954,7 +970,8 @@ msgstr "Enabled without a Key — the front end loads under the free quota."
 #: includes/class-wpfonts-admin.php:1795
 #, fuzzy
 msgid "文风 API Key 无效，前台按免费额度加载。"
-msgstr "The Windfonts API Key is invalid; the front end loads under the free quota."
+msgstr ""
+"The Windfonts API Key is invalid; the front end loads under the free quota."
 
 #: includes/class-wpfonts-admin.php:1798
 msgid "这次未能连接。"
@@ -1218,12 +1235,12 @@ msgid "已用在这段。"
 msgstr "Applied to this text."
 
 #. translators: %s: previewed font family token.
-#: includes/class-wpfonts-embed.php:220
+#: includes/class-wpfonts-embed.php:217
 #, php-format
 msgid "字体预览：%s"
 msgstr "Font preview: %s"
 
-#: includes/class-wpfonts-embed.php:225
+#: includes/class-wpfonts-embed.php:222
 msgid "退出预览"
 msgstr "Exit preview"
 
@@ -1605,35 +1622,37 @@ msgstr ""
 "without files here, and wrote %3$d confirmed Windfonts Cloud entries. No "
 "secrets were written."
 
-#. translators: 1: monthly unique visitor count, 2: reminder line.
-#: includes/class-wpfonts-usage.php:143
-#, php-format
-msgid "本月文风云字体已服务 %1$s 位独立访客，超过 %2$s/月 的提醒线。"
-msgstr "Wenfeng fonts have served %1$s unique visitors this month, past the %2$s/month reminder line."
+#. translators: 1: estimated monthly visitor count, 2: reminder line.
+#: includes/class-wpfonts-usage.php:175
+#, fuzzy, php-format
+msgid "本月约有 %1$s 位访客加载了文风字体，超过 %2$s/月 的提醒参考线。"
+msgstr "About %1$s visitors loaded Wenfeng fonts this month, past the %2$s/month advisory line."
 
-#: includes/class-wpfonts-usage.php:147
+#: includes/class-wpfonts-usage.php:179
+#, fuzzy
 msgid ""
-"建议到「工具 → 字体包」下载安装本地字体包（不限量），或到文风平台申请 API "
-"Key 走正式额度。"
-msgstr "Download a local font package under Tools > Font packages (unlimited), or apply for an API Key on the Wenfeng platform for the official quota."
+"建议到「工具 → 字体包」下载安装本地字体包（自托管，不限量）；用量大时也可以联"
+"系文风平台，把本站加入域名白名单。"
+msgstr "Install a local font package under Tools > Font packages (self-hosted, unlimited); for heavy usage you can also contact the Wenfeng platform to whitelist this domain."
 
-#: includes/class-wpfonts-usage.php:153
+#: includes/class-wpfonts-usage.php:185
 msgid "查看字体包"
 msgstr "View font packages"
 
-#: includes/class-wpfonts-usage.php:155
-msgid "申请 API Key"
-msgstr "Apply for an API Key"
+#: includes/class-wpfonts-usage.php:187
+msgid "文风平台"
+msgstr "Wenfeng platform"
 
-#: includes/class-wpfonts-usage.php:157
+#: includes/class-wpfonts-usage.php:189
 msgid "本月不再提醒"
 msgstr "Do not remind again this month"
 
-#. translators: 1: monthly unique visitor count, 2: reminder line.
-#: includes/class-wpfonts-usage.php:170
+#. translators: 1: estimated monthly visitor count, 2: reminder line.
+#: includes/class-wpfonts-usage.php:202
 #, php-format
-msgid "本月文风云字体已服务 %1$s 位独立访客（提醒线 %2$s/月）。"
-msgstr "Wenfeng fonts have served %1$s unique visitors this month (reminder line %2$s/month)."
+msgid ""
+"本月约有 %1$s 位访客加载了文风字体（按访客 Cookie 估算，提醒线 %2$s/月）。"
+msgstr "About %1$s visitors loaded Wenfeng fonts this month (estimated by visitor cookie; advisory line %2$s/month)."
 
 #: wpfonts.php:95
 msgid "Sans Serif"
@@ -1666,6 +1685,15 @@ msgstr "Uses the device's built-in Japanese fonts; no download needed."
 #: wpfonts.php:132
 msgid "使用设备自带的韩文字体，无需下载。"
 msgstr "Uses the device's built-in Korean fonts; no download needed."
+
+#~ msgid "申请 API Key"
+#~ msgstr "Apply for an API Key"
+
+#, php-format
+#~ msgid "本月文风云字体已服务 %1$s 位独立访客（提醒线 %2$s/月）。"
+#~ msgstr ""
+#~ "Wenfeng fonts have served %1$s unique visitors this month (reminder line "
+#~ "%2$s/month)."
 
 #~ msgid "留空表示不修改。"
 #~ msgstr "Leave empty to keep unchanged."

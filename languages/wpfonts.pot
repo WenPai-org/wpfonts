@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-16T15:32:42+00:00\n"
+"POT-Creation-Date: 2026-11-16T17:01:37+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpfonts\n"
@@ -335,7 +335,7 @@ msgid "文风 API Key 尚未验证。请到工具中再检查一次。"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:745
-msgid "未填写文风 API Key，前台按免费额度加载文风字体。本月已服务的访客数见「工具」页；超过 5 万/月请下载字体包或申请 Key。"
+msgid "未填写文风 API Key，前台按免费额度加载文风字体。本月用量见「工具」页；用量较大时请下载安装本地字体包，或联系文风平台开通域名白名单。"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:747
@@ -1133,12 +1133,12 @@ msgid "已用在这段。"
 msgstr ""
 
 #. translators: %s: previewed font family token.
-#: includes/class-wpfonts-embed.php:220
+#: includes/class-wpfonts-embed.php:217
 #, php-format
 msgid "字体预览：%s"
 msgstr ""
 
-#: includes/class-wpfonts-embed.php:225
+#: includes/class-wpfonts-embed.php:222
 msgid "退出预览"
 msgstr ""
 
@@ -1510,32 +1510,32 @@ msgstr ""
 msgid "已启用 %1$d 个本站已有的文风字体包，跳过 %2$d 个本站没有文件的包，写入 %3$d 条已确认的文风云。密钥没有写入。"
 msgstr ""
 
-#. translators: 1: monthly unique visitor count, 2: reminder line.
-#: includes/class-wpfonts-usage.php:143
+#. translators: 1: estimated monthly visitor count, 2: reminder line.
+#: includes/class-wpfonts-usage.php:175
 #, php-format
-msgid "本月文风云字体已服务 %1$s 位独立访客，超过 %2$s/月 的提醒线。"
+msgid "本月约有 %1$s 位访客加载了文风字体，超过 %2$s/月 的提醒参考线。"
 msgstr ""
 
-#: includes/class-wpfonts-usage.php:147
-msgid "建议到「工具 → 字体包」下载安装本地字体包（不限量），或到文风平台申请 API Key 走正式额度。"
+#: includes/class-wpfonts-usage.php:179
+msgid "建议到「工具 → 字体包」下载安装本地字体包（自托管，不限量）；用量大时也可以联系文风平台，把本站加入域名白名单。"
 msgstr ""
 
-#: includes/class-wpfonts-usage.php:153
+#: includes/class-wpfonts-usage.php:185
 msgid "查看字体包"
 msgstr ""
 
-#: includes/class-wpfonts-usage.php:155
-msgid "申请 API Key"
+#: includes/class-wpfonts-usage.php:187
+msgid "文风平台"
 msgstr ""
 
-#: includes/class-wpfonts-usage.php:157
+#: includes/class-wpfonts-usage.php:189
 msgid "本月不再提醒"
 msgstr ""
 
-#. translators: 1: monthly unique visitor count, 2: reminder line.
-#: includes/class-wpfonts-usage.php:170
+#. translators: 1: estimated monthly visitor count, 2: reminder line.
+#: includes/class-wpfonts-usage.php:202
 #, php-format
-msgid "本月文风云字体已服务 %1$s 位独立访客（提醒线 %2$s/月）。"
+msgid "本月约有 %1$s 位访客加载了文风字体（按访客 Cookie 估算，提醒线 %2$s/月）。"
 msgstr ""
 
 #: wpfonts.php:95

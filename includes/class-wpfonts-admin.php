@@ -742,7 +742,7 @@ class WPFonts_Admin {
 		$text  = __( '文风 API Key 尚未验证。请到工具中再检查一次。', 'wpfonts' );
 		if ( 'nokey' === $state ) {
 			$level = 'info';
-			$text  = __( '未填写文风 API Key，前台按免费额度加载文风字体。本月已服务的访客数见「工具」页；超过 5 万/月请下载字体包或申请 Key。', 'wpfonts' );
+			$text  = __( '未填写文风 API Key，前台按免费额度加载文风字体。本月用量见「工具」页；用量较大时请下载安装本地字体包，或联系文风平台开通域名白名单。', 'wpfonts' );
 		} elseif ( 'invalid' === $state ) {
 			$text = __( '文风 API Key 无效。前台仍按免费额度加载字体；更正 Key 后可验证正式额度。', 'wpfonts' );
 		} elseif ( 'unreachable' === $state ) {
