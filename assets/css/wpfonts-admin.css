@@ -185,6 +185,12 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 	white-space: nowrap;
 }
 
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-preview-link::after,
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-source-link::after,
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-license-link::after {
+	content: " ↗";
+}
+
 .wenpai-app #wpfonts-project-wrap {
 	border-top: 1px solid var(--wenpai-line-soft);
 	margin-top: var(--wenpai-space-3);
