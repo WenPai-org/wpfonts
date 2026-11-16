@@ -440,7 +440,7 @@ class WPFonts_Admin {
 		self::status_row(
 			self::cdn_tile( $state ),
 			'cloud',
-			__( '文风云', 'wpfonts' ),
+			__( '文风云® CDN', 'wpfonts' ),
 			self::cdn_desc( $state ),
 			self::cdn_pill( $state ),
 			self::cdn_pill_label( $state )
@@ -856,7 +856,7 @@ class WPFonts_Admin {
 		self::status_row(
 			! empty( $state['on'] ) ? 'ok' : '',
 			'info',
-			__( '中文', 'wpfonts' ),
+			__( '中文回退', 'wpfonts' ),
 			isset( $state['text'] ) ? (string) $state['text'] : '',
 			! empty( $state['on'] ) ? 'ok' : 'mute',
 			! empty( $state['on'] ) ? __( '使用中', 'wpfonts' ) : __( '未指定', 'wpfonts' )
