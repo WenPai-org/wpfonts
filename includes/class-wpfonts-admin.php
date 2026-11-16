@@ -61,6 +61,7 @@ class WPFonts_Admin {
 	 */
 	public static function register_settings() {
 		WPFonts_Settings::register();
+		WPFonts_Schema::register();
 	}
 
 	/**
@@ -402,6 +403,21 @@ class WPFonts_Admin {
 	 */
 	private static function cdn_depends() {
 		echo ' data-wenpai-depends-on="' . esc_attr( 'wpfonts_settings[cdn_enabled]' ) . '" data-wenpai-depends-value="1"';
+	}
+
+	/**
+	 * field_html() for a schema-declared field. Empty string means the kit
+	 * is not booted; callers keep their legacy markup as the fallback.
+	 *
+	 * @param string $id Schema field id.
+	 * @return string
+	 */
+	private static function schema_field_html( $id ) {
+		$fw = WPFonts_Schema::framework();
+		if ( null === $fw ) {
+			return '';
+		}
+		return (string) $fw->field_html( $id );
 	}
 
 	/**
@@ -1027,6 +1043,11 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function render_region_field( array $settings ) {
+		$html = self::schema_field_html( 'region' );
+		if ( '' !== $html ) {
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit field_html() escapes.
+			return;
+		}
 		$regions = array(
 			'cn' => array( __( '中国大陆', 'wpfonts' ), 'cn.windfonts.com' ),
 			'hk' => array( __( '中国香港', 'wpfonts' ), 'hk.windfonts.com' ),
@@ -1056,6 +1077,11 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function render_subset_field( array $settings ) {
+		$html = self::schema_field_html( 'subset' );
+		if ( '' !== $html ) {
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit field_html() escapes.
+			return;
+		}
 		echo '<div class="field" id="wpfonts-subset-field"';
 		self::cdn_depends();
 		echo '>';
@@ -1172,6 +1198,11 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function render_family_field( array $settings ) {
+		$html = self::schema_field_html( 'family' );
+		if ( '' !== $html ) {
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit field_html() escapes.
+			return;
+		}
 		echo '<div class="field"';
 		self::cdn_depends();
 		echo '>';
@@ -1227,7 +1258,7 @@ class WPFonts_Admin {
 		echo '<p class="hint">' . esc_html__( '可以勾选多个已确认的文风云。取消勾选并保存后，只从全站样式去掉这一项。', 'wpfonts' ) . '</p>';
 		echo '<p class="hint" id="wpfonts-catalog-note">' . esc_html( $messages['note'] ) . '</p>';
 		echo '<p class="wpfonts-catalog-actions"><button type="button" class="btn btn-secondary" id="wpfonts-catalog-refresh">' . esc_html( $messages['refresh'] ) . '</button></p>';
-		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
+		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" aria-label="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
 		echo '<div id="wpfonts-catalog" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '" data-glyph="' . esc_attr__( '字形预览', 'wpfonts' ) . '" data-glyph-sample="' . esc_attr__( '永和九年', 'wpfonts' ) . '">';
 		if ( $failed ) {
 			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['missing'] ) . '</p>';

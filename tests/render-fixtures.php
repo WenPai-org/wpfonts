@@ -322,6 +322,7 @@ require $root . '/includes/class-wpfonts-library.php';
 require $root . '/includes/class-wpfonts-cjk.php';
 require $root . '/includes/class-wpfonts-embed.php';
 require $root . '/includes/class-wpfonts-transfer.php';
+require $root . '/includes/class-wpfonts-schema.php';
 require $root . '/includes/class-wpfonts-admin.php';
 
 /**
@@ -441,6 +442,23 @@ $screens = array(
 					'family'      => 'wenfeng-ibmps',
 					'css_status'  => 'ok',
 					'css_face'    => 'windfonts-ibmps',
+					'key_status'  => 'valid',
+					'key_checked' => 1700000000,
+				)
+			),
+			'wpfonts_api_key'  => 'wf_aaaaaaaaaaaak7Qm',
+		),
+	),
+	'settings-simple' => array(
+		'title'   => '设置 · 简单模式',
+		'tab'     => 'settings',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => array_merge(
+				$public,
+				array(
+					'cdn_enabled' => 1,
+					'family'      => 'wenfeng-ibmps',
 					'key_status'  => 'valid',
 					'key_checked' => 1700000000,
 				)
@@ -742,6 +760,17 @@ if ( false === strpos( $catalog_html, '链接文字（不加载字体）' ) ) {
 	fwrite( STDERR, "style link preview was not labeled as link text.\n" );
 	exit( 1 );
 }
+$simple_html = (string) file_get_contents( $out . '/settings-simple.html' );
+if ( false !== strpos( $simple_html, 'wpfonts-api-key' ) || false !== strpos( $simple_html, 'wpfonts-project' ) ) {
+	fwrite( STDERR, "settings simple mode still renders advanced-only fields.\n" );
+	exit( 1 );
+}
+foreach ( array( 'region', 'subset', 'family' ) as $schema_field ) {
+	if ( 1 !== substr_count( $simple_html, 'data-wenpai-field="' . $schema_field . '"' ) ) {
+		fwrite( STDERR, "settings simple mode lost the schema field {$schema_field}.\n" );
+		exit( 1 );
+	}
+}
 $version_label = '文派字库（WPFonts） · ' . WPFONTS_VERSION;
 $docs_link     = 'href="https://wpcy.com/fonts" target="_blank" rel="noopener noreferrer">文档';
 foreach ( glob( $out . '/*.html' ) as $fixture_path ) {
@@ -767,7 +796,10 @@ foreach ( glob( $out . '/*.html' ) as $fixture_path ) {
 		fwrite( STDERR, $fixture_name . " footer still uses the 文风 marketing link.\n" );
 		exit( 1 );
 	}
-	if ( false === strpos( $fixture_html, '>字体包</a>' ) || false !== strpos( $fixture_html, '>服务</a>' ) ) {
+	// 字体包 lives in the 工具 subnav now, so only tools/packages fixtures
+	// carry its tab link; every screen must still have no 服务 tab.
+	$is_tools = 0 === strpos( $fixture_name, 'tools-' ) || 0 === strpos( $fixture_name, 'packages-' );
+	if ( ( $is_tools && false === strpos( $fixture_html, '>字体包</a>' ) ) || false !== strpos( $fixture_html, '>服务</a>' ) ) {
 		fwrite( STDERR, $fixture_name . " packages tab must stay, and there must be no 服务 tab.\n" );
 		exit( 1 );
 	}

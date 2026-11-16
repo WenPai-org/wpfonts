@@ -100,7 +100,7 @@
 (function () {
 	var root = document.getElementById("wpfonts-catalog");
 	var search = document.getElementById("wpfonts-catalog-search");
-	var family = document.getElementById("wpfonts-family");
+	var family = document.getElementById("wenpai-f-wpfonts_settings-family") || document.getElementById("wpfonts-family");
 	var list = document.getElementById("wpfonts-catalog-list");
 	var status = document.getElementById("wpfonts-catalog-status");
 	var scope = document.getElementById("wpfonts-catalog-scope");

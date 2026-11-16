@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wpfonts 设置页 schema 迁移比对稿</title>
+<link rel="stylesheet" href="../../lib/wenpai-admin-ui/css/wenpai-tokens.css">
+<link rel="stylesheet" href="../../lib/wenpai-admin-ui/css/wenpai-admin.css">
+<link rel="stylesheet" href="../../lib/wenpai-admin-ui/css/wenpai-admin-wp.css">
+<link rel="stylesheet" href="../../assets/css/wpfonts-admin.css">
+<style>
+	body { background:#f0f0f1; margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+	.cmp { max-width:1280px; margin:0 auto; padding:24px 16px 64px; }
+	.cmp > h1 { font-size:20px; font-weight:400; margin:0 0 4px; }
+	.cmp > .lede { color:var(--wenpai-ink-3); font-size:13px; margin:0 0 8px; max-width:960px; }
+	.cmp-sec { margin-bottom:40px; }
+	.cmp-sec > h2 { font-size:16px; font-weight:400; margin:0 0 4px; }
+	.cmp-sec > .why { color:var(--wenpai-ink-3); font-size:13px; margin:0 0 14px; max-width:960px; }
+	.cmp-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+	@media (max-width:1000px){ .cmp-grid{grid-template-columns:1fr;} }
+	.cmp-col > .tag { display:inline-block; font-size:12px; color:var(--wenpai-ink-3); border:1px solid var(--wenpai-line); border-radius:var(--wenpai-radius-xl); padding:2px 10px; margin-bottom:8px; }
+	.cmp-col > .tag.is-new { color:var(--wenpai-accent); border-color:var(--wenpai-accent); }
+	.wenpai-app, .wenpai-stack { background:transparent; }
+	.cmp-form { background:var(--wenpai-card); border:1px solid var(--wenpai-line-card); border-radius:var(--wenpai-radius); padding:16px 20px; }
+	.delta { font-size:12px; color:var(--wenpai-ink-3); margin:10px 0 0; }
+	.delta b { color:var(--wenpai-ink-1); font-weight:600; }
+	.callout { background:var(--wenpai-accent-soft); border:1px solid var(--wenpai-accent); border-radius:var(--wenpai-radius); padding:12px 16px; font-size:13px; margin:14px 0; }
+	.callout.bad { background:#fdf0f0; border-color:var(--wenpai-bad); }
+	.cmp-form .field { border-top:0; padding-top:0; }
+	.demo-switch { display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:14px; }
+</style>
+</head>
+<body>
+<div class="cmp wenpai-app">
+	<h1>wpfonts 设置页 · schema 迁移比对稿</h1>
+	<p class="lede">工作单：linuxjoy <code>docs/design/wenpai-admin-ui/wpfonts-settings-migration.md</code>。schema 已注册（不改渲染，已提交）；本页比对的是<b>下一步可选的渲染迁移</b>：region / subset / family 三个字段换 <code>field_html()</code>。右栏是 kit 0.10.5 <code>field_html()</code> 的真实 PHP 输出（wpfonts 存根环境渲染，非手写），已加载 kit JS——顶部「文风云」开关拨动时两侧 depends_on 联动可见。其余字段（cdn 状态行、系统字体 checkgroup、中文三项、字体目录、API Key、项目名、样式链接）按工作单<b>保持自定义渲染</b>，不在本页。</p>
+
+	<div class="callout">
+		<b>先说结论：</b>region 和 subset 换 <code>field_html()</code> 视觉几乎无损（卡片内部结构同为 <code>.choice-cards &gt; .choice &gt; .t/.d</code>）；family 有两个真实代价——input id 会变（<code>wpfonts-admin.js</code> 的目录联动按 <code>#wpfonts-family</code> 找它），且 kit text 控件不支持 placeholder / spellcheck。
+	</div>
+
+	<div class="cmp-form">
+		<div class="demo-switch"><label><input type="checkbox" id="demo-cdn" checked> 文风云已开启（demo，驱动两侧 depends_on）</label></div>
+		<input type="hidden" id="demo-cdn-field" name="wpfonts_settings[cdn_enabled]" value="1">
+	</div>
+
+	<section class="cmp-sec">
+		<h2>① 区域 region（choice 单选 ×3）</h2>
+		<p class="why">现状：手写 <code>.field &gt; .field-label + .field-ctl</code>，帮助文字 <code>.field-help</code> 在卡片<b>上方</b>。kit：同一 <code>.choice-cards</code> 结构，desc 落 <code>.wenpai-field__desc</code> 在控件<b>下方</b>，外层加 <code>.wenpai-field--row</code> 并带 role/aria。</p>
+		<div class="cmp-grid">
+			<div class="cmp-col"><span class="tag">现状（render_region_field）</span>
+				<div class="cmp-form">
+					<div class="field" data-wenpai-depends-on="wpfonts_settings[cdn_enabled]" data-wenpai-depends-value="1"><div class="field-label">区域</div><div class="field-ctl"><p class="field-help">选择文风服务器。只有这三台。</p><div class="choice-cards"><label class="choice is-on"><input type="radio" name="wpfonts_settings[region]" value="cn" checked='checked'><span><span class="t">中国大陆</span><span class="d">cn.windfonts.com</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[region]" value="hk"><span><span class="t">中国香港</span><span class="d">hk.windfonts.com</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[region]" value="en"><span><span class="t">国际</span><span class="d">en.windfonts.com</span></span></label></div></div></div>
+				</div>
+			</div>
+			<div class="cmp-col"><span class="tag is-new">迁移后（field_html 真实输出）</span>
+				<div class="cmp-form">
+					<div class="wenpai-field wenpai-field--choice field wenpai-field--row" data-wenpai-field="region" data-wenpai-depends-on="wpfonts_settings[cdn_enabled]" data-wenpai-depends-value="1" data-wenpai-depends-saved="1" id="wenpai-f-wpfonts_settings-region" role="group" aria-labelledby="wenpai-f-wpfonts_settings-region-label" aria-describedby="wenpai-f-wpfonts_settings-region-desc"><div class="field-label" id="wenpai-f-wpfonts_settings-region-label">区域</div><div class="field-ctl"><div class="choice-cards"><label class="choice is-on"><input type="radio" name="wpfonts_settings[region]" value="cn" checked='checked'><span><span class="t">中国大陆</span><span class="d">cn.windfonts.com</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[region]" value="hk"><span><span class="t">中国香港</span><span class="d">hk.windfonts.com</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[region]" value="en"><span><span class="t">国际</span><span class="d">en.windfonts.com</span></span></label></div><p class="wenpai-field__desc" id="wenpai-f-wpfonts_settings-region-desc">选择文风服务器。只有这三台。</p></div></div>
+				</div>
+			</div>
+		</div>
+		<p class="delta"><b>差异：</b>帮助文字从卡片上方移到下方（<code>.field-help</code> → <code>.wenpai-field__desc</code>）；外层多 <code>.wenpai-field--row</code> 并补齐 role/aria-describedby；CDN 关闭时右栏服务端直接输出 <code>hidden inert</code>（现状要等 JS）。建议：<b>迁移</b>。</p>
+	</section>
+
+	<section class="cmp-sec">
+		<h2>② 字符范围 subset（choice 单选 ×4）</h2>
+		<p class="why">现状：<code>.choice-cards.wpfonts-subset-list</code> 单列，卡内 <code>.d</code> 是说明文字，字段提示 <code>.hint</code> 在卡片下方。kit：4 个选项是偶数 → 自动加 <code>cols-2</code> 变 <b>2×2</b>；产品 CSS 的 <code>.wpfonts-subset-list</code> 规则（单列 + <code>.d</code> 换行）会失效。</p>
+		<div class="cmp-grid">
+			<div class="cmp-col"><span class="tag">现状（render_subset_field）</span>
+				<div class="cmp-form">
+					<div class="field" id="wpfonts-subset-field" data-wenpai-depends-on="wpfonts_settings[cdn_enabled]" data-wenpai-depends-value="1"><div class="field-label" id="wpfonts-subset-label">字符范围</div><div class="field-ctl"><div class="choice-cards wpfonts-subset-list" role="radiogroup" aria-labelledby="wpfonts-subset-label"><label class="choice"><input type="radio" name="wpfonts_settings[subset]" value="en"><span><span class="t">西文</span><span class="d">体积最小，主要覆盖拉丁字符。</span></span></label><label class="choice is-on"><input type="radio" name="wpfonts_settings[subset]" value="zh-common" checked='checked'><span><span class="t">常用中文（推荐）</span><span class="d">日常中文站点够用，体积适中。</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[subset]" value="zh"><span><span class="t">较全中文</span><span class="d">生僻字更多，体积明显更大。</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[subset]" value="full"><span><span class="t">全量</span><span class="d">最大包，仅在确实需要时使用。</span></span></label></div><p class="hint">字符范围决定远程字体包大小。插件不在这里切字。</p></div></div>
+				</div>
+			</div>
+			<div class="cmp-col"><span class="tag is-new">迁移后（field_html 真实输出）</span>
+				<div class="cmp-form">
+					<div class="wenpai-field wenpai-field--choice field wenpai-field--row" data-wenpai-field="subset" data-wenpai-depends-on="wpfonts_settings[cdn_enabled]" data-wenpai-depends-value="1" data-wenpai-depends-saved="1" id="wenpai-f-wpfonts_settings-subset" role="group" aria-labelledby="wenpai-f-wpfonts_settings-subset-label" aria-describedby="wenpai-f-wpfonts_settings-subset-desc"><div class="field-label" id="wenpai-f-wpfonts_settings-subset-label">字符范围</div><div class="field-ctl"><div class="choice-cards cols-2"><label class="choice"><input type="radio" name="wpfonts_settings[subset]" value="en"><span><span class="t">西文</span><span class="d">体积最小，主要覆盖拉丁字符。</span></span></label><label class="choice is-on"><input type="radio" name="wpfonts_settings[subset]" value="zh-common" checked='checked'><span><span class="t">常用中文（推荐）</span><span class="d">日常中文站点够用，体积适中。</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[subset]" value="zh"><span><span class="t">较全中文</span><span class="d">生僻字更多，体积明显更大。</span></span></label><label class="choice"><input type="radio" name="wpfonts_settings[subset]" value="full"><span><span class="t">全量</span><span class="d">最大包，仅在确实需要时使用。</span></span></label></div><p class="wenpai-field__desc" id="wenpai-f-wpfonts_settings-subset-desc">字符范围决定远程字体包大小。插件不在这里切字。</p></div></div>
+				</div>
+			</div>
+		</div>
+		<p class="delta"><b>差异：</b>4 卡从单列变 2×2（kit 偶数列规则）；<code>.wpfonts-subset-list</code> 的单列/换行 CSS 失效，可在产品 CSS 里给 <code>.wenpai-field--choice</code> 补一条或接受 2×2；提示文字 <code>.hint</code> → <code>.wenpai-field__desc</code>。建议：<b>迁移</b>（2×2 观感更紧凑，可接受；若要保单列需产品 CSS 一行）。</p>
+	</section>
+
+	<section class="cmp-sec">
+		<h2>③ 字体名 family（text）</h2>
+		<p class="why">现状：<code>input#wpfonts-family</code> 带 placeholder「wenfeng-ibmps」和 spellcheck=false，提示 <code>.hint</code>。kit text 控件：无 placeholder / spellcheck 支持，id 变为 <code>wenpai-f-wpfonts_settings-family</code>。</p>
+		<div class="cmp-grid">
+			<div class="cmp-col"><span class="tag">现状（render_family_field）</span>
+				<div class="cmp-form">
+					<div class="field" data-wenpai-depends-on="wpfonts_settings[cdn_enabled]" data-wenpai-depends-value="1"><label class="field-label" for="wpfonts-family">字体名</label><div class="field-ctl"><input type="text" id="wpfonts-family" name="wpfonts_settings[family]" value="" placeholder="wenfeng-ibmps" autocomplete="off" spellcheck="false"><p class="hint">也可直接填写，例如 wenfeng-ibmps。填了项目名后，公开地址可以不填字体名。</p></div></div>
+				</div>
+			</div>
+			<div class="cmp-col"><span class="tag is-new">迁移后（field_html 真实输出）</span>
+				<div class="cmp-form">
+					<div class="wenpai-field wenpai-field--text field wenpai-field--row" data-wenpai-field="family" data-wenpai-depends-on="wpfonts_settings[cdn_enabled]" data-wenpai-depends-value="1" data-wenpai-depends-saved="1"><div class="field-label"><label class="wenpai-field__label" for="wenpai-f-wpfonts_settings-family">字体名</label></div><div class="field-ctl"><input type="text" id="wenpai-f-wpfonts_settings-family" name="wpfonts_settings[family]" value="wenfeng-ibmps" autocomplete="off" aria-describedby="wenpai-f-wpfonts_settings-family-desc"><p class="wenpai-field__desc" id="wenpai-f-wpfonts_settings-family-desc">也可直接填写，例如 wenfeng-ibmps。填了项目名后，公开地址可以不填字体名。</p></div></div>
+				</div>
+			</div>
+		</div>
+		<p class="delta"><b>差异（真实代价）：</b>① input id 变了——<code>assets/js/wpfonts-admin.js</code> 目录联动用 <code>getElementById("wpfonts-family")</code> 写入选中字体，迁移必须同步改 JS（或给 schema 字段找回旧 id，kit 不支持自定义 id）；② placeholder「wenfeng-ibmps」和 spellcheck=false 丢失（kit text 无此 schema 键）；③ desc 仍在控件下方，视觉基本一致。建议：<b>可迁，但要带 JS 一行修改</b>；若想零改动也可以留自定义（注册不渲染）。</p>
+	</section>
+
+	<section class="cmp-sec">
+		<h2>④ 不动的部分（按工作单保留自定义渲染）</h2>
+		<p class="why">以下都已在 schema 注册（depends_on / 合同完整），但渲染保持现有自定义件，哨兵与 hidden 补齐不动：</p>
+		<div class="cmp-form">
+			<ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.9">
+				<li><b>cdn_enabled</b>：状态行里的 kit switch（已是 <code>switch_html</code>），注册 type toggle 不换渲染。</li>
+				<li><b>system_cn/en/jp/kr</b>：checkgroup 定制件（全选/清空 + 计数），哨兵 <code>system_form</code> hidden 保留。</li>
+				<li><b>cjk_body/heading/fallback</b>：optgroup + 「已保存，当前不可用」兜底项的定制 select，哨兵 <code>cjk_form</code> 保留。</li>
+				<li><b>families</b>：字体目录 picker（搜索 + 字形预览 + 样本图 + JSON data 岛），<code>families_form</code> 哨兵、<code>#wpfonts-family-holds</code> 补齐、<code>#wpfonts-catalog-data</code> 全保留；本次已顺手补了搜索框 <code>aria-label</code>。</li>
+				<li><b>api_key</b>：独立 option <code>wpfonts_api_key</code>，掩码态 + <code>clear_api_key</code> + 保存时健康检查；kit secret 的 <code>__wenpai_clear</code> 不适用，渲染自定义。</li>
+				<li><b>project_slug</b>：<code>&lt;details&gt;</code>「项目与白名单」+ 控制台外链，advanced 模式才渲染。</li>
+				<li><b>surface</b> hidden 与 <b>样式链接</b>只读预览：不进 schema，保持现状。</li>
+			</ul>
+		</div>
+		<p class="delta"><b>已完成（本提交）：</b><code>includes/class-wpfonts-schema.php</code> 注册全部键（含 faces/key_status/key_checked/css_status/css_face 内部状态键与 api_key），kit <code>register_setting</code> 已 remove——实测 <code>sanitize_option_wpfonts_settings</code> 上只剩 <code>WPFonts_Settings::sanitize</code>。渲染零变化（除 catalog 搜索框 aria-label）。tests 全绿、lint PASS findings=0、Studio :8899 simple/advanced 均 200、哨兵齐全。</p>
+	</section>
+
+	<section class="cmp-sec">
+		<h2>⑤ 拍板结果（已实施）</h2>
+		<div class="cmp-form">
+			<ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.9">
+				<li>region → <code>field_html()</code>：<b>已迁</b>。</li>
+				<li>subset → <code>field_html()</code>：<b>已迁</b>，接受 2×2（kit 偶数列规则）。</li>
+				<li>family → <code>field_html()</code>：<b>已迁</b>，<code>wpfonts-admin.js</code> 的目录联动已改指 <code>#wenpai-f-wpfonts_settings-family</code>；placeholder/spellcheck 按批准丢失。</li>
+			</ol>
+			<p class="delta" style="margin-top:10px">三个字段都经 <code>WPFonts_Admin::schema_field_html()</code> 走 <code>field_html()</code>，kit 未就绪时回退原自定义标记。fixtures 新增 settings-simple 屏并断言简单模式不含 api_key/project、三字段各一次；render-fixtures 的「字体包 tab」断言已按工具分区 IA 收窄到 tools/packages 屏。</p>
+		</div>
+	</section>
+</div>
+<script src="../../lib/wenpai-admin-ui/js/wenpai-admin.js"></script>
+<script>
+// Demo only: the checkbox mirrors wpfonts_settings[cdn_enabled] so both
+// columns' data-wenpai-depends-on blocks toggle like the real page.
+(function () {
+	var box = document.getElementById("demo-cdn");
+	var field = document.getElementById("demo-cdn-field");
+	if (!box || !field) { return; }
+	box.addEventListener("change", function () {
+		field.value = box.checked ? "1" : "0";
+		field.dispatchEvent(new Event("change", { bubbles: true }));
+		field.dispatchEvent(new Event("input", { bubbles: true }));
+	});
+})();
+</script>
+</body>
+</html>

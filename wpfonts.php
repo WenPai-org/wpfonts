@@ -47,6 +47,7 @@ require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-cjk.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-global-styles.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-editor.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-transfer.php';
+require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-schema.php';
 require_once WPFONTS_DIR_PATH . 'includes/class-wpfonts-admin.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
