@@ -1568,21 +1568,24 @@ class WPFonts_Admin {
 		$choice  = isset( $choices[ $subset ] ) ? $choices[ $subset ] : $choices['zh-common'];
 		echo '<section class="card" id="wpfonts-selection-summary">';
 		echo '<h2 class="card-title">' . esc_html__( '选用字体', 'wpfonts' ) . '</h2>';
-		echo '<div class="field">';
-		echo '<div class="field-label">' . esc_html__( '字体名', 'wpfonts' ) . '</div>';
-		echo '<div class="field-ctl">';
+		echo Wenpai_Admin_UI::status_list_html(
+			array(
+				'items' => array(
+					array(
+						'label' => __( '字体名', 'wpfonts' ),
+						'value' => '' !== $family ? $family : __( '未设置', 'wpfonts' ),
+					),
+					array(
+						'label' => __( '字符范围', 'wpfonts' ),
+						'value' => $choice['label'],
+						'desc'  => $choice['hint'],
+					),
+				),
+			)
+		);
 		if ( '' === $family ) {
-			echo '<a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'settings' ) ) ) . '">' . esc_html__( '去设置', 'wpfonts' ) . '</a>';
-		} else {
-			echo Wenpai_Admin_UI::code_inline_html( array( 'code' => $family ) );
+			echo '<div class="card-foot start"><a class="btn btn-secondary" href="' . esc_url( self::page_url( array( 'tab' => 'settings' ) ) ) . '">' . esc_html__( '去设置', 'wpfonts' ) . '</a></div>';
 		}
-		echo '</div></div>';
-		echo '<div class="field">';
-		echo '<div class="field-label">' . esc_html__( '字符范围', 'wpfonts' ) . '</div>';
-		echo '<div class="field-ctl">';
-		echo '<p>' . esc_html( $choice['label'] ) . '</p>';
-		echo '<p class="hint">' . esc_html( $choice['hint'] ) . '</p>';
-		echo '</div></div>';
 		echo '</section>';
 	}
 
