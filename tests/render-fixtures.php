@@ -761,15 +761,27 @@ if ( false === strpos( $catalog_html, '链接文字（不加载字体）' ) ) {
 	exit( 1 );
 }
 $simple_html = (string) file_get_contents( $out . '/settings-simple.html' );
-if ( false !== strpos( $simple_html, 'wpfonts-api-key' ) || false !== strpos( $simple_html, 'wpfonts-project' ) ) {
-	fwrite( STDERR, "settings simple mode still renders advanced-only fields.\n" );
+// Simple keeps the API key (the enabler) and the manual font name; the
+// catalog picker, region, subset and project slug are advanced-only.
+if ( false === strpos( $simple_html, 'id="wpfonts-api-key"' ) || false !== strpos( $simple_html, 'wpfonts-project' ) ) {
+	fwrite( STDERR, "settings simple mode lost the API key field or kept the project field.\n" );
 	exit( 1 );
 }
-foreach ( array( 'region', 'subset', 'family' ) as $schema_field ) {
-	if ( 1 !== substr_count( $simple_html, 'data-wenpai-field="' . $schema_field . '"' ) ) {
-		fwrite( STDERR, "settings simple mode lost the schema field {$schema_field}.\n" );
+foreach ( array( 'region', 'subset', 'families' ) as $advanced_only ) {
+	if ( false !== strpos( $simple_html, 'name="wpfonts_settings[' . $advanced_only . ']"' ) || false !== strpos( $simple_html, 'data-wenpai-field="' . $advanced_only . '"' ) ) {
+		fwrite( STDERR, "settings simple mode still renders the advanced-only field {$advanced_only}.\n" );
 		exit( 1 );
 	}
+}
+foreach ( array( 'family', 'cdn_enabled' ) as $simple_field ) {
+	if ( false === strpos( $simple_html, 'wpfonts_settings[' . $simple_field . ']' ) ) {
+		fwrite( STDERR, "settings simple mode lost the field {$simple_field}.\n" );
+		exit( 1 );
+	}
+}
+if ( false !== strpos( $simple_html, 'id="wpfonts-catalog"' ) ) {
+	fwrite( STDERR, "settings simple mode still renders the catalog picker.\n" );
+	exit( 1 );
 }
 $version_label = '文派字库（WPFonts） · ' . WPFONTS_VERSION;
 $docs_link     = 'href="https://wpcy.com/fonts" target="_blank" rel="noopener noreferrer">文档';

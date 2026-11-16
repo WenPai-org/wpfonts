@@ -102,8 +102,8 @@ $input = array(
 );
 $simple = WPFonts_Link::merge_public( $prev, $input, 'simple' );
 $assert( 1 === $simple['cdn_enabled'], 'simple save did not enable CDN' );
-$assert( 'en' === $simple['region'], 'simple save dropped region' );
-$assert( 'full' === $simple['subset'], 'simple save dropped subset' );
+$assert( 'hk' === $simple['region'], 'simple save overwrote the stored region' );
+$assert( 'zh' === $simple['subset'], 'simple save overwrote the stored subset' );
 $assert( 'studio' === $simple['project_slug'], 'simple save overwrote the project' );
 $assert( 'other-font' === $simple['family'], 'simple save ignored the font name field' );
 $assert( 'valid' === $simple['key_status'], 'posted key_status was trusted' );
@@ -112,6 +112,8 @@ $without_family = $input;
 unset( $without_family['family'] );
 $kept = WPFonts_Link::merge_public( $prev, $without_family, 'simple' );
 $assert( 'wenfeng-ibmps' === $kept['family'], 'simple save without a family field cleared it' );
+$assert( 'hk' === $kept['region'], 'simple save without region input reset it' );
+$assert( 'zh' === $kept['subset'], 'simple save without subset input reset it' );
 $assert( 'studio' === $kept['project_slug'], 'simple save without a family field overwrote the project' );
 
 $broken                 = $base;
@@ -259,6 +261,8 @@ $assert( array() === $off_sheets, 'CDN off still printed a stylesheet' );
 $advanced = WPFonts_Link::merge_public( $prev, $input, 'advanced' );
 $assert( 'hacked' === $advanced['project_slug'], 'advanced save kept the old project' );
 $assert( 'other-font' === $advanced['family'], 'advanced save kept the old family' );
+$assert( 'en' === $advanced['region'], 'advanced save ignored the region field' );
+$assert( 'full' === $advanced['subset'], 'advanced save ignored the subset field' );
 $assert( 'valid' === $advanced['key_status'], 'advanced save trusted posted key_status' );
 
 if ( array() !== $failures ) {

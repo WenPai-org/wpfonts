@@ -735,16 +735,19 @@ class WPFonts_Link {
 		if ( ! in_array( $status, array( '', 'valid', 'invalid', 'unreachable' ), true ) ) {
 			$status = '';
 		}
-		$next = array(
+		$advanced = ( 'advanced' === $surface );
+		$next     = array(
 			'cdn_enabled'  => ( isset( $input['cdn_enabled'] ) && '1' === (string) $input['cdn_enabled'] ) ? 1 : 0,
-			'region'       => self::region( isset( $input['region'] ) ? $input['region'] : '' ),
-			'subset'       => self::subset( isset( $input['subset'] ) ? $input['subset'] : '' ),
+			// Region and subset only render on the advanced form; a simple
+			// save keeps the stored picks instead of resetting them.
+			'region'       => self::region( $advanced && isset( $input['region'] ) ? $input['region'] : ( isset( $prev['region'] ) ? $prev['region'] : '' ) ),
+			'subset'       => self::subset( $advanced && isset( $input['subset'] ) ? $input['subset'] : ( isset( $prev['subset'] ) ? $prev['subset'] : '' ) ),
 			'project_slug' => isset( $prev['project_slug'] ) ? self::token( $prev['project_slug'], 64 ) : '',
 			'family'       => isset( $prev['family'] ) ? self::token( $prev['family'], 80 ) : '',
 			'key_status'   => $status,
 			'key_checked'  => isset( $prev['key_checked'] ) ? (int) $prev['key_checked'] : 0,
 		);
-		if ( 'advanced' === $surface ) {
+		if ( $advanced ) {
 			$next['project_slug'] = self::token( isset( $input['project_slug'] ) ? $input['project_slug'] : '', 64 );
 			$next['family']       = self::token( isset( $input['family'] ) ? $input['family'] : '', 80 );
 		} elseif ( array_key_exists( 'family', $input ) ) {

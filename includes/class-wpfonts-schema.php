@@ -176,6 +176,7 @@ class WPFonts_Schema {
 				'region' => array(
 					'type'       => 'choice',
 					'default'    => 'cn',
+					'mode'       => 'advanced',
 					'label'      => __( '区域', 'wpfonts' ),
 					'desc'       => __( '选择文风服务器。只有这三台。', 'wpfonts' ),
 					'choices'    => array(
@@ -194,6 +195,7 @@ class WPFonts_Schema {
 					'default'    => array(),
 					'label'      => __( '选用字体', 'wpfonts' ),
 					'choices'    => array(),
+					'mode'       => 'advanced',
 					'depends_on' => $cdn,
 				),
 				'family'      => array(
@@ -206,6 +208,7 @@ class WPFonts_Schema {
 				'subset'      => array(
 					'type'       => 'choice',
 					'default'    => 'zh-common',
+					'mode'       => 'advanced',
 					'label'      => __( '字符范围', 'wpfonts' ),
 					'desc'       => __( '字符范围决定远程字体包大小。插件不在这里切字。', 'wpfonts' ),
 					'choices'    => array(
@@ -220,14 +223,14 @@ class WPFonts_Schema {
 				// wpfonts_settings[api_key] but sanitize_form() writes the
 				// separate wpfonts_api_key option (clean_secret + clear_api_key
 				// + health check). Kit secret/__wenpai_clear does not apply.
+				// The field renders on both surfaces (the key is the enabler,
+				// filled before CDN goes on), ungated by cdn_enabled.
 				// Registered for contract completeness; rendered by
 				// render_key_field() only.
 				'api_key'       => array(
-					'type'       => 'secret',
-					'default'    => '',
-					'label'      => __( '文风 API Key', 'wpfonts' ),
-					'mode'       => 'advanced',
-					'depends_on' => $cdn,
+					'type'    => 'secret',
+					'default' => '',
+					'label'   => __( '文风 API Key', 'wpfonts' ),
 				),
 				'project_slug'  => array(
 					'type'       => 'text',

@@ -479,7 +479,9 @@ class WPFonts_Settings {
 		$key     = self::api_key();
 		$changed = false;
 
-		if ( 'advanced' === $surface ) {
+		// The key field renders on both surfaces now; presence of the input
+		// (or the clear checkbox) is the intent, not the mode.
+		if ( isset( $input['api_key'] ) || ! empty( $input['clear_api_key'] ) ) {
 			if ( ! empty( $input['clear_api_key'] ) ) {
 				$key     = '';
 				$changed = true;

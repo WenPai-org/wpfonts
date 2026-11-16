@@ -523,15 +523,20 @@ class WPFonts_Admin {
 			)
 		);
 
-		self::render_region_field( $settings );
-		echo '<div id="wpfonts-font-pick">';
-		self::render_catalog_field( $settings );
-		self::render_family_field( $settings );
-		echo '</div>';
-		self::render_subset_field( $settings );
+		self::render_key_field( $has_key, $state );
+
 		if ( 'advanced' === $mode ) {
-			self::render_key_field( $has_key, $state );
+			self::render_region_field( $settings );
+			echo '<div id="wpfonts-font-pick">';
+			self::render_catalog_field( $settings );
+			self::render_family_field( $settings );
+			echo '</div>';
+			self::render_subset_field( $settings );
 			self::render_project_field( $settings );
+		} else {
+			echo '<div id="wpfonts-font-pick">';
+			self::render_family_field( $settings );
+			echo '</div>';
 		}
 		self::render_link_field( $settings, $state, $has_key );
 
@@ -720,7 +725,7 @@ class WPFonts_Admin {
 		$level = 'warn';
 		$text  = __( '文风 API Key 尚未验证。请到工具中再检查一次。验证通过前，前台不加载样式。', 'wpfonts' );
 		if ( 'nokey' === $state ) {
-			$text = __( '文风云已开启，但尚未填写文风 API Key。请到高级中填写。前台暂不加载远程样式。', 'wpfonts' );
+			$text = __( '文风云已开启，但尚未填写文风 API Key。请到设置页填写。前台暂不加载远程样式。', 'wpfonts' );
 		} elseif ( 'invalid' === $state ) {
 			$level = 'bad';
 			$text  = __( '文风 API Key 无效。前台不会加载网页字体。系统字体仍然可用。', 'wpfonts' );
@@ -1154,9 +1159,7 @@ class WPFonts_Admin {
 	 * @return void
 	 */
 	private static function render_key_field( $has_key, $state ) {
-		echo '<div class="field"';
-		self::cdn_depends();
-		echo '>';
+		echo '<div class="field">';
 		echo '<label class="field-label" for="wpfonts-api-key">' . esc_html__( '文风 API Key', 'wpfonts' ) . '</label>';
 		echo '<div class="field-ctl">';
 		$placeholder = $has_key ? __( '留空表示不修改', 'wpfonts' ) : __( '粘贴文风 API Key', 'wpfonts' );
