@@ -1459,3 +1459,15 @@ msgstr "Uses the device's built-in Japanese fonts; no download needed."
 #: wpfonts.php:131
 msgid "使用设备自带的韩文字体，无需下载。"
 msgstr "Uses the device's built-in Korean fonts; no download needed."
+
+#: includes/class-wpfonts-admin.php
+msgid "文风样式表返回 404，前台不会加载远程字体。"
+msgstr "The Windfonts stylesheet returned 404; remote fonts will not load on the front end."
+
+#: includes/class-wpfonts-admin.php
+msgid "文风样式表暂时无法验证，前台字体可能回退到系统字体。"
+msgstr "The Windfonts stylesheet could not be verified; front-end fonts may fall back to system fonts."
+
+#: includes/class-wpfonts-admin.php
+msgid "打开工具页再检查一次"
+msgstr "Open Tools to check again"

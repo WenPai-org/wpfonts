@@ -1,0 +1,34 @@
+# Chinese (China) translations for WPFonts.
+# Source strings are already Chinese; only non-CJK msgids need entries.
+msgid ""
+msgstr ""
+"Project-Id-Version: WPFonts 2.0.0-rc.22\n"
+"Report-Msgid-Bugs-To: https://wpcy.com/wpfonts\n"
+"POT-Creation-Date: 2026-11-16T11:12:54+00:00\n"
+"PO-Revision-Date: 2026-11-16T19:30:00+08:00\n"
+"Last-Translator: Devin <devin@cognition.ai>\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Domain: wpfonts\n"
+
+msgid "WPFonts"
+msgstr "文派字库"
+
+msgid "Windfonts"
+msgstr "文风字体"
+
+msgid "Sans Serif"
+msgstr "无衬线"
+
+msgid "Serif"
+msgstr "衬线"
+
+msgid "Monospace"
+msgstr "等距"
+
+msgid "Handwriting"
+msgstr "手写"

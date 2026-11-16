@@ -30,6 +30,7 @@ class WPFonts_Admin {
 		add_action( 'admin_post_wpfonts_package_delete', array( __CLASS__, 'delete_package' ) );
 		add_action( 'admin_post_wpfonts_export', array( __CLASS__, 'export_migration' ) );
 		add_action( 'admin_post_wpfonts_import', array( __CLASS__, 'import_migration' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'cdn_notice' ) );
 		add_filter( 'plugin_action_links_' . WPFONTS_BASENAME, array( __CLASS__, 'action_links' ) );
 		add_filter( 'gettext', array( __CLASS__, 'saved_label' ), 10, 3 );
 	}
@@ -760,6 +761,41 @@ class WPFonts_Admin {
 				'text'  => $text,
 				'wrap'  => false,
 			)
+		);
+	}
+
+	/**
+	 * Site-wide notice when the enabled Windfonts stylesheet cannot be used.
+	 *
+	 * @return void
+	 */
+	public static function cdn_notice() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$settings = WPFonts_Settings::get();
+		if ( empty( $settings['cdn_enabled'] ) || 'valid' !== (string) ( $settings['key_status'] ?? '' ) ) {
+			return;
+		}
+		if ( ! WPFonts_Link::has_target( $settings ) ) {
+			return;
+		}
+		$css_status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';
+		if ( 'missing' === $css_status ) {
+			$message = __( '文风样式表返回 404，前台不会加载远程字体。', 'wpfonts' );
+			$kind    = 'notice-error';
+		} elseif ( 'unchecked' === $css_status ) {
+			$message = __( '文风样式表暂时无法验证，前台字体可能回退到系统字体。', 'wpfonts' );
+			$kind    = 'notice-warning';
+		} else {
+			return;
+		}
+		printf(
+			'<div class="notice %s"><p>%s <a href="%s">%s</a></p></div>',
+			esc_attr( $kind ),
+			esc_html( $message ),
+			esc_url( self::page_url( array( 'tab' => 'tools' ) ) ),
+			esc_html__( '打开工具页再检查一次', 'wpfonts' )
 		);
 	}
 
