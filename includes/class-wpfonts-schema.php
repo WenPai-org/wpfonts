@@ -210,7 +210,7 @@ class WPFonts_Schema {
 					'default'    => 'zh-common',
 					'mode'       => 'advanced',
 					'label'      => __( '字符范围', 'wpfonts' ),
-					'desc'       => __( '字符范围决定远程字体包大小。插件不在这里切字。', 'wpfonts' ),
+					'desc'       => __( '字符范围决定远程字体包的大小，范围越小包越小。', 'wpfonts' ),
 					'choices'    => array(
 						'en'        => array( 'label' => __( '西文', 'wpfonts' ), 'desc' => __( '体积最小，主要覆盖拉丁字符。', 'wpfonts' ) ),
 						'zh-common' => array( 'label' => __( '常用中文（推荐）', 'wpfonts' ), 'desc' => __( '日常中文站点够用，体积适中。', 'wpfonts' ) ),

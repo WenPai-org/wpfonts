@@ -1101,7 +1101,7 @@ class WPFonts_Admin {
 			echo '</label>';
 		}
 		echo '</div>';
-		echo '<p class="hint">' . esc_html__( '字符范围决定远程字体包大小。插件不在这里切字。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '字符范围决定远程字体包的大小，范围越小包越小。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 	}
 
