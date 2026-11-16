@@ -1523,3 +1523,25 @@ fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); 
   color: var(--wenpai-ink-3);
   cursor: default;
 }
+
+/* forced-colors (Windows 高对比度): author colors are stripped, so every
+   state that relied on a background tint or accent border gets a system-color
+   equivalent. Status dots and the subnav badge keep their semantic colors via
+   forced-color-adjust:none — they are the double-coding for pill/notice states
+   whose text is already forced to CanvasText. */
+@media (forced-colors: active) {
+  .pill::before,
+  .wenpai-subnav__badge { forced-color-adjust: none; }
+  .pill { border: 1px solid CanvasText; }
+  .choice.is-on { outline: 2px solid Highlight; outline-offset: 1px; box-shadow: none; }
+  .seg a.on { box-shadow: inset 0 -2px 0 Highlight; }
+  .toggle i { border: 1px solid CanvasText; }
+  .toggle.on i { background: Highlight; }
+  .toggle.on i::after { background: ButtonFace; }
+  .wenpai-icon__opt.is-current,
+  .wenpai-entity__item.is-active { outline: 2px solid Highlight; outline-offset: -2px; }
+  .wenpai-field.is-invalid .field-ctl input,
+  .wenpai-field.is-invalid .field-ctl select,
+  .wenpai-field.is-invalid .field-ctl textarea { border-color: CanvasText; border-width: 2px; }
+  .wenpai-file__drop.is-drag { outline: 2px dashed Highlight; outline-offset: -2px; }
+}
