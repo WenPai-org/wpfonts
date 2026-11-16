@@ -430,7 +430,7 @@ class WPFonts_Admin {
 	private static function render_overview( array $settings, $state ) {
 		Wenpai_Admin_Shell::page_head(
 			__( '概览', 'wpfonts' ),
-			__( '默认使用系统字体。需要网页字体时，可用文风云，或安装文风字体包。', 'wpfonts' )
+			__( '系统字体开箱即用；需要文风字体时，开启文风云或安装字体包。', 'wpfonts' )
 		);
 		echo '<div class="wenpai-stack">';
 		self::render_state_banner( $state );
@@ -450,7 +450,7 @@ class WPFonts_Admin {
 			$embed_ok ? 'ok' : '',
 			'external',
 			__( '样式链接', 'wpfonts' ),
-			$embed_ok ? __( '前台会加载文风服务器上的样式链接。', 'wpfonts' ) : __( '前台不会加载远程样式链接。', 'wpfonts' ),
+			$embed_ok ? __( '前台会加载文风服务器上的样式链接。', 'wpfonts' ) : __( '前台不加载远程样式。', 'wpfonts' ),
 			$embed_ok ? 'ok' : 'mute',
 			$embed_ok ? __( '会加载', 'wpfonts' ) : __( '未加载', 'wpfonts' )
 		);
@@ -705,7 +705,7 @@ class WPFonts_Admin {
 				array(
 					'icon'    => 'info',
 					'title'   => __( '网页字体尚未开启', 'wpfonts' ),
-					'desc'    => __( '当前使用系统字体。需要网页字体时，可开启文风云，或到字体包安装文风已切好的包。', 'wpfonts' ),
+					'desc'    => __( '系统字体开箱即用。需要文风字体时，可开启文风云，或到字体包安装。', 'wpfonts' ),
 					'actions' => array(
 						array(
 							'label'   => __( '去设置', 'wpfonts' ),
@@ -848,7 +848,7 @@ class WPFonts_Admin {
 	private static function render_cjk_row() {
 		$state = array(
 			'on'   => false,
-			'text' => __( '尚未指定中文回退，站点先用系统中文；安装文风字体包或开启文风云后，到设置里选一个。', 'wpfonts' ),
+			'text' => __( '未指定，前台使用系统中文。安装字体包或开启文风云后，可在设置里选择。', 'wpfonts' ),
 		);
 		if ( class_exists( 'WPFonts_CJK', false ) ) {
 			$state = WPFonts_CJK::overview();
@@ -1688,13 +1688,13 @@ class WPFonts_Admin {
 	 */
 	private static function cdn_desc( $state ) {
 		if ( 'empty' === $state ) {
-			return __( '尚未开启，前台也不会加载样式。', 'wpfonts' );
+			return __( '未开启。开启并保存后，前台加载文风样式。', 'wpfonts' );
 		}
 		if ( 'nokey' === $state ) {
 			return __( '已开启，但尚未填写文风 API Key。', 'wpfonts' );
 		}
 		if ( 'invalid' === $state ) {
-			return __( '文风 API Key 无效，前台不加载远程样式。', 'wpfonts' );
+			return __( '文风 API Key 无效，前台使用系统字体。', 'wpfonts' );
 		}
 		if ( 'unreachable' === $state ) {
 			return __( '这次未能连接。', 'wpfonts' );
@@ -1777,7 +1777,7 @@ class WPFonts_Admin {
 			$desc  = __( '前台会加载本站这份字体样式。', 'wpfonts' );
 		} elseif ( 'inactive' === $presence ) {
 			$label = __( '已停用', 'wpfonts' );
-			$desc  = __( '已停用', 'wpfonts' );
+			$desc  = __( '文件保留在本站，启用后即可使用。', 'wpfonts' );
 		}
 		echo Wenpai_Admin_UI::row_html(
 		array(

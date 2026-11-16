@@ -176,7 +176,7 @@ $assert = static function ( $condition, $message ) use ( &$failures ) {
 $off = WPFonts_CJK::overview();
 $assert( empty( $off['on'] ), 'overview was on before a Chinese face was chosen' );
 $assert( false !== strpos( $off['text'], '系统中文' ), 'empty overview did not say the site uses system Chinese' );
-$assert( false !== strpos( $off['text'], '文风字体包' ), 'empty overview did not mention a font package' );
+$assert( false !== strpos( $off['text'], '字体包' ), 'empty overview did not mention a font package' );
 $assert( false !== strpos( $off['text'], '文风云' ), 'empty overview did not mention 文风云' );
 $assert( false !== strpos( $off['text'], '设置' ), 'empty overview did not point at settings' );
 $assert( false === strpos( $off['text'], '未指定。启用字体包或文风云后，可在设置里选。' ), 'empty overview kept the old sentence' );
@@ -431,7 +431,7 @@ $assert( $before === $GLOBALS['wpfonts_styles']['wpfonts-cjk']['css'], 'front en
 $overview = WPFonts_CJK::overview();
 $assert( ! empty( $overview['on'] ), 'overview stayed off after a real choice' );
 $assert( false !== strpos( $overview['text'], '已指定' ), 'overview copy drifted' );
-$assert( false !== strpos( $overview['text'], '正文、标题和西文后面的中文' ), 'on-state overview stayed stiff' );
+$assert( false !== strpos( $overview['text'], '正文、标题和西文后的中文' ), 'on-state overview stayed stiff' );
 
 if ( array() !== $failures ) {
 	fwrite( STDERR, implode( "\n", $failures ) . "\n" );
