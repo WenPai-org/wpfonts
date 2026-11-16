@@ -779,7 +779,7 @@ class WPFonts_Admin {
 		if ( empty( $settings['cdn_enabled'] ) || 'valid' !== (string) ( $settings['key_status'] ?? '' ) ) {
 			return;
 		}
-		if ( ! WPFonts_Link::has_target( $settings ) ) {
+		if ( ! WPFonts_Link::has_target( $settings ) && array() === WPFonts_Settings::confirmed_faces( $settings ) ) {
 			return;
 		}
 		$css_status = isset( $settings['css_status'] ) ? (string) $settings['css_status'] : '';

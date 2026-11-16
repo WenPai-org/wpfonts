@@ -395,6 +395,26 @@ if ( isset( $GLOBALS['wpfonts_enqueued']['wpfonts-preview'] ) ) {
 	$failures[] = 'hk region preview was not enqueued';
 }
 
+// Previewing the already-configured font: no duplicate handle, but the
+// scoped font CSS still attaches to the handle that carries the URL.
+$reset();
+$GLOBALS['wpfonts_logged_in'] = true;
+$GLOBALS['wpfonts_can_admin'] = true;
+$GLOBALS['wpfonts_settings'] = array(
+	'cdn_enabled' => 1,
+	'key_status'  => 'valid',
+	'family'      => 'wenfeng-ibmps',
+	'region'      => 'cn',
+	'subset'      => 'zh-common',
+);
+$_GET['wpfonts_preview'] = 'wenfeng-ibmps';
+WPFonts_Embed::enqueue();
+$assert( ! isset( $GLOBALS['wpfonts_enqueued']['wpfonts-preview'] ), 'configured preview font got a duplicate handle' );
+$assert( isset( $GLOBALS['wpfonts_inline']['wpfonts-cdn'] ), 'configured preview font lost the scoped font CSS' );
+if ( isset( $GLOBALS['wpfonts_inline']['wpfonts-cdn'] ) ) {
+	$assert( false !== strpos( $GLOBALS['wpfonts_inline']['wpfonts-cdn'], 'font-family:"TestFace"' ), 'configured preview CSS lacks the font-family rule' );
+}
+
 if ( array() !== $failures ) {
 	foreach ( $failures as $failure ) {
 		fwrite( STDERR, "FAIL: {$failure}\n" );

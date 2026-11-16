@@ -179,9 +179,15 @@ class WPFonts_Embed {
 		if ( '' !== $token ) {
 			$preview = self::preview_url( $settings, $token );
 			$face    = '' !== $preview ? self::preview_face( $settings, $token ) : '';
-			if ( '' !== $preview && '' !== $face && ! in_array( $preview, $urls, true ) ) {
-				wp_enqueue_style( 'wpfonts-preview', $preview, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Same allowlisted URL rule as above.
-				wp_add_inline_style( 'wpfonts-preview', self::preview_css( $face ) );
+			if ( '' !== $preview && '' !== $face ) {
+				$existing = array_search( $preview, $urls, true );
+				if ( false === $existing ) {
+					wp_enqueue_style( 'wpfonts-preview', $preview, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Same allowlisted URL rule as above.
+					wp_add_inline_style( 'wpfonts-preview', self::preview_css( $face ) );
+				} else {
+					$handle = 0 === $existing ? 'wpfonts-cdn' : 'wpfonts-cdn-' . $existing;
+					wp_add_inline_style( $handle, self::preview_css( $face ) );
+				}
 			}
 		}
 		WPFonts_Packages::enqueue_styles();
