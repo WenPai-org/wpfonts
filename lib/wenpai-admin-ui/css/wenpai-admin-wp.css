@@ -598,7 +598,9 @@ body.wenpai-ui-page .wenpai-app .simple-row {
   margin: 0 -8px;
   padding-left: var(--wenpai-space-2);
   padding-right: var(--wenpai-space-2);
-  border-radius: var(--wenpai-radius-md);
+  /* Bottom corners only: a full radius bends the border-top separator's ends
+     into arcs. The hover band still gets rounded lower corners. */
+  border-radius: 0 0 var(--wenpai-radius-md) var(--wenpai-radius-md);
 }
 
 body.wenpai-ui-page .wenpai-app .simple-row.is-static {
