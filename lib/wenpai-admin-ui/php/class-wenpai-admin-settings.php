@@ -192,12 +192,22 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		private $tools = null;
 
 		/**
+		 * Group id => label map for `?section=` resolution (kit 0.10).
+		 * Lets schema fields with `group` hide server-side like hand-written
+		 * group_attrs(); empty means "JS resolves, no-JS shows all".
+		 *
+		 * @var array
+		 */
+		private $sections = array();
+
+		/**
 		 * Create and register a settings instance for one option.
 		 *
 		 * @param string $option Option name.
 		 * @param array  $fields Field schema keyed by field id.
 		 * @param array  $args   Optional. Supports 'group', 'strings', 'layout' (row|stack, default row),
-		 *                       'version', 'upgrades', 'tools'.
+		 *                       'version', 'upgrades', 'tools', 'sections' (id=>label map for
+		 *                       server-side `?section=` resolution of field `group`, kit 0.10).
 		 * @return Wenpai_Admin_Settings
 		 */
 		public static function register( $option, array $fields, array $args = array() ) {
@@ -364,8 +374,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				isset( $args['strings'] ) && is_array( $args['strings'] ) ? $args['strings'] : array()
 			);
 			// 0.3.1: row (label left, control right; stacks at <=960px) is the default again, as in 0.2.x. 'stack' opts out.
-			$layout       = isset( $args['layout'] ) && 'stack' === $args['layout'] ? 'stack' : 'row';
-			$this->fields = array();
+			$layout         = isset( $args['layout'] ) && 'stack' === $args['layout'] ? 'stack' : 'row';
+			$this->sections = isset( $args['sections'] ) && is_array( $args['sections'] ) ? $args['sections'] : array();
+			$this->fields   = array();
 			foreach ( $fields as $id => $f ) {
 				$f = wp_parse_args(
 					$f,
@@ -396,6 +407,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 						'presentation' => '',
 						'prefix'       => '',
 						'suffix'       => '',
+						'mode'         => '',
+						'group'        => '',
 					)
 				);
 				if ( 'secret' === $f['type'] ) {
@@ -433,6 +446,13 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				if ( null !== $tree && 'disable' === $tree['mode'] && ! self::tree_has_reason( $tree ) ) {
 					self::doing_it_wrong( sprintf( 'Field 「%s」: depends_on mode 「disable」 needs a 「reason」 telling the user why and how to enable it.', $id ) );
 				}
+				$vmode = sanitize_key( (string) $f['mode'] );
+				if ( '' !== $vmode && ! in_array( $vmode, array( 'simple', 'advanced' ), true ) ) {
+					self::doing_it_wrong( sprintf( 'Field 「%s」: mode must be 「simple」 or 「advanced」; ignored.', $id ) );
+					$vmode = '';
+				}
+				$f['mode']           = $vmode;
+				$f['group']          = sanitize_key( (string) $f['group'] );
 				$this->fields[ $id ] = $f;
 			}
 			$this->version_explicit = array_key_exists( 'version', $args );
@@ -2525,8 +2545,30 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			} elseif ( null !== $off ) {
 				$state = ' hidden inert data-wenpai-dep-hidden';
 			}
-			$cls  = 'wenpai-field wenpai-field--' . $f['type'] . ( $row ? ' field wenpai-field--row' : '' ) . ( '' !== $err ? ' is-invalid' : '' ) . ( '' !== $state && null !== $off && in_array( $off['mode'], array( 'disable', 'exclude' ), true ) ? ' is-disabled' : '' );
-			$open = '<div class="' . esc_attr( $cls ) . '" data-wenpai-field="' . esc_attr( $id ) . '"' . $this->depends_attrs( $f['depends_on'] ) . $state;
+			$cls = 'wenpai-field wenpai-field--' . $f['type'] . ( $row ? ' field wenpai-field--row' : '' ) . ( '' !== $err ? ' is-invalid' : '' ) . ( '' !== $state && null !== $off && in_array( $off['mode'], array( 'disable', 'exclude' ), true ) ? ' is-disabled' : '' );
+
+			// View rules (0.10): schema fields join the same mode/group contract
+			// as hand-written mode_attrs()/group_attrs(). Hidden stays submitted;
+			// depends_on and view-hidden combine by OR in kit JS.
+			$view = '';
+			if ( '' !== $f['mode'] && class_exists( 'Wenpai_Admin_UI', false ) ) {
+				$view .= ' data-wenpai-mode="' . esc_attr( $f['mode'] ) . '"';
+				if ( Wenpai_Admin_UI::mode() !== $f['mode'] ) {
+					$view .= ' data-wenpai-view-hidden';
+				}
+			}
+			if ( '' !== $f['group'] ) {
+				$view .= ' data-wenpai-group="' . esc_attr( $f['group'] ) . '"';
+				if ( ! empty( $this->sections ) && class_exists( 'Wenpai_Admin_UI', false )
+					&& Wenpai_Admin_UI::section( $this->sections ) !== $f['group'] ) {
+					$view .= ' data-wenpai-view-hidden';
+				}
+			}
+			if ( false !== strpos( $view, 'data-wenpai-view-hidden' ) && false === strpos( $state, ' hidden' ) ) {
+				$view .= ' hidden';
+			}
+
+			$open = '<div class="' . esc_attr( $cls ) . '" data-wenpai-field="' . esc_attr( $id ) . '"' . $this->depends_attrs( $f['depends_on'] ) . $state . $view;
 			$aria = empty( $described ) ? '' : ' aria-describedby="' . esc_attr( implode( ' ', $described ) ) . '"';
 
 			if ( $row ) {
@@ -4546,7 +4588,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 *
 		 * @param array  $tabs    Tab id => label, or id => array( 'label', 'depends_on', ... ).
 		 * @param string $current Requested tab id.
-		 * @return array{tabs: array, current: string, notice: string}
+		 * @return array{tabs: array, current: string, notice: string, errors: array} `errors` maps each shown tab id to its field-error count (kit 0.10) for nav badges.
 		 */
 		public function visible_tabs( array $tabs, $current ) {
 			$shown = array();
@@ -4571,10 +4613,27 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				}
 				$current = $first;
 			}
+			// 0.10: per-tab error counts so tab nav can badge the tabs that need attention.
+			$counts = array();
+			$errs   = $this->errors();
+			foreach ( array_keys( $shown ) as $tid ) {
+				$counts[ $tid ] = 0;
+			}
+			foreach ( $errs as $fid => $e ) {
+				if ( ! isset( $this->fields[ $fid ] ) ) {
+					continue;
+				}
+				foreach ( (array) $this->fields[ $fid ]['tab'] as $ft ) {
+					if ( isset( $counts[ $ft ] ) ) {
+						++$counts[ $ft ];
+					}
+				}
+			}
 			return array(
 				'tabs'    => $shown,
 				'current' => $current,
 				'notice'  => $notice,
+				'errors'  => $counts,
 			);
 		}
 	}

@@ -260,6 +260,7 @@ a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
 .seg span:first-child, .seg a:first-child { border-inline-start: 0; }
 .seg a:hover { color: var(--wenpai-ink); background: var(--wenpai-line-soft); }
 .seg .on, .seg a.on { background: var(--wenpai-accent-soft); color: var(--wenpai-accent); font-weight: var(--wenpai-weight-regular); }
+.wenpai-subnav__badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 var(--wenpai-space-1); margin-inline-start: var(--wenpai-space-1); border-radius: 999px; background: var(--wenpai-bad); color: var(--wenpai-on-accent); font-size: var(--wenpai-text-caption); line-height: 1; }
 .seg a:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: calc(-1 * var(--wenpai-focus-width)); box-shadow: none; }
 /* D-24 / Track A: in-tab secondary nav (.seg chain; Tab≤4 stays on Shell) */
 .wenpai-subnav { display: block; margin: 0 0 var(--wenpai-space-4); max-width: 100%; }

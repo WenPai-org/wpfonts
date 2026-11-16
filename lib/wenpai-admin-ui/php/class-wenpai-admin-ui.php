@@ -1535,7 +1535,8 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 * @param array $args {
 		 *     Helper arguments.
 		 *
-		 *     @type array  $items   array of array( id, label, url|href? ). Positional id/label/url ok.
+		 *     @type array  $items   array of array( id, label, url|href?, badge?, current? ). Positional id/label/url ok.
+		 *                           badge: int count or array( count, label ) for a screen-reader suffix (0.10).
 		 *                           When url/href empty and $slug is set, builds Menu::url( $slug, query+section ).
 		 *     @type string $current Current section id. Also honors item['current'].
 		 *     @type string $slug    Optional page slug for Wenpai_Admin_Menu::url.
@@ -1575,7 +1576,20 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				if ( $on ) {
 					$links .= ' class="on" aria-current="page"';
 				}
-				$links .= '>' . esc_html( (string) $row['label'] ) . '</a>';
+				$links .= '>' . esc_html( (string) $row['label'] );
+				// 0.10: optional attention badge (e.g. per-tab error count from
+				// Wenpai_Admin_Settings::visible_tabs()['errors']). `badge` is an
+				// int, or array( 'count' => n, 'label' => screen-reader text ).
+				$badge = isset( $item['badge'] ) ? $item['badge'] : 0;
+				$bn    = is_array( $badge ) ? ( isset( $badge['count'] ) ? (int) $badge['count'] : 0 ) : (int) $badge;
+				if ( $bn > 0 ) {
+					$blabel = is_array( $badge ) && isset( $badge['label'] ) ? (string) $badge['label'] : '';
+					$links .= ' <span class="wenpai-subnav__badge" aria-hidden="true">' . $bn . '</span>';
+					if ( '' !== $blabel ) {
+						$links .= '<span class="screen-reader-text"> ' . esc_html( $blabel ) . '</span>';
+					}
+				}
+				$links .= '</a>';
 			}
 			$class = self::classes( array( 'wenpai-subnav', self::extra_class( $args ) ) );
 			$aria  = '';
