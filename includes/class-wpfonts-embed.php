@@ -22,6 +22,59 @@ class WPFonts_Embed {
 	public static function init() {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 		add_action( 'wp_head', array( __CLASS__, 'print_license_note' ), 7 );
+		add_action( 'wp_footer', array( __CLASS__, 'print_preview_badge' ) );
+	}
+
+	/**
+	 * Admin-only preview token from ?wpfonts_preview=wenfeng-*, or empty.
+	 *
+	 * Read-only selector for the front-end preview. It never writes options
+	 * and never changes which faces are confirmed.
+	 *
+	 * @return string
+	 */
+	private static function preview_request() {
+		if ( is_admin() || ! is_user_logged_in() || ! current_user_can( 'manage_options' ) ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only preview selector, gated by manage_options.
+		if ( empty( $_GET['wpfonts_preview'] ) ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same read-only selector.
+		$token = WPFonts_Link::token( sanitize_text_field( wp_unslash( $_GET['wpfonts_preview'] ) ), 80 );
+		if ( '' === $token || 0 !== strpos( $token, 'wenfeng-' ) ) {
+			return '';
+		}
+		return $token;
+	}
+
+	/**
+	 * Allowlisted stylesheet URL for the preview token, or empty.
+	 *
+	 * @param array  $settings Public settings.
+	 * @param string $token    wenfeng-* token.
+	 * @return string
+	 */
+	private static function preview_url( array $settings, $token ) {
+		$subset = isset( $settings['subset'] ) ? (string) $settings['subset'] : 'zh-common';
+		$url    = WPFonts_Link::family_stylesheet_url( $settings, $token, $subset );
+		if ( '' === $url || ! WPFonts_Link::is_allowlisted( $url ) ) {
+			return '';
+		}
+		return $url;
+	}
+
+	/**
+	 * CSS that applies the preview face to body text for this request only.
+	 *
+	 * @param string $token wenfeng-* token; also the @font-face name.
+	 * @return string
+	 */
+	private static function preview_css( $token ) {
+		$family = '"' . $token . '"';
+		return 'body{font-family:' . $family . ',-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif!important}'
+			. 'h1,h2,h3,h4,h5,h6{font-family:inherit!important}';
 	}
 
 	/**
@@ -38,6 +91,13 @@ class WPFonts_Embed {
 		}
 		$settings = WPFonts_Settings::get();
 		$urls     = WPFonts_Link::front_stylesheets( $settings );
+		$token    = self::preview_request();
+		if ( '' !== $token ) {
+			$preview = self::preview_url( $settings, $token );
+			if ( '' !== $preview && ! in_array( $preview, $urls, true ) ) {
+				$urls[] = $preview;
+			}
+		}
 		if ( array() === $urls ) {
 			return;
 		}
@@ -77,7 +137,42 @@ class WPFonts_Embed {
 			// null avoids appending ?ver=, which would change the CDN request.
 			wp_enqueue_style( $handle, $urls[ $index ], array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- The allowlisted URL must stay free of a ver query arg.
 		}
+		$token = self::preview_request();
+		if ( '' !== $token ) {
+			$preview = self::preview_url( $settings, $token );
+			if ( '' !== $preview && ! in_array( $preview, $urls, true ) ) {
+				wp_enqueue_style( 'wpfonts-preview', $preview, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Same allowlisted URL rule as above.
+				wp_add_inline_style( 'wpfonts-preview', self::preview_css( $token ) );
+			}
+		}
 		WPFonts_Packages::enqueue_styles();
+	}
+
+	/**
+	 * Fixed badge marking an active admin font preview.
+	 *
+	 * @return void
+	 */
+	public static function print_preview_badge() {
+		$token = self::preview_request();
+		if ( '' === $token ) {
+			return;
+		}
+		$settings = WPFonts_Settings::get();
+		if ( '' === self::preview_url( $settings, $token ) ) {
+			return;
+		}
+		$exit = remove_query_arg( 'wpfonts_preview' );
+		echo '<div style="position:fixed;left:12px;bottom:12px;z-index:99999;max-width:70vw;padding:8px 12px;border-radius:6px;background:#1d2327;color:#f0f0f1;font:13px/1.4 -apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3);">';
+		echo esc_html(
+			sprintf(
+				/* translators: %s: previewed font family token. */
+				__( '字体预览：%s（仅管理员可见）', 'wpfonts' ),
+				$token
+			)
+		);
+		echo ' · <a href="' . esc_url( $exit ) . '" style="color:#72aee6;">' . esc_html__( '退出预览', 'wpfonts' ) . '</a>';
+		echo '</div>';
 	}
 }
 

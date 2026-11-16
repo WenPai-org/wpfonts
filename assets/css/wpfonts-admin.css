@@ -157,6 +157,11 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 	overflow-wrap: anywhere;
 }
 
+.wenpai-app .wpfonts-preview-link {
+	margin-left: var(--wenpai-space-2);
+	font-size: var(--wenpai-text-meta);
+}
+
 .wenpai-app #wpfonts-project-wrap {
 	border-top: 1px solid var(--wenpai-line-soft);
 	margin-top: var(--wenpai-space-3);

@@ -101,6 +101,8 @@
 	var glyphObserver = null;
 	var glyphLabel = root.getAttribute("data-glyph") || "字形预览";
 	var glyphSample = root.getAttribute("data-glyph-sample") || "永和九年";
+	var previewBase = root.getAttribute("data-preview-base") || "";
+	var previewLabel = root.getAttribute("data-preview-label") || "预览";
 
 	function safeFace(value) {
 		return String(value || "").replace(/["'\\<>{};]/g, "").replace(/^\s+|\s+$/g, "");
@@ -427,6 +429,15 @@
 			meta.textContent = row.fontFamily;
 			text.appendChild(title);
 			text.appendChild(meta);
+			if (previewBase) {
+				var pv = document.createElement("a");
+				pv.className = "wpfonts-preview-link";
+				pv.href = previewBase + (previewBase.indexOf("?") === -1 ? "?" : "&") + "wpfonts_preview=" + encodeURIComponent(row.fontFamily);
+				pv.target = "_blank";
+				pv.rel = "noopener noreferrer";
+				pv.textContent = previewLabel;
+				text.appendChild(pv);
+			}
 			label.appendChild(input);
 			label.appendChild(text);
 			if (row.cssFace && !cardUrl) {

@@ -251,6 +251,14 @@ function admin_url( $path = '' ) {
 }
 
 /**
+ * @param string $path Path.
+ * @return string
+ */
+function home_url( $path = '' ) {
+	return 'https://example.test/' . ltrim( (string) $path, '/' );
+}
+
+/**
  * @param array  $args Query args.
  * @param string $url Base URL.
  * @return string
