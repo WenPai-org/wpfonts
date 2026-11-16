@@ -63,7 +63,7 @@ class WPFonts_Editor {
 				'cloud'    => $cloud,
 				'i18n'     => array(
 					'title'       => __( '文派字库', 'wpfonts' ),
-					'intro'       => __( '侧栏里的选择只改当前区块。', 'wpfonts' ),
+					'intro'       => __( '侧栏里的选择作用于当前区块。', 'wpfonts' ),
 					'packages'    => __( 'Windfonts', 'wpfonts' ),
 					'cloud'       => __( '文风云', 'wpfonts' ),
 					'noPackages'  => __( '还没有启用的文风字体包。', 'wpfonts' ),

@@ -389,7 +389,7 @@ $root = dirname( __DIR__ );
 $admin = (string) file_get_contents( $root . '/includes/class-wpfonts-admin.php' );
 $main  = (string) file_get_contents( $root . '/wpfonts.php' );
 $editor_js = (string) file_get_contents( $root . '/assets/js/wpfonts-editor.js' );
-$assert( false !== strpos( $admin, '侧栏里的「文派字库」只改当前区块。已启用的文风字体包和已确认的文风云会进入全站样式，可在外观 → 样式 → 排版里选用。' ), 'help lost the two sentences' );
+$assert( false !== strpos( $admin, '侧栏里的「文派字库」作用于当前区块。已启用的文风字体包和已确认的文风云会进入全站样式，可在外观 → 样式 → 排版里选用。' ), 'help lost the two sentences' );
 $assert( false !== strpos( $main, 'WPFonts_Settings::system_enabled' ), 'unchecked system languages are still registered' );
 $assert( false === strpos( $editor_js, 'app.windfonts.com' ), 'the inspector calls the Windfonts catalog' );
 $assert( false === strpos( $editor_js, 'admin-ajax.php' ), 'the inspector searches on open' );

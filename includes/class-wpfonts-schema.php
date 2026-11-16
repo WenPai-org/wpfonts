@@ -127,7 +127,7 @@ class WPFonts_Schema {
 				'type'    => 'toggle',
 				'default' => 1,
 				'label'   => $label,
-				'desc'    => __( '默认都开启。取消勾选后，这一组不再出现在字体库。不依赖文风云。', 'wpfonts' ),
+				'desc'    => __( '默认都开启。取消勾选后，这一组不再出现在字体库。', 'wpfonts' ),
 			);
 		}
 
@@ -140,7 +140,7 @@ class WPFonts_Schema {
 					'type'    => 'toggle',
 					'default' => 0,
 					'label'   => __( '开启文风云', 'wpfonts' ),
-					'desc'    => __( '默认关闭。开启后，前台才会请求文风样式。关闭后不再请求远程字体，系统字体仍然可用。', 'wpfonts' ),
+					'desc'    => __( '默认关闭。开启并保存后，前台加载文风样式；关闭时只使用系统字体。', 'wpfonts' ),
 				),
 			),
 			$system,

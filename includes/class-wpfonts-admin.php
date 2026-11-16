@@ -436,7 +436,7 @@ class WPFonts_Admin {
 		self::render_state_banner( $state );
 		echo '<section class="card">';
 		echo '<h2 class="card-title">' . esc_html__( '运行状态', 'wpfonts' ) . '</h2>';
-		self::status_row( 'ok', 'info', __( '系统字体', 'wpfonts' ), __( '使用站点已有的字体。前台不请求远程字体。', 'wpfonts' ), 'ok', __( '可用', 'wpfonts' ) );
+		self::status_row( 'ok', 'info', __( '系统字体', 'wpfonts' ), __( '使用设备自带字体，前台不加载远程字体。', 'wpfonts' ), 'ok', __( '可用', 'wpfonts' ) );
 		self::status_row(
 			self::cdn_tile( $state ),
 			'cloud',
@@ -517,7 +517,7 @@ class WPFonts_Admin {
 				'state'        => 'accent',
 				'title'        => __( '开启文风云', 'wpfonts' ),
 				'title_id'     => 'wpfonts-cdn-t',
-				'desc'         => __( '默认关闭。开启后，前台才会请求文风样式。关闭后不再请求远程字体，系统字体仍然可用。', 'wpfonts' ),
+				'desc'         => __( '默认关闭。开启并保存后，前台加载文风样式；关闭时只使用系统字体。', 'wpfonts' ),
 				'desc_id'      => 'wpfonts-cdn-d',
 				'control_html' => $wpfonts_cdn_control,
 			)
@@ -568,7 +568,7 @@ class WPFonts_Admin {
 	private static function render_tools( array $settings, $state, $has_key, $section = '' ) {
 		Wenpai_Admin_Shell::page_head(
 			__( '工具', 'wpfonts' ),
-			__( '安装字体包，检查文风 API Key，预览样式链接，并导出或导入不含密钥的字体记录。插件不负责上传或切分字体。', 'wpfonts' )
+			__( '安装字体包、检查文风 API Key、预览样式链接，并导出或导入字体记录（不含密钥）。', 'wpfonts' )
 		);
 		echo '<div class="wenpai-stack">';
 		echo Wenpai_Admin_UI::subnav_html(
@@ -600,7 +600,7 @@ class WPFonts_Admin {
 		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '健康检查', 'wpfonts' ), 'sub' => __( '在服务器上向文风验证。页面上不会显示 Key。', 'wpfonts' ), 'icon' => 'info', 'state' => 'warn' ) );
 		echo '<div class="field"><div class="field-label">' . esc_html__( '请求', 'wpfonts' ) . '</div><div class="field-ctl">';
 		echo '<div class="wenpai-code"><code>GET /api/key/status</code></div>';
-		echo '<p class="hint">' . esc_html__( '请求发往 app.windfonts.com。三台字体服务器不提供这个地址。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '验证请求发往 app.windfonts.com，不走字体 CDN。', 'wpfonts' ) . '</p>';
 		echo '</div></div>';
 		echo '<div class="field"><div class="field-label">' . esc_html__( '结果', 'wpfonts' ) . '</div><div class="field-ctl">';
 		self::render_health_result( $settings['key_status'], $has_key );
@@ -612,16 +612,16 @@ class WPFonts_Admin {
 		echo '</div></div>';
 		echo '</section>';
 
-		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '样式链接', 'wpfonts' ), 'sub' => __( '只显示计算得到的地址。插件不下载 CSS 正文。', 'wpfonts' ), 'icon' => 'external' ) );
+		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '样式链接', 'wpfonts' ), 'sub' => __( '这里显示前台将加载的样式地址。', 'wpfonts' ), 'icon' => 'external' ) );
 		self::render_link_preview( $settings, $state, $has_key, false );
 		echo '</section>';
 
 		self::render_migration( $settings );
 
 		echo '<section class="card">';
-		echo '<h2 class="card-title">' . esc_html__( '插件不切字', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '切分字体仍在文风完成，插件不切字。', 'wpfonts' ) . '</p>';
-		self::status_row( 'ok', 'info', __( '系统字体', 'wpfonts' ), __( '无论远程状态如何，系统字体仍然可用。', 'wpfonts' ), 'ok', __( '可用', 'wpfonts' ) );
+		echo '<h2 class="card-title">' . esc_html__( '字体来源', 'wpfonts' ) . '</h2>';
+		echo '<p class="card-sub">' . esc_html__( '字体在文风侧切分完成；本站托管字体包、连接文风云，或直接使用系统字体。', 'wpfonts' ) . '</p>';
+		self::status_row( 'ok', 'info', __( '系统字体', 'wpfonts' ), __( '系统字体始终可用。', 'wpfonts' ), 'ok', __( '可用', 'wpfonts' ) );
 		echo '</section>';
 		echo '</div>';
 	}
@@ -639,7 +639,7 @@ class WPFonts_Admin {
 		echo '<div class="wenpai-stack">';
 		self::help_card(
 			__( '编辑器与排版', 'wpfonts' ),
-			__( '侧栏里的「文派字库」只改当前区块。已启用的文风字体包和已确认的文风云会进入全站样式，可在外观 → 样式 → 排版里选用。', 'wpfonts' )
+			__( '侧栏里的「文派字库」作用于当前区块。已启用的文风字体包和已确认的文风云会进入全站样式，可在外观 → 样式 → 排版里选用。', 'wpfonts' )
 		);
 		self::help_card(
 			__( '中文', 'wpfonts' ),
@@ -647,7 +647,7 @@ class WPFonts_Admin {
 		);
 		self::help_card(
 			__( '系统字体', 'wpfonts' ),
-			__( '无需填写。字体库里的「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」仍然可用，前台不会因此请求远程字体。', 'wpfonts' )
+			__( '打开即用。字体库里的「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」默认可用，前台直接使用设备字体。', 'wpfonts' )
 		);
 		self::help_card(
 			__( '文风云', 'wpfonts' ),
@@ -655,15 +655,15 @@ class WPFonts_Admin {
 		);
 		self::help_card(
 			__( '文风字体包', 'wpfonts' ),
-			__( '安装文风已切好的包，文件放在本站。插件不切字，也不把原始字体传到文风去切。', 'wpfonts' )
+			__( '安装文风已切好的字体包，文件保存在本站，由本站直接加载。', 'wpfonts' )
 		);
 		self::help_card(
 			__( '字体目录', 'wpfonts' ),
-			__( '目录保存在本站。大约每月自动更新一次，也可在设置里立刻更新。选中后写入字体名；更新失败不会盖掉已有目录。', 'wpfonts' )
+			__( '目录保存在本站，每月自动更新一次；在设置里也可立即刷新。选中的字体会写入字体名。', 'wpfonts' )
 		);
 		echo '<section class="card">';
-		echo '<h2 class="card-title">' . esc_html__( '本版不做', 'wpfonts' ) . '</h2>';
-		echo '<p>' . esc_html__( '插件不切字，也不改主题文件。已启用的文风字体包和确认能打开的文风云会出现在全站样式里。卸载时不删除全站样式。', 'wpfonts' ) . '</p>';
+		echo '<h2 class="card-title">' . esc_html__( '使用范围', 'wpfonts' ) . '</h2>';
+		echo '<p>' . esc_html__( '字体切分在文风侧完成，主题文件无需改动。已启用的文风字体包和确认能打开的文风云会出现在全站样式里；卸载插件时不删除全站样式。', 'wpfonts' ) . '</p>';
 		echo '</section>';
 		echo '</div>';
 	}
@@ -728,9 +728,9 @@ class WPFonts_Admin {
 			$text = __( '文风云已开启，但尚未填写文风 API Key。请到设置页填写。前台暂不加载远程样式。', 'wpfonts' );
 		} elseif ( 'invalid' === $state ) {
 			$level = 'bad';
-			$text  = __( '文风 API Key 无效。前台不会加载网页字体。系统字体仍然可用。', 'wpfonts' );
+			$text  = __( '文风 API Key 无效，前台使用系统字体。', 'wpfonts' );
 		} elseif ( 'unreachable' === $state ) {
-			$text = __( '这次未能连接。暂不判定 Key 无效。系统字体仍然可用，请稍后再检查。', 'wpfonts' );
+			$text = __( '这次未能连接，暂不判定 Key 状态。前台使用系统字体，请稍后再检查。', 'wpfonts' );
 		} elseif ( 'incomplete' === $state ) {
 			$text = __( '文风 API Key 可用。还需要字体名或项目名，前台暂不加载样式。', 'wpfonts' );
 		} elseif ( 'css_missing' === $state ) {
@@ -811,7 +811,7 @@ class WPFonts_Admin {
 		echo '<div class="field">';
 		echo '<div class="field-label">' . esc_html__( '系统字体', 'wpfonts' ) . '</div>';
 		echo '<div class="field-ctl">';
-		echo '<p class="field-help">' . esc_html__( '默认都开启。取消勾选后，这一组不再出现在字体库。不依赖文风云。', 'wpfonts' ) . '</p>';
+		echo '<p class="field-help">' . esc_html__( '默认都开启。取消勾选后，这一组不再出现在字体库。', 'wpfonts' ) . '</p>';
 		echo '<input type="hidden" name="wpfonts_settings[system_form]" value="1">';
 		$on_count = 0;
 		foreach ( $choices as $code => $label ) {
@@ -897,7 +897,7 @@ class WPFonts_Admin {
 			$settings,
 			$choices
 		);
-		echo '<p class="hint">' . esc_html__( '中文回退会接在现有西文字体后面，主题里的字体类也会带上。不改主题文件。', 'wpfonts' ) . '</p>';
+		echo '<p class="hint">' . esc_html__( '中文回退会接在现有西文字体后面，主题里的字体类也会自动带上。', 'wpfonts' ) . '</p>';
 		if ( array() === $choices ) {
 			echo '<p class="hint">' . esc_html__( '还没有可以选的中文。安装文风字体包或开启文风云并确认后，就能在这里指定中文回退。', 'wpfonts' ) . '</p>';
 		}
@@ -1579,7 +1579,7 @@ class WPFonts_Admin {
 		}
 		if ( ! WPFonts_Link::has_target( $settings ) ) {
 			self::notice( 'warn', __( '还不能放到前台。请填写字体名，或填写项目名。', 'wpfonts' ) );
-			echo '<p class="hint">' . esc_html__( '公开字体地址需要字体名。未填写前，不会把无法打开的地址放到网页上。', 'wpfonts' ) . '</p>';
+			echo '<p class="hint">' . esc_html__( '公开样式地址需要字体名或项目名。填写后这里显示前台加载的地址。', 'wpfonts' ) . '</p>';
 			return;
 		}
 
@@ -1651,7 +1651,7 @@ class WPFonts_Admin {
 		}
 		if ( 'unreachable' === $status ) {
 			self::notice( 'warn', __( '这次未能连接。请稍后再试。', 'wpfonts' ) );
-			echo '<p class="hint">' . esc_html__( '可能是超时，或服务暂时不可用。这不是 Key 无效。请稍后再检查。系统字体目前仍然可用。', 'wpfonts' ) . '</p>';
+			echo '<p class="hint">' . esc_html__( '可能是超时或服务暂时不可用，并非 Key 无效。期间前台使用系统字体，请稍后再检查。', 'wpfonts' ) . '</p>';
 			return;
 		}
 		if ( 'valid' === $status ) {
@@ -1844,7 +1844,7 @@ class WPFonts_Admin {
 				array(
 					'icon' => 'download',
 					'text' => __( '把 zip 拖到这里', 'wpfonts' ),
-					'meta' => __( '或点击选择文件。安装后由本站托管，不依赖文风云。', 'wpfonts' ),
+					'meta' => __( '或点击选择文件。安装后由本站托管、直接加载。', 'wpfonts' ),
 				)
 			);
 			echo '<p class="meta" id="wpfonts-install-status" data-busy="' . esc_attr__( '正在安装…', 'wpfonts' ) . '" hidden></p>';

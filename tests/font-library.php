@@ -355,7 +355,7 @@ $assert( false !== strpos( $editor_src, "'packages'    => __( 'Windfonts', 'wpfo
 $assert( false !== strpos( $editor_src, '还没有启用的文风字体包。' ), 'inspector empty package copy drifted' );
 $assert( false !== strpos( $editor_src, 'confirmed_cloud_families' ), 'editor still applies raw catalog tokens' );
 $assert( false === strpos( $editor_js, 'wenfeng-' ), 'editor script builds a CSS stack from the catalog token' );
-$assert( false !== strpos( $editor_src, '侧栏里的选择只改当前区块。' ), 'editor intro drifted' );
+$assert( false !== strpos( $editor_src, '侧栏里的选择作用于当前区块。' ), 'editor intro drifted' );
 
 $two = $cloud_settings;
 $two['faces'] = array(

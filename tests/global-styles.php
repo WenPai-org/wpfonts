@@ -748,7 +748,7 @@ $assert( false !== strpos( $gs_src, 'wp_global_styles' ), 'global styles helper 
 $assert( false !== strpos( $gs_src, 'WP_Theme_JSON_Resolver' ), 'global styles helper does not use the resolver' );
 $assert( false === strpos( $library_src, 'wp_global_styles' ), 'library started writing global styles' );
 $assert( false !== strpos( $main_src, 'class-wpfonts-global-styles.php' ), 'main file does not load the sync helper' );
-$assert( false !== strpos( $admin_src, '已启用的文风字体包和确认能打开的文风云会出现在全站样式里。' ), 'help copy drifted' );
+$assert( false !== strpos( $admin_src, '已启用的文风字体包和确认能打开的文风云会出现在全站样式里' ), 'help copy drifted' );
 $assert( false === strpos( $admin_src, '全站样式由字体库安装写入' ), 'help still says Font Library install is required' );
 $assert( false === strpos( $admin_src, '全站安装请用字体库' ), 'admin still sends people to install for site-wide type' );
 $assert( false !== strpos( $uninstall, 'wpfonts_gs_slugs' ), 'uninstall leaves the owned-slug option' );

@@ -110,25 +110,25 @@ function wp_fonts_register_collections() {
 	$collections = array(
 		'wp-fonts-stacks-cn' => array(
 			'name'        => __( '系统 · 中文', 'wpfonts' ),
-			'description' => __( '设备上已有的中文字体。不下载字体文件。', 'wpfonts' ),
+			'description' => __( '使用设备自带的中文字体，无需下载。', 'wpfonts' ),
 			'file'        => 'chinese.json',
 			'system'      => 'cn',
 		),
 		'wp-fonts-stacks-en' => array(
 			'name'        => __( '系统 · 英文', 'wpfonts' ),
-			'description' => __( '设备上已有的西文字体。不下载字体文件。', 'wpfonts' ),
+			'description' => __( '使用设备自带的西文字体，无需下载。', 'wpfonts' ),
 			'file'        => 'english.json',
 			'system'      => 'en',
 		),
 		'wp-fonts-stacks-jp' => array(
 			'name'        => __( '系统 · 日文', 'wpfonts' ),
-			'description' => __( '设备上已有的日文字体。不下载字体文件。', 'wpfonts' ),
+			'description' => __( '使用设备自带的日文字体，无需下载。', 'wpfonts' ),
 			'file'        => 'japanese.json',
 			'system'      => 'jp',
 		),
 		'wp-fonts-stacks-kr' => array(
 			'name'        => __( '系统 · 韩文', 'wpfonts' ),
-			'description' => __( '设备上已有的韩文字体。不下载字体文件。', 'wpfonts' ),
+			'description' => __( '使用设备自带的韩文字体，无需下载。', 'wpfonts' ),
 			'file'        => 'korean.json',
 			'system'      => 'kr',
 		),
