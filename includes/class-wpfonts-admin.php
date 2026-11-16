@@ -1308,7 +1308,7 @@ class WPFonts_Admin {
 		echo '<p class="hint" id="wpfonts-catalog-note">' . esc_html( $messages['note'] ) . '</p>';
 		echo '<p class="wpfonts-catalog-actions"><button type="button" class="btn btn-secondary" id="wpfonts-catalog-refresh">' . esc_html( $messages['refresh'] ) . '</button></p>';
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" aria-label="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
-		echo '<div id="wpfonts-catalog" data-preview-base="' . esc_url( home_url( '/' ) ) . '" data-preview-label="' . esc_attr__( '预览', 'wpfonts' ) . '" data-source-label="' . esc_attr__( '详情', 'wpfonts' ) . '" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '" data-glyph="' . esc_attr__( '字形预览', 'wpfonts' ) . '" data-glyph-sample="' . esc_attr__( '永和九年', 'wpfonts' ) . '">';
+		echo '<div id="wpfonts-catalog" data-preview-base="' . esc_url( home_url( '/' ) ) . '" data-preview-label="' . esc_attr__( '前台预览', 'wpfonts' ) . '" data-source-label="' . esc_attr__( '字体详情', 'wpfonts' ) . '" data-license-label="' . esc_attr__( '授权协议', 'wpfonts' ) . '" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '" data-glyph="' . esc_attr__( '字形预览', 'wpfonts' ) . '" data-glyph-sample="' . esc_attr__( '永和九年', 'wpfonts' ) . '">';
 		if ( $failed ) {
 			echo '<p class="hint" id="wpfonts-catalog-status">' . esc_html( $messages['missing'] ) . '</p>';
 		} elseif ( array() === $fonts ) {
@@ -1380,8 +1380,11 @@ class WPFonts_Admin {
 		}
 		echo '>' . esc_html( $name ) . '</span>';
 		echo '<span class="d">' . esc_html( $id );
-		echo '<a class="wpfonts-preview-link" href="' . esc_url( add_query_arg( array( 'wpfonts_preview' => $id ), home_url( '/' ) ) ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( '预览', 'wpfonts' ) . '</a>';
-		echo '<a class="wpfonts-source-link" href="' . esc_url( 'https://app.windfonts.com/fonts/' . rawurlencode( (string) preg_replace( '/^wenfeng-/', '', $id ) ) ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( '详情', 'wpfonts' ) . '</a>';
+		echo '<a class="wpfonts-preview-link" href="' . esc_url( add_query_arg( array( 'wpfonts_preview' => $id ), home_url( '/' ) ) ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( '前台预览', 'wpfonts' ) . '</a>';
+		echo '<a class="wpfonts-source-link" href="' . esc_url( 'https://app.windfonts.com/fonts/' . rawurlencode( (string) preg_replace( '/^wenfeng-/', '', $id ) ) ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( '字体详情', 'wpfonts' ) . '</a>';
+		if ( isset( $font['licenseUrl'] ) && '' !== $font['licenseUrl'] ) {
+			echo '<a class="wpfonts-license-link" href="' . esc_url( $font['licenseUrl'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( '授权协议', 'wpfonts' ) . '</a>';
+		}
 		echo '</span>';
 		if ( $has_css ) {
 			echo '<span class="wpfonts-specimen-fallback"';
@@ -1449,6 +1452,10 @@ class WPFonts_Admin {
 				}
 				if ( '' !== $spec['fontPreviewUrl'] ) {
 					$row['fontPreviewUrl'] = $spec['fontPreviewUrl'];
+				}
+				$license = WPFonts_Link::package_license_url( $token, $region );
+				if ( '' !== $license ) {
+					$row['licenseUrl'] = $license;
 				}
 			}
 			$out[] = $row;

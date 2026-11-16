@@ -209,6 +209,24 @@ class WPFonts_Link {
 	}
 
 	/**
+	 * License text URL for one wenfeng-* family on the package CDN.
+	 *
+	 * Same host and folder rules as package_preview_url(). Empty when the
+	 * slug is not a wenfeng-* token.
+	 *
+	 * @param mixed $slug   Package id or catalog fontFamily.
+	 * @param mixed $region Region id.
+	 * @return string
+	 */
+	public static function package_license_url( $slug, $region = 'cn' ) {
+		$norm = self::package_cdn_norm( $slug );
+		if ( '' === $norm ) {
+			return '';
+		}
+		return 'https://' . self::host( $region ) . '/fonts-packages/' . $norm . '/license/original.txt';
+	}
+
+	/**
 	 * previewUrl, cardPreviewUrl, and fontPreviewUrl for a slug, preferring webp.
 	 *
 	 * Derived from the CDN folder (package_cdn_norm()). A row may already

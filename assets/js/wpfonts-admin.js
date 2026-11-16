@@ -102,8 +102,9 @@
 	var glyphLabel = root.getAttribute("data-glyph") || "字形预览";
 	var glyphSample = root.getAttribute("data-glyph-sample") || "永和九年";
 	var previewBase = root.getAttribute("data-preview-base") || "";
-	var previewLabel = root.getAttribute("data-preview-label") || "预览";
-	var sourceLabel = root.getAttribute("data-source-label") || "详情";
+	var previewLabel = root.getAttribute("data-preview-label") || "前台预览";
+	var sourceLabel = root.getAttribute("data-source-label") || "字体详情";
+	var licenseLabel = root.getAttribute("data-license-label") || "授权协议";
 
 	function safeFace(value) {
 		return String(value || "").replace(/["'\\<>{};]/g, "").replace(/^\s+|\s+$/g, "");
@@ -115,6 +116,10 @@
 
 	function allowedSpecimen(url) {
 		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/preview\/(?:preview|card|og|fontpreview)\.(?:webp|png)$/.test(url || "");
+	}
+
+	function allowedLicense(url) {
+		return /^https:\/\/(?:cn|hk|en)\.windfonts\.com\/fonts-packages\/[a-z0-9-]+\/license\/original\.txt$/.test(url || "");
 	}
 
 	function pngSibling(url) {
@@ -431,6 +436,15 @@
 				src.rel = "noopener noreferrer";
 				src.textContent = sourceLabel;
 				meta.appendChild(src);
+				if (allowedLicense(row.licenseUrl)) {
+					var lic = document.createElement("a");
+					lic.className = "wpfonts-license-link";
+					lic.href = row.licenseUrl;
+					lic.target = "_blank";
+					lic.rel = "noopener noreferrer";
+					lic.textContent = licenseLabel;
+					meta.appendChild(lic);
+				}
 			}
 			text.appendChild(title);
 			text.appendChild(meta);

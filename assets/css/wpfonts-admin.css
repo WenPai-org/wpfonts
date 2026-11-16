@@ -174,11 +174,13 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 .wenpai-app .wpfonts-catalog-list .choice .d {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: var(--wenpai-space-2);
 }
 
 .wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-preview-link,
-.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-source-link {
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-source-link,
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-license-link {
 	margin-left: 0;
 	white-space: nowrap;
 }
