@@ -485,10 +485,6 @@ class WPFonts_Link {
 		if ( empty( $settings['cdn_enabled'] ) ) {
 			return array();
 		}
-		$status = isset( $settings['key_status'] ) ? (string) $settings['key_status'] : '';
-		if ( 'valid' !== $status ) {
-			return array();
-		}
 
 		unset( $html, $globals );
 		$urls    = array();
@@ -557,10 +553,6 @@ class WPFonts_Link {
 	 */
 	public static function embed_url( array $settings ) {
 		if ( empty( $settings['cdn_enabled'] ) ) {
-			return '';
-		}
-		$status = isset( $settings['key_status'] ) ? (string) $settings['key_status'] : '';
-		if ( 'valid' !== $status ) {
 			return '';
 		}
 		if ( ! self::has_target( $settings ) ) {

@@ -303,6 +303,14 @@ function wp_nonce_field( $action ) {
 }
 
 /**
+ * @param int $number Number.
+ * @return string
+ */
+function number_format_i18n( $number ) {
+	return (string) $number;
+}
+
+/**
  * @param string $name Option name.
  * @param mixed  $default Default.
  * @return mixed
@@ -324,6 +332,7 @@ require $root . '/lib/wenpai-admin-ui/php/load.php';
 require $root . '/includes/class-wpfonts-link.php';
 require $root . '/includes/class-wpfonts-health.php';
 require $root . '/includes/class-wpfonts-settings.php';
+require $root . '/includes/class-wpfonts-usage.php';
 require $root . '/includes/class-wpfonts-catalog.php';
 require $root . '/includes/class-wpfonts-packages.php';
 require $root . '/includes/class-wpfonts-library.php';

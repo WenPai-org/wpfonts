@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-16T15:02:27+00:00\n"
+"POT-Creation-Date: 2026-11-16T15:32:42+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpfonts\n"
@@ -60,11 +60,11 @@ msgid "已保存。"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:160
-#: includes/class-wpfonts-admin.php:2103
-#: includes/class-wpfonts-admin.php:2138
-#: includes/class-wpfonts-admin.php:2163
-#: includes/class-wpfonts-admin.php:2194
-#: includes/class-wpfonts-admin.php:2224
+#: includes/class-wpfonts-admin.php:2108
+#: includes/class-wpfonts-admin.php:2143
+#: includes/class-wpfonts-admin.php:2168
+#: includes/class-wpfonts-admin.php:2199
+#: includes/class-wpfonts-admin.php:2229
 msgid "你没有权限做这件事。"
 msgstr ""
 
@@ -87,7 +87,7 @@ msgid "工具"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:366
-#: includes/class-wpfonts-admin.php:639
+#: includes/class-wpfonts-admin.php:652
 msgid "帮助"
 msgstr ""
 
@@ -100,7 +100,7 @@ msgid "文派字库（WPFonts）"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:372
-#: includes/class-wpfonts-admin.php:1559
+#: includes/class-wpfonts-admin.php:1574
 #: includes/class-wpfonts-schema.php:317
 msgid "（在新标签页打开）"
 msgstr ""
@@ -118,8 +118,8 @@ msgid "运行状态"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:440
-#: includes/class-wpfonts-admin.php:652
-#: includes/class-wpfonts-admin.php:850
+#: includes/class-wpfonts-admin.php:665
+#: includes/class-wpfonts-admin.php:865
 msgid "系统字体"
 msgstr ""
 
@@ -136,8 +136,8 @@ msgid "文风云® CDN"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:453
-#: includes/class-wpfonts-admin.php:625
-#: includes/class-wpfonts-admin.php:1611
+#: includes/class-wpfonts-admin.php:638
+#: includes/class-wpfonts-admin.php:1625
 msgid "样式链接"
 msgstr ""
 
@@ -204,8 +204,8 @@ msgid "日常"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:588
-#: includes/class-wpfonts-admin.php:719
-#: includes/class-wpfonts-admin.php:1885
+#: includes/class-wpfonts-admin.php:732
+#: includes/class-wpfonts-admin.php:1890
 msgid "字体包"
 msgstr ""
 
@@ -213,816 +213,815 @@ msgstr ""
 msgid "迁移"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:610
+#: includes/class-wpfonts-admin.php:615
+msgid "本月用量"
+msgstr ""
+
+#: includes/class-wpfonts-admin.php:623
 msgid "健康检查"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:610
+#: includes/class-wpfonts-admin.php:623
 msgid "在服务器上向文风验证。页面上不会显示 Key。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:611
+#: includes/class-wpfonts-admin.php:624
 msgid "请求"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:613
+#: includes/class-wpfonts-admin.php:626
 msgid "验证请求发往 app.windfonts.com，不走字体 CDN。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:615
+#: includes/class-wpfonts-admin.php:628
 msgid "结果"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:620
+#: includes/class-wpfonts-admin.php:633
 msgid "再检查一次"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:625
+#: includes/class-wpfonts-admin.php:638
 msgid "这里显示前台将加载的样式地址。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:640
+#: includes/class-wpfonts-admin.php:653
 msgid "简要说明。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:644
+#: includes/class-wpfonts-admin.php:657
 msgid "编辑器与排版"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:645
+#: includes/class-wpfonts-admin.php:658
 msgid "侧栏里的「文派字库」作用于当前区块。已启用的文风字体包和已确认的文风云会进入全站样式，可在外观 → 样式 → 排版里选用。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:648
-#: includes/class-wpfonts-admin.php:914
+#: includes/class-wpfonts-admin.php:661
+#: includes/class-wpfonts-admin.php:929
 msgid "中文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:649
+#: includes/class-wpfonts-admin.php:662
 msgid "未指定中文回退时，站点使用系统中文。安装文风字体包或开启文风云后，可在设置里指定正文、标题和中文回退。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:653
+#: includes/class-wpfonts-admin.php:666
 msgid "打开即用。字体库里的「系统 · 中文」「系统 · 英文」「系统 · 日文」「系统 · 韩文」默认可用，前台直接使用设备字体。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:656
-#: includes/class-wpfonts-admin.php:964
+#: includes/class-wpfonts-admin.php:669
+#: includes/class-wpfonts-admin.php:979
 #: includes/class-wpfonts-editor.php:68
 #: includes/class-wpfonts-library.php:157
 #: includes/class-wpfonts-schema.php:116
 msgid "文风云"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:657
+#: includes/class-wpfonts-admin.php:670
 msgid "默认关闭。开启并保存后，每条已确认的文风云字体各加一条样式链接。服务器只有 cn.windfonts.com、hk.windfonts.com 和 en.windfonts.com。网页中不会出现 API Key。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:660
-#: includes/class-wpfonts-admin.php:963
-#: includes/class-wpfonts-admin.php:1879
+#: includes/class-wpfonts-admin.php:673
+#: includes/class-wpfonts-admin.php:978
+#: includes/class-wpfonts-admin.php:1884
 #: includes/class-wpfonts-schema.php:115
 msgid "文风字体包"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:661
+#: includes/class-wpfonts-admin.php:674
 msgid "安装文风已切好的字体包，文件保存在本站，由本站直接加载。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:664
+#: includes/class-wpfonts-admin.php:677
 msgid "字体目录"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:665
+#: includes/class-wpfonts-admin.php:678
 msgid "目录保存在本站，每月自动更新一次；在设置里也可立即刷新。选中的字体会写入字体名。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:668
+#: includes/class-wpfonts-admin.php:681
 msgid "使用范围"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:669
+#: includes/class-wpfonts-admin.php:682
 msgid "字体切分在文风侧完成，主题文件无需改动。已启用的文风字体包和确认能打开的文风云会出现在全站样式里；卸载插件时不删除全站样式。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:699
+#: includes/class-wpfonts-admin.php:712
 msgid "文风字体包使用中。前台会加载本站这份字体样式。文风云仍可按需开启。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:703
+#: includes/class-wpfonts-admin.php:716
 msgid "当前使用系统字体。要开启文风云，打开下方开关并保存；也可以先到字体包安装文风已切好的包。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:710
+#: includes/class-wpfonts-admin.php:723
 msgid "网页字体尚未开启"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:711
+#: includes/class-wpfonts-admin.php:724
 msgid "系统字体开箱即用。需要文风字体时，可开启文风云，或到字体包安装。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:714
-#: includes/class-wpfonts-admin.php:1594
+#: includes/class-wpfonts-admin.php:727
+#: includes/class-wpfonts-admin.php:1609
 msgid "去设置"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:729
-msgid "文风 API Key 尚未验证。请到工具中再检查一次。验证通过前，前台不加载样式。"
+#: includes/class-wpfonts-admin.php:742
+msgid "文风 API Key 尚未验证。请到工具中再检查一次。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:731
-msgid "文风云已开启，但尚未填写文风 API Key。请到设置页填写。前台暂不加载远程样式。"
+#: includes/class-wpfonts-admin.php:745
+msgid "未填写文风 API Key，前台按免费额度加载文风字体。本月已服务的访客数见「工具」页；超过 5 万/月请下载字体包或申请 Key。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:734
-#: includes/class-wpfonts-admin.php:1790
-msgid "文风 API Key 无效，前台使用系统字体。"
+#: includes/class-wpfonts-admin.php:747
+msgid "文风 API Key 无效。前台仍按免费额度加载字体；更正 Key 后可验证正式额度。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:736
-msgid "这次未能连接，暂不判定 Key 状态。前台使用系统字体，请稍后再检查。"
+#: includes/class-wpfonts-admin.php:749
+msgid "这次未能连接文风接口，暂不判定 Key 状态。前台仍按免费额度加载字体，请稍后再检查。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:738
-msgid "文风 API Key 可用。还需要字体名或项目名，前台暂不加载样式。"
+#: includes/class-wpfonts-admin.php:751
+msgid "还需要字体名或已确认的文风字体，前台暂不加载样式。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:741
-#: includes/class-wpfonts-admin.php:1651
+#: includes/class-wpfonts-admin.php:754
+#: includes/class-wpfonts-admin.php:1655
 msgid "这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:744
+#: includes/class-wpfonts-admin.php:756
+msgid "文风 API Key 尚未验证，前台按免费额度加载字体。请到工具中检查一次。"
+msgstr ""
+
+#: includes/class-wpfonts-admin.php:759
 msgid "文风云已开启，文风 API Key 可用。前台会加载文风服务器上的样式，网页中不会出现 Key。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:746
+#: includes/class-wpfonts-admin.php:761
 msgid "文风字体包也在使用。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:787
+#: includes/class-wpfonts-admin.php:802
 msgid "文风样式表返回 404，前台不会加载远程字体。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:790
+#: includes/class-wpfonts-admin.php:805
 msgid "文风样式表暂时无法验证，前台字体可能回退到系统字体。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:800
+#: includes/class-wpfonts-admin.php:815
 msgid "打开工具页再检查一次"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:844
+#: includes/class-wpfonts-admin.php:859
 #: includes/class-wpfonts-schema.php:121
-#: wpfonts.php:112
+#: wpfonts.php:113
 msgid "系统 · 中文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:845
+#: includes/class-wpfonts-admin.php:860
 #: includes/class-wpfonts-schema.php:122
-#: wpfonts.php:118
+#: wpfonts.php:119
 msgid "系统 · 英文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:846
+#: includes/class-wpfonts-admin.php:861
 #: includes/class-wpfonts-schema.php:123
-#: wpfonts.php:124
+#: wpfonts.php:125
 msgid "系统 · 日文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:847
+#: includes/class-wpfonts-admin.php:862
 #: includes/class-wpfonts-schema.php:124
-#: wpfonts.php:130
+#: wpfonts.php:131
 msgid "系统 · 韩文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:852
+#: includes/class-wpfonts-admin.php:867
 #: includes/class-wpfonts-schema.php:130
 msgid "默认都开启。取消勾选后，这一组不再出现在字体库。"
 msgstr ""
 
 #. translators: 1: number of system font families enabled, 2: total number of choices.
-#: includes/class-wpfonts-admin.php:862
+#: includes/class-wpfonts-admin.php:877
 #, php-format
 msgid "已启用 %1$d / %2$d"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:869
+#: includes/class-wpfonts-admin.php:884
 #: includes/class-wpfonts-schema.php:357
 msgid "全选"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:870
+#: includes/class-wpfonts-admin.php:885
 #: includes/class-wpfonts-schema.php:358
 msgid "清空"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:890
+#: includes/class-wpfonts-admin.php:905
 #: includes/class-wpfonts-cjk.php:214
 msgid "未指定，前台使用系统中文。安装字体包或开启文风云后，可在设置里选择。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:898
-#: includes/class-wpfonts-admin.php:934
+#: includes/class-wpfonts-admin.php:913
+#: includes/class-wpfonts-admin.php:949
 #: includes/class-wpfonts-schema.php:154
 msgid "中文回退"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:901
-#: includes/class-wpfonts-admin.php:1869
-#: includes/class-wpfonts-admin.php:1976
+#: includes/class-wpfonts-admin.php:916
+#: includes/class-wpfonts-admin.php:1874
+#: includes/class-wpfonts-admin.php:1981
 msgid "使用中"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:901
+#: includes/class-wpfonts-admin.php:916
 msgid "未指定"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:917
+#: includes/class-wpfonts-admin.php:932
 #: includes/class-wpfonts-schema.php:155
 msgid "从已启用的文风字体包，或已确认的文风云里选。留空则这一项不单独指定。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:920
+#: includes/class-wpfonts-admin.php:935
 #: includes/class-wpfonts-schema.php:162
 msgid "正文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:921
-#: includes/class-wpfonts-admin.php:928
+#: includes/class-wpfonts-admin.php:936
+#: includes/class-wpfonts-admin.php:943
 msgid "与中文回退相同"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:927
+#: includes/class-wpfonts-admin.php:942
 #: includes/class-wpfonts-schema.php:169
 msgid "标题"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:935
+#: includes/class-wpfonts-admin.php:950
 msgid "不使用"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:939
+#: includes/class-wpfonts-admin.php:954
 msgid "中文回退会接在现有西文字体后面，主题里的字体类也会自动带上。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:941
+#: includes/class-wpfonts-admin.php:956
 msgid "还没有可以选的中文。安装文风字体包或开启文风云并确认后，就能在这里指定中文回退。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:990
+#: includes/class-wpfonts-admin.php:1005
 msgid "已保存，当前不可用"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1019
+#: includes/class-wpfonts-admin.php:1034
 msgid "已导入。密钥没有写入本站。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1021
+#: includes/class-wpfonts-admin.php:1036
 msgid "文件里有密钥，已拒绝导入。密钥不会写入本站。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1023
+#: includes/class-wpfonts-admin.php:1038
 msgid "这份文件不能导入。请使用本页导出的 JSON。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1025
+#: includes/class-wpfonts-admin.php:1040
 msgid "没有读到文件。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1028
+#: includes/class-wpfonts-admin.php:1043
 msgid "导出"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1028
+#: includes/class-wpfonts-admin.php:1043
 msgid "下载不含 API Key 的 JSON，便于在另一站点恢复已启用的文风字体包和已确认的文风云。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1033
+#: includes/class-wpfonts-admin.php:1048
 msgid "API Key 不会出现在文件中。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1034
+#: includes/class-wpfonts-admin.php:1049
 msgid "导出 JSON"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1037
+#: includes/class-wpfonts-admin.php:1052
 msgid "导入"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1037
+#: includes/class-wpfonts-admin.php:1052
 msgid "写入已启用的字体包记录和已确认的文风云。本站没有对应文件的字体包会跳过。带密钥的文件会被拒绝。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1041
+#: includes/class-wpfonts-admin.php:1056
 msgid "JSON 文件"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1042
-#: includes/class-wpfonts-admin.php:1934
+#: includes/class-wpfonts-admin.php:1057
+#: includes/class-wpfonts-admin.php:1939
 #: includes/class-wpfonts-schema.php:365
 msgid "移除"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1043
-#: includes/class-wpfonts-admin.php:1045
+#: includes/class-wpfonts-admin.php:1058
+#: includes/class-wpfonts-admin.php:1060
 msgid "拖入 JSON 文件，或点击选择"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1050
+#: includes/class-wpfonts-admin.php:1065
 msgid "选择 .json 文件后随表单一起提交。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1055
+#: includes/class-wpfonts-admin.php:1070
 msgid "我确认用这份文件更新已启用的字体包，并覆盖已确认的文风云列表。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1059
+#: includes/class-wpfonts-admin.php:1074
 msgid "未勾选不能点。密钥不会写入。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1060
+#: includes/class-wpfonts-admin.php:1075
 msgid "导入 JSON"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1077
-#: includes/class-wpfonts-admin.php:1854
+#: includes/class-wpfonts-admin.php:1092
+#: includes/class-wpfonts-admin.php:1859
 #: includes/class-wpfonts-schema.php:285
 msgid "已开启"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1078
-#: includes/class-wpfonts-admin.php:1834
+#: includes/class-wpfonts-admin.php:1093
+#: includes/class-wpfonts-admin.php:1839
 #: includes/class-wpfonts-schema.php:286
 msgid "未开启"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1103
+#: includes/class-wpfonts-admin.php:1118
 #: includes/class-wpfonts-schema.php:183
 msgid "中国大陆"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1104
+#: includes/class-wpfonts-admin.php:1119
 #: includes/class-wpfonts-schema.php:184
 msgid "中国香港"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1105
+#: includes/class-wpfonts-admin.php:1120
 #: includes/class-wpfonts-schema.php:185
 msgid "国际"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1110
+#: includes/class-wpfonts-admin.php:1125
 #: includes/class-wpfonts-schema.php:180
 msgid "区域"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1112
+#: includes/class-wpfonts-admin.php:1127
 #: includes/class-wpfonts-schema.php:181
 msgid "选择文风云字体的 CDN 加速服务器。可选中国大陆、中国香港、国际三区域，香港节点兼顾国内外访问。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1139
-#: includes/class-wpfonts-admin.php:1586
+#: includes/class-wpfonts-admin.php:1154
+#: includes/class-wpfonts-admin.php:1601
 #: includes/class-wpfonts-schema.php:212
 msgid "字符范围"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1150
+#: includes/class-wpfonts-admin.php:1165
 #: includes/class-wpfonts-schema.php:213
 msgid "字符范围决定远程字体包的大小，范围越小包越小。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1162
+#: includes/class-wpfonts-admin.php:1177
 #: includes/class-wpfonts-schema.php:215
 msgid "西文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1163
+#: includes/class-wpfonts-admin.php:1178
 #: includes/class-wpfonts-schema.php:215
 msgid "体积最小，主要覆盖拉丁字符。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1166
+#: includes/class-wpfonts-admin.php:1181
 #: includes/class-wpfonts-schema.php:216
 msgid "常用中文（推荐）"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1167
+#: includes/class-wpfonts-admin.php:1182
 #: includes/class-wpfonts-schema.php:216
 msgid "日常中文站点够用，体积适中。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1170
+#: includes/class-wpfonts-admin.php:1185
 #: includes/class-wpfonts-schema.php:217
 msgid "较全中文"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1171
+#: includes/class-wpfonts-admin.php:1186
 #: includes/class-wpfonts-schema.php:217
 msgid "生僻字更多，体积明显更大。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1174
+#: includes/class-wpfonts-admin.php:1189
 #: includes/class-wpfonts-schema.php:218
 msgid "全量"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1175
+#: includes/class-wpfonts-admin.php:1190
 #: includes/class-wpfonts-schema.php:218
 msgid "最大包，仅在确实需要时使用。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1187
+#: includes/class-wpfonts-admin.php:1202
 msgid "正在加载字体目录…"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1188
+#: includes/class-wpfonts-admin.php:1203
 msgid "暂时读不到字体目录。你可以手动填写字体名，稍后再试。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1189
+#: includes/class-wpfonts-admin.php:1204
 msgid "没有匹配的字体。改个词，或手动填写。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1190
+#: includes/class-wpfonts-admin.php:1205
 msgid "结果来自已加载页"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1191
+#: includes/class-wpfonts-admin.php:1206
 msgid "正在更新字体目录…"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1192
+#: includes/class-wpfonts-admin.php:1207
 msgid "字体目录已更新。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1193
+#: includes/class-wpfonts-admin.php:1208
 msgid "暂时更新不了，仍显示上次保存的目录。稍后再试。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1194
+#: includes/class-wpfonts-admin.php:1209
 msgid "更新字体目录"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1195
+#: includes/class-wpfonts-admin.php:1210
 msgid "还没有字体目录。可点「更新字体目录」再试，或先手填字体名。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1208
+#: includes/class-wpfonts-admin.php:1223
 #: includes/class-wpfonts-schema.php:233
 msgid "文风 API Key"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1210
+#: includes/class-wpfonts-admin.php:1225
 msgid "留空表示不修改"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1210
+#: includes/class-wpfonts-admin.php:1225
 msgid "粘贴文风 API Key"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1215
+#: includes/class-wpfonts-admin.php:1230
 msgid "文风 API Key 无效。已保存的 Key 不再完整显示，请到文风重新复制 Key。"
 msgstr ""
 
 #. translators: %s: masked API key, first and last characters only.
-#: includes/class-wpfonts-admin.php:1222
+#: includes/class-wpfonts-admin.php:1237
 #, php-format
 msgid "已保存，这里显示 %s。验证通过。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1227
+#: includes/class-wpfonts-admin.php:1242
 msgid "已保存。页面上不再显示完整内容。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1232
+#: includes/class-wpfonts-admin.php:1247
 msgid "已保存。留空表示不修改。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1235
+#: includes/class-wpfonts-admin.php:1250
 msgid "清除已保存的 Key"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1237
-msgid "留空表示不修改。"
+#: includes/class-wpfonts-admin.php:1252
+msgid "可留空。未填写时前台按免费额度加载文风字体；填写后可验证正式额度。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1257
-#: includes/class-wpfonts-admin.php:1582
+#: includes/class-wpfonts-admin.php:1272
+#: includes/class-wpfonts-admin.php:1597
 #: includes/class-wpfonts-schema.php:204
 msgid "字体名"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1260
+#: includes/class-wpfonts-admin.php:1275
 #: includes/class-wpfonts-schema.php:205
 msgid "也可直接填写，例如 wenfeng-ibmps。填了项目名后，公开地址可以不填字体名。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1294
-#: includes/class-wpfonts-admin.php:1577
+#: includes/class-wpfonts-admin.php:1309
+#: includes/class-wpfonts-admin.php:1592
 #: includes/class-wpfonts-schema.php:196
 msgid "选用字体"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1305
+#: includes/class-wpfonts-admin.php:1320
 msgid "从下方勾选所需文风字体，或在「字体名」里手动填写。选中的字体会写进前台加载的样式地址，支持多选。目录每月仅自动更新一次，如有需要可点击「更新字体目录」立即刷新。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1307
+#: includes/class-wpfonts-admin.php:1322
 msgid "搜索字体名"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1308
-#: includes/class-wpfonts-admin.php:1380
+#: includes/class-wpfonts-admin.php:1323
+#: includes/class-wpfonts-admin.php:1395
 msgid "前台预览"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1308
-#: includes/class-wpfonts-admin.php:1381
+#: includes/class-wpfonts-admin.php:1323
+#: includes/class-wpfonts-admin.php:1396
 msgid "字体详情"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1308
-#: includes/class-wpfonts-admin.php:1383
+#: includes/class-wpfonts-admin.php:1323
+#: includes/class-wpfonts-admin.php:1398
 msgid "授权协议"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1308
-#: includes/class-wpfonts-admin.php:1379
+#: includes/class-wpfonts-admin.php:1323
+#: includes/class-wpfonts-admin.php:1394
 msgid "已复制"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1308
-#: includes/class-wpfonts-admin.php:1379
+#: includes/class-wpfonts-admin.php:1323
+#: includes/class-wpfonts-admin.php:1394
 msgid "点击复制"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1308
-#: includes/class-wpfonts-admin.php:1392
-#: includes/class-wpfonts-admin.php:2066
+#: includes/class-wpfonts-admin.php:1323
+#: includes/class-wpfonts-admin.php:1407
+#: includes/class-wpfonts-admin.php:2071
 msgid "字形预览"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1308
-#: includes/class-wpfonts-admin.php:1393
+#: includes/class-wpfonts-admin.php:1323
+#: includes/class-wpfonts-admin.php:1408
 msgid "永和九年"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1551
+#: includes/class-wpfonts-admin.php:1566
 msgid "项目与白名单"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1553
+#: includes/class-wpfonts-admin.php:1568
 #: includes/class-wpfonts-schema.php:238
 msgid "项目名"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1556
+#: includes/class-wpfonts-admin.php:1571
 #: includes/class-wpfonts-schema.php:239
 msgid "选填。填写后前台改用项目样式。域名白名单在文风控制台配置，不在本插件里改。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1558
+#: includes/class-wpfonts-admin.php:1573
 msgid "打开文风控制台"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1583
+#: includes/class-wpfonts-admin.php:1598
 msgid "未设置"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1628
-msgid "不会加载远程样式。文风 API Key 无效。"
-msgstr ""
-
-#: includes/class-wpfonts-admin.php:1629
-msgid "更正 Key 并保存后，这里才会显示文风服务器上的样式链接。"
-msgstr ""
-
-#: includes/class-wpfonts-admin.php:1633
-msgid "尚未填写文风 API Key。前台暂不加载远程样式。"
-msgstr ""
-
-#: includes/class-wpfonts-admin.php:1639
+#: includes/class-wpfonts-admin.php:1643
 msgid "还不能放到前台。请填写字体名，或填写项目名。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1640
+#: includes/class-wpfonts-admin.php:1644
 msgid "公开样式地址需要字体名或项目名。填写后这里显示前台加载的地址。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1657
+#: includes/class-wpfonts-admin.php:1662
 msgid "前台会加载这一条。链接中没有 API Key。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1659
-msgid "还没确认这条地址能打开。保存一次后再看。"
+#: includes/class-wpfonts-admin.php:1664
+msgid "前台会加载这一条（免费额度）。保存后会自动验证地址。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1661
-msgid "尚未验证通过，前台暂不使用。"
-msgstr ""
-
-#: includes/class-wpfonts-admin.php:1663
-msgid "开启文风云并保存后，前台才会使用。"
-msgstr ""
-
-#: includes/class-wpfonts-admin.php:1665
-msgid "前台目前不会使用。"
+#: includes/class-wpfonts-admin.php:1666
+msgid "Key 状态未确认；地址本身可用时前台仍会加载。"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:1668
+msgid "开启文风云并保存后，前台才会使用。"
+msgstr ""
+
+#: includes/class-wpfonts-admin.php:1670
+msgid "前台目前不会使用。"
+msgstr ""
+
+#: includes/class-wpfonts-admin.php:1673
 msgid "使用的是项目中已经准备好的样式。"
 msgstr ""
 
 #. translators: %s: subset id such as zh-common.
-#: includes/class-wpfonts-admin.php:1674
+#: includes/class-wpfonts-admin.php:1679
 #, php-format
 msgid "公开字体地址，字符范围 %s 附在地址后面。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1693
+#: includes/class-wpfonts-admin.php:1698
 msgid "链接文字（不加载字体）"
 msgstr ""
 
 #. translators: %d: number of confirmed cloud fonts.
-#: includes/class-wpfonts-admin.php:1709
+#: includes/class-wpfonts-admin.php:1714
 #, php-format
 msgid "前台按已确认字体各加载一条样式，共 %d 条。链接中没有 API Key。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1738
+#: includes/class-wpfonts-admin.php:1743
 msgid "尚未填写文风 API Key。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1742
+#: includes/class-wpfonts-admin.php:1747
 msgid "文风 API Key 无效。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1746
+#: includes/class-wpfonts-admin.php:1751
 msgid "这次未能连接。请稍后再试。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1747
-msgid "可能是超时或服务暂时不可用，并非 Key 无效。期间前台使用系统字体，请稍后再检查。"
+#: includes/class-wpfonts-admin.php:1752
+msgid "可能是超时或服务暂时不可用，并非 Key 无效。前台仍按免费额度加载字体，请稍后再检查。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1751
+#: includes/class-wpfonts-admin.php:1756
 msgid "文风 API Key 可用。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1754
+#: includes/class-wpfonts-admin.php:1759
 msgid "尚未检查。请点击下方再检查一次。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1784
+#: includes/class-wpfonts-admin.php:1789
 msgid "未开启。开启并保存后，前台加载文风样式。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1787
-msgid "已开启，但尚未填写文风 API Key。"
+#: includes/class-wpfonts-admin.php:1792
+msgid "已开启，未填写 Key，前台按免费额度加载。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1793
+#: includes/class-wpfonts-admin.php:1795
+msgid "文风 API Key 无效，前台按免费额度加载。"
+msgstr ""
+
+#: includes/class-wpfonts-admin.php:1798
 msgid "这次未能连接。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1796
-msgid "文风 API Key 尚未验证。"
-msgstr ""
-
-#: includes/class-wpfonts-admin.php:1799
-msgid "文风 API Key 可用。还需要字体名或项目名。"
-msgstr ""
-
-#: includes/class-wpfonts-admin.php:1802
-msgid "这条地址打不开，前台不会加载。"
+#: includes/class-wpfonts-admin.php:1801
+msgid "Key 尚未验证，前台按免费额度加载。"
 msgstr ""
 
 #: includes/class-wpfonts-admin.php:1804
+msgid "还需要字体名、项目名或已确认字体。"
+msgstr ""
+
+#: includes/class-wpfonts-admin.php:1807
+msgid "这条地址打不开，前台不会加载。"
+msgstr ""
+
+#: includes/class-wpfonts-admin.php:1809
 msgid "已开启。前台会加载文风服务器上的样式。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1837
+#: includes/class-wpfonts-admin.php:1842
 msgid "无效"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1840
+#: includes/class-wpfonts-admin.php:1845
 msgid "未能连接"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1843
+#: includes/class-wpfonts-admin.php:1848
 msgid "未填写"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1846
+#: includes/class-wpfonts-admin.php:1851
 msgid "未验证"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1849
+#: includes/class-wpfonts-admin.php:1854
 msgid "未完成"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1852
+#: includes/class-wpfonts-admin.php:1857
 msgid "打不开"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1865
+#: includes/class-wpfonts-admin.php:1870
 msgid "未安装"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1866
+#: includes/class-wpfonts-admin.php:1871
 msgid "还没有文风字体包"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1870
+#: includes/class-wpfonts-admin.php:1875
 msgid "前台会加载本站这份字体样式。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1872
-#: includes/class-wpfonts-admin.php:1976
+#: includes/class-wpfonts-admin.php:1877
+#: includes/class-wpfonts-admin.php:1981
 msgid "已停用"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1873
+#: includes/class-wpfonts-admin.php:1878
 msgid "文件保留在本站，启用后即可使用。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1900
+#: includes/class-wpfonts-admin.php:1905
 msgid "已安装。前台会加载本站这份字体样式，也会出现在全站样式里。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1902
+#: includes/class-wpfonts-admin.php:1907
 msgid "已替换本站这份字体。前台会加载新的样式。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1904
+#: includes/class-wpfonts-admin.php:1909
 msgid "前台会加载本站这份字体样式，也会出现在全站样式里。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1906
+#: includes/class-wpfonts-admin.php:1911
 msgid "已停用。前台和全站样式不再使用这份字体，文件仍保留在本站。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1908
+#: includes/class-wpfonts-admin.php:1913
 msgid "已删除这份字体包。前台和全站样式不再使用它，本站文件也已移除。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1910
+#: includes/class-wpfonts-admin.php:1915
 #: includes/class-wpfonts-cli.php:182
 msgid "装不上。请用文风已切好的 zip（内含样式和 woff2）。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1935
+#: includes/class-wpfonts-admin.php:1940
 msgid "拖入字体包 zip，或点击选择"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1937
+#: includes/class-wpfonts-admin.php:1942
 msgid "把 zip 拖到这里，或点击选择文件"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1937
+#: includes/class-wpfonts-admin.php:1942
 msgid "拖入 zip 安装，或点击选择"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1943
+#: includes/class-wpfonts-admin.php:1948
 msgid "安装后由本站托管、直接加载。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1945
+#: includes/class-wpfonts-admin.php:1950
 msgid "正在安装…"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1965
+#: includes/class-wpfonts-admin.php:1970
 msgid "停用"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1965
+#: includes/class-wpfonts-admin.php:1970
 msgid "启用"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1990
+#: includes/class-wpfonts-admin.php:1995
 msgid "删除后本站不再提供这份字体。我已核对。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1994
+#: includes/class-wpfonts-admin.php:1999
 msgid "未勾选不能点。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:1995
+#: includes/class-wpfonts-admin.php:2000
 msgid "删除"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:2040
+#: includes/class-wpfonts-admin.php:2045
 #: includes/class-wpfonts-library.php:144
 msgid "本包按字符切片托管，前台会自动按需加载；字体库里每个字重只显示一条即可。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:2051
+#: includes/class-wpfonts-admin.php:2056
 msgid "预览暂时不可用。"
 msgstr ""
 
-#: includes/class-wpfonts-admin.php:2068
+#: includes/class-wpfonts-admin.php:2073
 msgid "永和九年，岁在癸丑。暮春之初，会于会稽山阴之兰亭。"
 msgstr ""
 
@@ -1134,12 +1133,12 @@ msgid "已用在这段。"
 msgstr ""
 
 #. translators: %s: previewed font family token.
-#: includes/class-wpfonts-embed.php:211
+#: includes/class-wpfonts-embed.php:220
 #, php-format
 msgid "字体预览：%s"
 msgstr ""
 
-#: includes/class-wpfonts-embed.php:216
+#: includes/class-wpfonts-embed.php:225
 msgid "退出预览"
 msgstr ""
 
@@ -1511,34 +1510,62 @@ msgstr ""
 msgid "已启用 %1$d 个本站已有的文风字体包，跳过 %2$d 个本站没有文件的包，写入 %3$d 条已确认的文风云。密钥没有写入。"
 msgstr ""
 
-#: wpfonts.php:94
+#. translators: 1: monthly unique visitor count, 2: reminder line.
+#: includes/class-wpfonts-usage.php:143
+#, php-format
+msgid "本月文风云字体已服务 %1$s 位独立访客，超过 %2$s/月 的提醒线。"
+msgstr ""
+
+#: includes/class-wpfonts-usage.php:147
+msgid "建议到「工具 → 字体包」下载安装本地字体包（不限量），或到文风平台申请 API Key 走正式额度。"
+msgstr ""
+
+#: includes/class-wpfonts-usage.php:153
+msgid "查看字体包"
+msgstr ""
+
+#: includes/class-wpfonts-usage.php:155
+msgid "申请 API Key"
+msgstr ""
+
+#: includes/class-wpfonts-usage.php:157
+msgid "本月不再提醒"
+msgstr ""
+
+#. translators: 1: monthly unique visitor count, 2: reminder line.
+#: includes/class-wpfonts-usage.php:170
+#, php-format
+msgid "本月文风云字体已服务 %1$s 位独立访客（提醒线 %2$s/月）。"
+msgstr ""
+
+#: wpfonts.php:95
 msgid "Sans Serif"
 msgstr ""
 
-#: wpfonts.php:98
+#: wpfonts.php:99
 msgid "Serif"
 msgstr ""
 
-#: wpfonts.php:102
+#: wpfonts.php:103
 msgid "Monospace"
 msgstr ""
 
-#: wpfonts.php:106
+#: wpfonts.php:107
 msgid "Handwriting"
 msgstr ""
 
-#: wpfonts.php:113
+#: wpfonts.php:114
 msgid "使用设备自带的中文字体，无需下载。"
 msgstr ""
 
-#: wpfonts.php:119
+#: wpfonts.php:120
 msgid "使用设备自带的西文字体，无需下载。"
 msgstr ""
 
-#: wpfonts.php:125
+#: wpfonts.php:126
 msgid "使用设备自带的日文字体，无需下载。"
 msgstr ""
 
-#: wpfonts.php:131
+#: wpfonts.php:132
 msgid "使用设备自带的韩文字体，无需下载。"
 msgstr ""

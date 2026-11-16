@@ -539,7 +539,7 @@ class WPFonts_Admin {
 			self::render_family_field( $settings );
 			echo '</div>';
 		}
-		self::render_link_field( $settings, $state, $has_key );
+		self::render_link_field( $settings, $state );
 
 		echo Wenpai_Admin_UI::card_foot_html(
 			array(
@@ -607,6 +607,19 @@ class WPFonts_Admin {
 		self::render_state_banner( $state );
 		self::render_selection_summary( $settings );
 
+		if ( ! empty( $settings['cdn_enabled'] ) && class_exists( 'WPFonts_Usage', false ) ) {
+			echo Wenpai_Admin_UI::status_list_html(
+				array(
+					'items' => array(
+						array(
+							'label' => __( '本月用量', 'wpfonts' ),
+							'value' => WPFonts_Usage::summary_text(),
+						),
+					),
+				)
+			);
+		}
+
 		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '健康检查', 'wpfonts' ), 'sub' => __( '在服务器上向文风验证。页面上不会显示 Key。', 'wpfonts' ), 'icon' => 'info', 'state' => 'warn' ) );
 		echo '<div class="field"><div class="field-label">' . esc_html__( '请求', 'wpfonts' ) . '</div><div class="field-ctl">';
 		echo Wenpai_Admin_UI::code_inline_html( array( 'code' => 'GET /api/key/status', 'copy' => false ) );
@@ -623,7 +636,7 @@ class WPFonts_Admin {
 		echo '</section>';
 
 		echo Wenpai_Admin_UI::card_open_html( array( 'title' => __( '样式链接', 'wpfonts' ), 'sub' => __( '这里显示前台将加载的样式地址。', 'wpfonts' ), 'icon' => 'external' ) );
-		self::render_link_preview( $settings, $state, $has_key, false );
+		self::render_link_preview( $settings, $state, false );
 		echo '</section>';
 
 		echo '</div>';
@@ -726,19 +739,21 @@ class WPFonts_Admin {
 			return;
 		}
 		$level = 'warn';
-		$text  = __( '文风 API Key 尚未验证。请到工具中再检查一次。验证通过前，前台不加载样式。', 'wpfonts' );
+		$text  = __( '文风 API Key 尚未验证。请到工具中再检查一次。', 'wpfonts' );
 		if ( 'nokey' === $state ) {
-			$text = __( '文风云已开启，但尚未填写文风 API Key。请到设置页填写。前台暂不加载远程样式。', 'wpfonts' );
+			$level = 'info';
+			$text  = __( '未填写文风 API Key，前台按免费额度加载文风字体。本月已服务的访客数见「工具」页；超过 5 万/月请下载字体包或申请 Key。', 'wpfonts' );
 		} elseif ( 'invalid' === $state ) {
-			$level = 'bad';
-			$text  = __( '文风 API Key 无效，前台使用系统字体。', 'wpfonts' );
+			$text = __( '文风 API Key 无效。前台仍按免费额度加载字体；更正 Key 后可验证正式额度。', 'wpfonts' );
 		} elseif ( 'unreachable' === $state ) {
-			$text = __( '这次未能连接，暂不判定 Key 状态。前台使用系统字体，请稍后再检查。', 'wpfonts' );
+			$text = __( '这次未能连接文风接口，暂不判定 Key 状态。前台仍按免费额度加载字体，请稍后再检查。', 'wpfonts' );
 		} elseif ( 'incomplete' === $state ) {
-			$text = __( '文风 API Key 可用。还需要字体名或项目名，前台暂不加载样式。', 'wpfonts' );
+			$text = __( '还需要字体名或已确认的文风字体，前台暂不加载样式。', 'wpfonts' );
 		} elseif ( 'css_missing' === $state ) {
 			$level = 'bad';
 			$text  = __( '这条地址打不开，前台不会加载。换个字体，或改字符范围后再保存。', 'wpfonts' );
+		} elseif ( 'unchecked' === $state ) {
+			$text = __( '文风 API Key 尚未验证，前台按免费额度加载字体。请到工具中检查一次。', 'wpfonts' );
 		} elseif ( 'ok' === $state ) {
 			$level = 'ok';
 			$text  = __( '文风云已开启，文风 API Key 可用。前台会加载文风服务器上的样式，网页中不会出现 Key。', 'wpfonts' );
@@ -776,7 +791,7 @@ class WPFonts_Admin {
 			return;
 		}
 		$settings = WPFonts_Settings::get();
-		if ( empty( $settings['cdn_enabled'] ) || 'valid' !== (string) ( $settings['key_status'] ?? '' ) ) {
+		if ( empty( $settings['cdn_enabled'] ) ) {
 			return;
 		}
 		if ( ! WPFonts_Link::has_target( $settings ) && array() === WPFonts_Settings::confirmed_faces( $settings ) ) {
@@ -1234,7 +1249,7 @@ class WPFonts_Admin {
 			}
 			echo '<label class="wenpai-field__clear"><input type="checkbox" name="wpfonts_settings[clear_api_key]" value="1"> ' . esc_html__( '清除已保存的 Key', 'wpfonts' ) . '</label>';
 		} else {
-			echo '<p class="hint">' . esc_html__( '留空表示不修改。', 'wpfonts' ) . '</p>';
+			echo '<p class="hint">' . esc_html__( '可留空。未填写时前台按免费额度加载文风字体；填写后可验证正式额度。', 'wpfonts' ) . '</p>';
 		}
 		echo '</div></div>';
 	}
@@ -1601,16 +1616,15 @@ class WPFonts_Admin {
 	 *
 	 * @param array  $settings Public settings.
 	 * @param string $state    View state.
-	 * @param bool   $has_key  Whether a key is stored.
 	 * @return void
 	 */
-	private static function render_link_field( array $settings, $state, $has_key ) {
+	private static function render_link_field( array $settings, $state ) {
 		echo '<div class="field"';
 		self::cdn_depends();
 		echo '>';
 		echo '<div class="field-label">' . esc_html__( '样式链接', 'wpfonts' ) . '</div>';
 		echo '<div class="field-ctl">';
-		self::render_link_preview( $settings, $state, $has_key, true );
+		self::render_link_preview( $settings, $state, true );
 		echo '</div></div>';
 	}
 
@@ -1619,20 +1633,10 @@ class WPFonts_Admin {
 	 *
 	 * @param array  $settings Public settings.
 	 * @param string $state    View state.
-	 * @param bool   $has_key  Whether a key is stored.
 	 * @param bool   $in_form  True on the settings form.
 	 * @return void
 	 */
-	private static function render_link_preview( array $settings, $state, $has_key, $in_form ) {
-		if ( 'invalid' === $state ) {
-			self::notice( 'bad', __( '不会加载远程样式。文风 API Key 无效。', 'wpfonts' ) );
-			echo '<p class="hint">' . esc_html__( '更正 Key 并保存后，这里才会显示文风服务器上的样式链接。', 'wpfonts' ) . '</p>';
-			return;
-		}
-		if ( ! $has_key && 'empty' !== $state ) {
-			self::notice( 'warn', __( '尚未填写文风 API Key。前台暂不加载远程样式。', 'wpfonts' ) );
-			return;
-		}
+	private static function render_link_preview( array $settings, $state, $in_form ) {
 		$faces = WPFonts_Settings::confirmed_faces( $settings );
 		if ( ! WPFonts_Link::has_target( $settings ) ) {
 			if ( array() === $faces ) {
@@ -1653,12 +1657,13 @@ class WPFonts_Admin {
 			return;
 		}
 		self::echo_embed_code( $url );
-		if ( 'ok' === $state && 'ok' === $css_status ) {
+		$front_loads = '' !== WPFonts_Link::embed_url( $settings );
+		if ( $front_loads && 'ok' === $css_status ) {
 			echo '<p class="hint is-ok">' . esc_html__( '前台会加载这一条。链接中没有 API Key。', 'wpfonts' ) . '</p>';
-		} elseif ( 'ok' === $state ) {
-			echo '<p class="hint">' . esc_html__( '还没确认这条地址能打开。保存一次后再看。', 'wpfonts' ) . '</p>';
+		} elseif ( $front_loads ) {
+			echo '<p class="hint">' . esc_html__( '前台会加载这一条（免费额度）。保存后会自动验证地址。', 'wpfonts' ) . '</p>';
 		} elseif ( 'unreachable' === $state || 'unchecked' === $state ) {
-			echo '<p class="hint">' . esc_html__( '尚未验证通过，前台暂不使用。', 'wpfonts' ) . '</p>';
+			echo '<p class="hint">' . esc_html__( 'Key 状态未确认；地址本身可用时前台仍会加载。', 'wpfonts' ) . '</p>';
 		} elseif ( $in_form && 'empty' === $state ) {
 			echo '<p class="hint">' . esc_html__( '开启文风云并保存后，前台才会使用。', 'wpfonts' ) . '</p>';
 		} else {
@@ -1744,7 +1749,7 @@ class WPFonts_Admin {
 		}
 		if ( 'unreachable' === $status ) {
 			self::notice( 'warn', __( '这次未能连接。请稍后再试。', 'wpfonts' ) );
-			echo '<p class="hint">' . esc_html__( '可能是超时或服务暂时不可用，并非 Key 无效。期间前台使用系统字体，请稍后再检查。', 'wpfonts' ) . '</p>';
+			echo '<p class="hint">' . esc_html__( '可能是超时或服务暂时不可用，并非 Key 无效。前台仍按免费额度加载字体，请稍后再检查。', 'wpfonts' ) . '</p>';
 			return;
 		}
 		if ( 'valid' === $status ) {
@@ -1784,19 +1789,19 @@ class WPFonts_Admin {
 			return __( '未开启。开启并保存后，前台加载文风样式。', 'wpfonts' );
 		}
 		if ( 'nokey' === $state ) {
-			return __( '已开启，但尚未填写文风 API Key。', 'wpfonts' );
+			return __( '已开启，未填写 Key，前台按免费额度加载。', 'wpfonts' );
 		}
 		if ( 'invalid' === $state ) {
-			return __( '文风 API Key 无效，前台使用系统字体。', 'wpfonts' );
+			return __( '文风 API Key 无效，前台按免费额度加载。', 'wpfonts' );
 		}
 		if ( 'unreachable' === $state ) {
 			return __( '这次未能连接。', 'wpfonts' );
 		}
 		if ( 'unchecked' === $state ) {
-			return __( '文风 API Key 尚未验证。', 'wpfonts' );
+			return __( 'Key 尚未验证，前台按免费额度加载。', 'wpfonts' );
 		}
 		if ( 'incomplete' === $state ) {
-			return __( '文风 API Key 可用。还需要字体名或项目名。', 'wpfonts' );
+			return __( '还需要字体名、项目名或已确认字体。', 'wpfonts' );
 		}
 		if ( 'css_missing' === $state ) {
 			return __( '这条地址打不开，前台不会加载。', 'wpfonts' );

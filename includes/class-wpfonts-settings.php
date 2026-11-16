@@ -152,18 +152,15 @@ class WPFonts_Settings {
 	/**
 	 * Faces that may be listed and loaded.
 	 *
-	 * When cdn_enabled or key_status is missing, that gate is skipped so a
-	 * partial row from rc.6 still counts. A present key must be valid, and a
-	 * present switch must be on.
+	 * When cdn_enabled is missing, that gate is skipped so a partial row
+	 * from rc.6 still counts. CDN stylesheets are public; the API key is
+	 * not required for the front end.
 	 *
 	 * @param array $settings Public settings.
 	 * @return array<int,array{family:string,name:string,css_face:string,subset:string}>
 	 */
 	public static function confirmed_faces( array $settings ) {
 		if ( array_key_exists( 'cdn_enabled', $settings ) && empty( $settings['cdn_enabled'] ) ) {
-			return array();
-		}
-		if ( array_key_exists( 'key_status', $settings ) && 'valid' !== (string) $settings['key_status'] ) {
 			return array();
 		}
 		$out = array();
@@ -367,6 +364,14 @@ class WPFonts_Settings {
 		if ( empty( $settings['cdn_enabled'] ) ) {
 			return 'empty';
 		}
+		if ( ! WPFonts_Link::has_target( $settings ) && array() === self::confirmed_faces( $settings ) ) {
+			return 'incomplete';
+		}
+		if ( isset( $settings['css_status'] ) && 'missing' === $settings['css_status'] ) {
+			return 'css_missing';
+		}
+		// CDN stylesheets are public: a missing or unchecked key never blocks
+		// the front end. Key states only change admin messaging below.
 		if ( ! $has_key ) {
 			return 'nokey';
 		}
@@ -377,14 +382,8 @@ class WPFonts_Settings {
 		if ( 'unreachable' === $status ) {
 			return 'unreachable';
 		}
-		if ( 'valid' !== $status ) {
+		if ( '' === $status ) {
 			return 'unchecked';
-		}
-		if ( ! WPFonts_Link::has_target( $settings ) && array() === self::confirmed_faces( $settings ) ) {
-			return 'incomplete';
-		}
-		if ( isset( $settings['css_status'] ) && 'missing' === $settings['css_status'] ) {
-			return 'css_missing';
 		}
 		return 'ok';
 	}
@@ -405,7 +404,7 @@ class WPFonts_Settings {
 		} else {
 			$settings['faces'] = $faces;
 		}
-		$can_probe = ! empty( $settings['cdn_enabled'] ) && 'valid' === (string) $settings['key_status'];
+		$can_probe = ! empty( $settings['cdn_enabled'] );
 		if ( ! $can_probe ) {
 			$settings['css_status'] = '';
 			$settings['css_face']   = '';
@@ -503,12 +502,12 @@ class WPFonts_Settings {
 		if ( '' === $key ) {
 			$next['key_status']  = '';
 			$next['key_checked'] = 0;
-			$next['css_status']  = '';
-			$next['css_face']    = '';
 			if ( $changed ) {
 				delete_option( self::KEY_OPTION );
 			}
-			return $next;
+			$next['css_status'] = '';
+			$next['css_face']   = '';
+			return self::refresh_css( $next );
 		}
 
 		$should_check = ! empty( $next['cdn_enabled'] ) && ( $changed || 'advanced' === $surface || '' === $prev['key_status'] );

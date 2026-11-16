@@ -68,7 +68,7 @@ $assert( '' === WPFonts_Link::embed_url( $off ), 'CDN off still embedded' );
 foreach ( array( 'invalid', 'unreachable', '', 'valid-looking' ) as $status ) {
 	$row               = $base;
 	$row['key_status'] = $status;
-	$assert( '' === WPFonts_Link::embed_url( $row ), 'status ' . $status . ' still embedded' );
+	$assert( 'https://cn.windfonts.com/api/css?family=wenfeng-ibmps&subset=zh-common' === WPFonts_Link::embed_url( $row ), 'status ' . $status . ' blocked the public stylesheet' );
 }
 
 $nofamily = $base;
