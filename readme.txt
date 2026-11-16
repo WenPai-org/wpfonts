@@ -2,7 +2,7 @@
 Contributors: wenpai
 Tags: fonts, typography, font-library, chinese, cjk
 Requires at least: 6.5
-Tested up to: 7.1.4
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.0.0-rc.22
 License: GPLv2 or later

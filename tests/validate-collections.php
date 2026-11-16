@@ -178,7 +178,7 @@ $assert( false !== strpos( $admin, '体积最小，主要覆盖拉丁字符。' 
 $assert( false !== strpos( $admin, '日常中文站点够用，体积适中。' ), 'Common Chinese subset copy drifted.' );
 $assert( false !== strpos( $admin, '生僻字更多，体积明显更大。' ), 'Broader Chinese subset copy drifted.' );
 $assert( false !== strpos( $admin, '最大包，仅在确实需要时使用。' ), 'Full subset copy drifted.' );
-$assert( false !== strpos( $admin, '字符范围决定远程字体包大小。插件不在这里切字。' ), 'Subset hint drifted.' );
+$assert( false !== strpos( $admin, '字符范围决定远程字体包的大小，范围越小包越小。' ), 'Subset hint drifted.' );
 $assert( false !== strpos( $admin, '项目与白名单' ), 'Project disclosure title drifted.' );
 $assert( false !== strpos( $admin, '选填。填写后前台改用项目样式。域名白名单在文风控制台配置，不在本插件里改。' ), 'Project hint drifted.' );
 $assert( false !== strpos( $admin, '打开文风控制台' ), 'Console link label drifted.' );

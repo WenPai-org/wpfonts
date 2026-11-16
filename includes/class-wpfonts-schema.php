@@ -345,7 +345,9 @@ class WPFonts_Schema {
 			'tools_reset_button'     => __( '重置设置', 'wpfonts' ),
 			'tools_reset_clear'      => __( '同时清除已保存的密钥', 'wpfonts' ),
 			'tools_reset_busy'       => __( '正在重置…', 'wpfonts' ),
+			/* translators: %d: item position in the list. */
 			'repeater_item'          => __( '第 %d 项', 'wpfonts' ),
+			/* translators: %d: item position in the list. */
 			'repeater_delete'        => __( '删除第 %d 项', 'wpfonts' ),
 			'repeater_add'           => __( '添加一项', 'wpfonts' ),
 			'repeater_move_up'       => __( '上移', 'wpfonts' ),

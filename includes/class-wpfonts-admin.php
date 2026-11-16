@@ -820,6 +820,7 @@ class WPFonts_Admin {
 				++$on_count;
 			}
 		}
+		/* translators: 1: number of system font families enabled, 2: total number of choices. */
 		$count_tpl = __( '已启用 %1$d / %2$d', 'wpfonts' );
 		echo '<div class="wenpai-checkgroup" data-wenpai-checkgroup data-wenpai-count-total="' . esc_attr( (string) count( $choices ) ) . '">'
 			. '<div class="wenpai-checkgroup__head">'
