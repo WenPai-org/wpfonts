@@ -11,11 +11,15 @@ if ( defined( 'ABSPATH' ) ) {
 }
 
 define( 'ABSPATH', __DIR__ . '/' );
+define( 'DAY_IN_SECONDS', 86400 );
+define( 'MINUTE_IN_SECONDS', 60 );
 
-$GLOBALS['wpfonts_enqueued'] = array();
-$GLOBALS['wpfonts_inline']   = array();
-$GLOBALS['wpfonts_logged_in'] = false;
-$GLOBALS['wpfonts_can_admin'] = false;
+$GLOBALS['wpfonts_enqueued']       = array();
+$GLOBALS['wpfonts_inline']         = array();
+$GLOBALS['wpfonts_adminbar_nodes'] = array();
+$GLOBALS['wpfonts_transients']     = array();
+$GLOBALS['wpfonts_logged_in']      = false;
+$GLOBALS['wpfonts_can_admin']      = false;
 $GLOBALS['wpfonts_settings']  = array(
 	'cdn_enabled' => 0,
 	'region'      => 'cn',
@@ -182,6 +186,62 @@ function remove_query_arg( $query ) {
 }
 
 /**
+ * @param string $key Key.
+ * @return mixed
+ */
+function get_transient( $key ) {
+	return isset( $GLOBALS['wpfonts_transients'][ $key ] ) ? $GLOBALS['wpfonts_transients'][ $key ] : false;
+}
+
+/**
+ * @param string $key Key.
+ * @param mixed  $value Value.
+ * @param int    $ttl TTL.
+ * @return bool
+ */
+function set_transient( $key, $value, $ttl = 0 ) {
+	unset( $ttl );
+	$GLOBALS['wpfonts_transients'][ $key ] = $value;
+	return true;
+}
+
+/**
+ * Fake stylesheet fetch: returns one @font-face named TestFace.
+ *
+ * @param string $url URL.
+ * @param array  $args Args.
+ * @return array
+ */
+function wp_remote_get( $url, $args = array() ) {
+	unset( $url, $args );
+	return array( 'body' => '@font-face{font-family:"TestFace";src:url(x.woff2)}', 'response' => array( 'code' => 200 ) );
+}
+
+/**
+ * @param mixed $thing Thing.
+ * @return bool
+ */
+function is_wp_error( $thing ) {
+	return false;
+}
+
+/**
+ * @param array $response Response.
+ * @return int
+ */
+function wp_remote_retrieve_response_code( $response ) {
+	return isset( $response['response']['code'] ) ? (int) $response['response']['code'] : 0;
+}
+
+/**
+ * @param array $response Response.
+ * @return string
+ */
+function wp_remote_retrieve_body( $response ) {
+	return isset( $response['body'] ) ? (string) $response['body'] : '';
+}
+
+/**
  * @return array
  */
 class WPFonts_Settings {
@@ -190,6 +250,15 @@ class WPFonts_Settings {
 	 */
 	public static function get() {
 		return $GLOBALS['wpfonts_settings'];
+	}
+
+	/**
+	 * @param array $settings Settings.
+	 * @return array
+	 */
+	public static function confirmed_faces( $settings ) {
+		unset( $settings );
+		return array();
 	}
 }
 
@@ -265,7 +334,7 @@ if ( isset( $GLOBALS['wpfonts_enqueued']['wpfonts-preview'] ) ) {
 }
 $assert( isset( $GLOBALS['wpfonts_inline']['wpfonts-preview'] ), 'preview font CSS was not attached' );
 if ( isset( $GLOBALS['wpfonts_inline']['wpfonts-preview'] ) ) {
-	$assert( false !== strpos( $GLOBALS['wpfonts_inline']['wpfonts-preview'], 'font-family:"wenfeng-ibmps"' ), 'preview CSS lacks the font-family rule' );
+	$assert( false !== strpos( $GLOBALS['wpfonts_inline']['wpfonts-preview'], 'font-family:"TestFace"' ), 'preview CSS lacks the probed font-family rule' );
 }
 ob_start();
 WPFonts_Embed::print_license_note();

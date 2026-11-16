@@ -68,13 +68,51 @@ class WPFonts_Embed {
 	/**
 	 * CSS that applies the preview face to body text for this request only.
 	 *
-	 * @param string $token wenfeng-* token; also the @font-face name.
+	 * The name must be the @font-face name from the stylesheet, which is not
+	 * always the wenfeng-* token (e.g. PangZhenGui-PMZD).
+	 *
+	 * @param string $face CSS font-family name.
 	 * @return string
 	 */
-	private static function preview_css( $token ) {
-		$family = '"' . $token . '"';
+	private static function preview_css( $face ) {
+		$family = '"' . $face . '"';
 		return 'body{font-family:' . $family . ',-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif!important}'
 			. 'h1,h2,h3,h4,h5,h6{font-family:inherit!important}';
+	}
+
+	/**
+	 * Resolve the @font-face name for a preview token.
+	 *
+	 * Confirmed faces already store the probed name. Anything else is probed
+	 * once per URL per day through the allowlisted stylesheet; failures are
+	 * cached briefly so a dead CDN is not hit on every request.
+	 *
+	 * @param array  $settings Public settings.
+	 * @param string $token    wenfeng-* token.
+	 * @return string CSS font-family name, or empty.
+	 */
+	private static function preview_face( array $settings, $token ) {
+		if ( class_exists( 'WPFonts_Settings', false ) ) {
+			foreach ( WPFonts_Settings::confirmed_faces( $settings ) as $face ) {
+				if ( isset( $face['family'], $face['css_face'] ) && $face['family'] === $token && '' !== $face['css_face'] ) {
+					return $face['css_face'];
+				}
+			}
+		}
+		$url = self::preview_url( $settings, $token );
+		if ( '' === $url ) {
+			return '';
+		}
+		$key    = 'wpfonts_preview_face_' . md5( $url );
+		$cached = get_transient( $key );
+		if ( is_string( $cached ) && '' !== $cached ) {
+			$parts = explode( '|', $cached, 2 );
+			return 'ok' === $parts[0] ? $parts[1] : '';
+		}
+		$probe = WPFonts_Link::probe_family( $settings, $token );
+		$ttl   = 'ok' === $probe['status'] ? DAY_IN_SECONDS : 10 * MINUTE_IN_SECONDS;
+		set_transient( $key, $probe['status'] . '|' . $probe['face'], $ttl );
+		return 'ok' === $probe['status'] ? $probe['face'] : '';
 	}
 
 	/**
@@ -140,9 +178,10 @@ class WPFonts_Embed {
 		$token = self::preview_request();
 		if ( '' !== $token ) {
 			$preview = self::preview_url( $settings, $token );
-			if ( '' !== $preview && ! in_array( $preview, $urls, true ) ) {
+			$face    = '' !== $preview ? self::preview_face( $settings, $token ) : '';
+			if ( '' !== $preview && '' !== $face && ! in_array( $preview, $urls, true ) ) {
 				wp_enqueue_style( 'wpfonts-preview', $preview, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Same allowlisted URL rule as above.
-				wp_add_inline_style( 'wpfonts-preview', self::preview_css( $token ) );
+				wp_add_inline_style( 'wpfonts-preview', self::preview_css( $face ) );
 			}
 		}
 		WPFonts_Packages::enqueue_styles();
@@ -160,7 +199,7 @@ class WPFonts_Embed {
 			return;
 		}
 		$settings = WPFonts_Settings::get();
-		if ( '' === self::preview_url( $settings, $token ) ) {
+		if ( '' === self::preview_url( $settings, $token ) || '' === self::preview_face( $settings, $token ) ) {
 			return;
 		}
 		$wp_admin_bar->add_node(
