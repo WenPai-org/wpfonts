@@ -167,7 +167,7 @@ $assert( false === strpos( $admin, '本站字体包' ), 'Admin UI must not say �
 $assert( false !== strpos( $admin, '文风云' ), 'Admin UI lost 文风云.' );
 $assert( false !== strpos( $admin, '文风字体包' ), 'Admin UI lost 文风字体包.' );
 $assert( false !== strpos( $admin, '选用字体' ), 'Font picker title is missing.' );
-$assert( false !== strpos( $admin, '从下方目录勾选字体，或在「字体名」里手动填写。' ), 'Font picker description drifted.' );
+$assert( false !== strpos( $admin, '从下方勾选所需文风字体，或在「字体名」里手动填写。' ), 'Font picker description drifted.' );
 $assert( false !== strpos( $admin, '搜索字体名' ), 'Catalog search placeholder drifted.' );
 $assert( false !== strpos( $admin, '正在加载字体目录…' ), 'Catalog loading copy drifted.' );
 $assert( false !== strpos( $admin, '暂时读不到字体目录。你可以手动填写字体名，稍后再试。' ), 'Catalog failure copy drifted.' );

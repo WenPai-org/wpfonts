@@ -769,7 +769,7 @@ $assert( false !== strpos( $admin, '暂时读不到字体目录。你可以手�
 $assert( false !== strpos( $admin, '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。' ), 'empty catalog one-liner drifted' );
 $assert( false !== strpos( $admin, '字体目录' ), 'help card title drifted' );
 $assert( false !== strpos( $admin, '目录保存在本站，每月自动更新一次；在设置里也可立即刷新。选中的字体会写入字体名。' ), 'help card body drifted' );
-$assert( false !== strpos( $admin, '目录保存在本站，每月自动更新一次；点「更新字体目录」可立即刷新。' ), 'catalog note drifted' );
+$assert( false !== strpos( $admin, '从下方勾选所需文风字体，或在「字体名」里手动填写。' ), 'catalog help copy drifted' );
 $assert( false === strpos( $admin, '去控制台上传' ), 'admin offered a console upload' );
 $assert( false !== strpos( $js, 'selected[target.value] = true' ), 'picking a font does not keep that family in the multi-face selection' );
 $assert( false === strpos( $js, 'normalizedName' ), 'catalog script reads normalizedName' );

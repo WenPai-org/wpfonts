@@ -1191,7 +1191,6 @@ class WPFonts_Admin {
 			'updating' => __( '正在更新字体目录…', 'wpfonts' ),
 			'updated'  => __( '字体目录已更新。', 'wpfonts' ),
 			'stale'    => __( '暂时更新不了，仍显示上次保存的目录。稍后再试。', 'wpfonts' ),
-			'note'     => __( '目录保存在本站，每月自动更新一次；点「更新字体目录」可立即刷新。', 'wpfonts' ),
 			'refresh'  => __( '更新字体目录', 'wpfonts' ),
 			'missing'  => __( '还没有字体目录。可点「更新字体目录」再试，或先手填字体名。', 'wpfonts' ),
 		);
@@ -1303,9 +1302,7 @@ class WPFonts_Admin {
 			echo '<input type="hidden" name="wpfonts_settings[families][]" value="' . esc_attr( $token ) . '">';
 		}
 		echo '</div>';
-		echo '<p class="field-help">' . esc_html__( '从下方目录勾选字体，或在「字体名」里手动填写。选中的字体会写进前台加载的样式地址。', 'wpfonts' ) . '</p>';
-		echo '<p class="hint">' . esc_html__( '可同时勾选多个。取消勾选并保存后，该字体不再加载。', 'wpfonts' ) . '</p>';
-		echo '<p class="hint" id="wpfonts-catalog-note">' . esc_html( $messages['note'] ) . '</p>';
+		echo '<p class="field-help">' . esc_html__( '从下方勾选所需文风字体，或在「字体名」里手动填写。选中的字体会写进前台加载的样式地址，支持多选。目录每月仅自动更新一次，如有需要可点击「更新字体目录」立即刷新。', 'wpfonts' ) . '</p>';
 		echo '<p class="wpfonts-catalog-actions"><button type="button" class="btn btn-secondary" id="wpfonts-catalog-refresh">' . esc_html( $messages['refresh'] ) . '</button></p>';
 		echo '<input type="search" id="wpfonts-catalog-search" placeholder="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" aria-label="' . esc_attr__( '搜索字体名', 'wpfonts' ) . '" autocomplete="off" spellcheck="false" aria-controls="wpfonts-catalog-list">';
 		echo '<div id="wpfonts-catalog" data-preview-base="' . esc_url( home_url( '/' ) ) . '" data-preview-label="' . esc_attr__( '前台预览', 'wpfonts' ) . '" data-source-label="' . esc_attr__( '字体详情', 'wpfonts' ) . '" data-license-label="' . esc_attr__( '授权协议', 'wpfonts' ) . '" data-copy-done="' . esc_attr__( '已复制', 'wpfonts' ) . '" data-copy-title="' . esc_attr__( '点击复制', 'wpfonts' ) . '" data-loading="' . esc_attr( $messages['loading'] ) . '" data-fail="' . esc_attr( $messages['fail'] ) . '" data-empty="' . esc_attr( $messages['empty'] ) . '" data-loaded="' . esc_attr( $messages['loaded'] ) . '" data-updating="' . esc_attr( $messages['updating'] ) . '" data-updated="' . esc_attr( $messages['updated'] ) . '" data-stale="' . esc_attr( $messages['stale'] ) . '" data-glyph="' . esc_attr__( '字形预览', 'wpfonts' ) . '" data-glyph-sample="' . esc_attr__( '永和九年', 'wpfonts' ) . '">';
