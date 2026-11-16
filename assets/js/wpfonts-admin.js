@@ -103,6 +103,7 @@
 	var glyphSample = root.getAttribute("data-glyph-sample") || "永和九年";
 	var previewBase = root.getAttribute("data-preview-base") || "";
 	var previewLabel = root.getAttribute("data-preview-label") || "预览";
+	var sourceLabel = root.getAttribute("data-source-label") || "详情";
 
 	function safeFace(value) {
 		return String(value || "").replace(/["'\\<>{};]/g, "").replace(/^\s+|\s+$/g, "");
@@ -423,6 +424,13 @@
 				pv.rel = "noopener noreferrer";
 				pv.textContent = previewLabel;
 				meta.appendChild(pv);
+				var src = document.createElement("a");
+				src.className = "wpfonts-source-link";
+				src.href = "https://app.windfonts.com/fonts/" + encodeURIComponent(String(row.fontFamily).replace(/^wenfeng-/, ""));
+				src.target = "_blank";
+				src.rel = "noopener noreferrer";
+				src.textContent = sourceLabel;
+				meta.appendChild(src);
 			}
 			text.appendChild(title);
 			text.appendChild(meta);

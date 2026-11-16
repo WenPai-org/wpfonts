@@ -177,7 +177,8 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 	gap: var(--wenpai-space-2);
 }
 
-.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-preview-link {
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-preview-link,
+.wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-source-link {
 	margin-left: 0;
 	white-space: nowrap;
 }
