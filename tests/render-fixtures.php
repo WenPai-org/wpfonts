@@ -391,7 +391,7 @@ function wpfonts_sample_catalog() {
  * @param array|null $catalog Catalog payload, or null for the sample page.
  * @return string
  */
-function wpfonts_render_screen( array $options, $tab, $mode, $catalog = null ) {
+function wpfonts_render_screen( array $options, $tab, $mode, $catalog = null, $section = '' ) {
 	$GLOBALS['fixture_options']         = $options;
 	$GLOBALS['wpfonts_catalog_fixture'] = is_array( $catalog ) ? $catalog : wpfonts_sample_catalog();
 	$_GET                               = array(
@@ -399,6 +399,9 @@ function wpfonts_render_screen( array $options, $tab, $mode, $catalog = null ) {
 		'tab'  => $tab,
 		'mode' => $mode,
 	);
+	if ( '' !== $section ) {
+		$_GET['section'] = $section;
+	}
 	ob_start();
 	WPFonts_Admin::render();
 	return (string) ob_get_clean();
@@ -567,6 +570,16 @@ $screens = array(
 		),
 		'catalog' => wpfonts_sample_catalog(),
 	),
+	'migration'       => array(
+		'title'   => '工具 · 迁移',
+		'tab'     => 'tools',
+		'section' => 'migration',
+		'mode'    => 'simple',
+		'options' => array(
+			'wpfonts_settings' => $public,
+			'wpfonts_api_key'  => '',
+		),
+	),
 	'help'            => array(
 		'title'   => '帮助',
 		'tab'     => 'help',
@@ -631,7 +644,8 @@ foreach ( $screens as $name => $screen ) {
 			$screen['options'],
 			$screen['tab'],
 			$screen['mode'],
-			isset( $screen['catalog'] ) ? $screen['catalog'] : null
+			isset( $screen['catalog'] ) ? $screen['catalog'] : null,
+			isset( $screen['section'] ) ? $screen['section'] : ''
 		)
 	);
 	$path = $out . '/' . $name . '.html';

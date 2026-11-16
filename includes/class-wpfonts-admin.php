@@ -261,7 +261,7 @@ class WPFonts_Admin {
 		if ( ! in_array( $tab, array( 'overview', 'settings', 'tools', 'help' ), true ) ) {
 			$tab = 'overview';
 		}
-		if ( 'packages' !== $section ) {
+		if ( ! in_array( $section, array( 'packages', 'migration' ), true ) ) {
 			$section = '';
 		}
 		if ( 'advanced' !== $mode ) {
@@ -575,7 +575,7 @@ class WPFonts_Admin {
 		echo Wenpai_Admin_UI::subnav_html(
 			array(
 				'label'   => __( '工具分区', 'wpfonts' ),
-				'current' => 'packages' === $section ? 'packages' : 'tools',
+				'current' => '' !== $section ? $section : 'tools',
 				'slug'    => 'wpfonts',
 				'query'   => array( 'tab' => 'tools' ),
 				'items'   => array(
@@ -587,11 +587,20 @@ class WPFonts_Admin {
 						'id'    => 'packages',
 						'label' => __( '字体包', 'wpfonts' ),
 					),
+					array(
+						'id'    => 'migration',
+						'label' => __( '迁移', 'wpfonts' ),
+					),
 				),
 			)
 		);
 		if ( 'packages' === $section ) {
 			self::render_packages_body();
+			echo '</div>';
+			return;
+		}
+		if ( 'migration' === $section ) {
+			self::render_migration( $settings );
 			echo '</div>';
 			return;
 		}
@@ -617,13 +626,6 @@ class WPFonts_Admin {
 		self::render_link_preview( $settings, $state, $has_key, false );
 		echo '</section>';
 
-		self::render_migration( $settings );
-
-		echo '<section class="card">';
-		echo '<h2 class="card-title">' . esc_html__( '字体来源', 'wpfonts' ) . '</h2>';
-		echo '<p class="card-sub">' . esc_html__( '字体在文风侧切分完成；本站托管字体包、连接文风云，或直接使用系统字体。', 'wpfonts' ) . '</p>';
-		self::status_row( 'ok', 'info', __( '系统字体', 'wpfonts' ), __( '系统字体始终可用。', 'wpfonts' ), 'ok', __( '可用', 'wpfonts' ) );
-		echo '</section>';
 		echo '</div>';
 	}
 
@@ -2151,6 +2153,7 @@ class WPFonts_Admin {
 				self::page_url(
 					array(
 						'tab'          => 'tools',
+						'section'      => 'migration',
 						'wpfonts_xfer' => 'invalid',
 					)
 				)
@@ -2180,6 +2183,7 @@ class WPFonts_Admin {
 				self::page_url(
 					array(
 						'tab'          => 'tools',
+						'section'      => 'migration',
 						'wpfonts_xfer' => 'invalid',
 					)
 				)
@@ -2214,6 +2218,7 @@ class WPFonts_Admin {
 			self::page_url(
 				array(
 					'tab'          => 'tools',
+					'section'      => 'migration',
 					'wpfonts_xfer' => $code,
 				)
 			)

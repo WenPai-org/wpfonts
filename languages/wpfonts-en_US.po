@@ -1471,3 +1471,7 @@ msgstr "The Windfonts stylesheet could not be verified; front-end fonts may fall
 #: includes/class-wpfonts-admin.php
 msgid "打开工具页再检查一次"
 msgstr "Open Tools to check again"
+
+#: includes/class-wpfonts-admin.php
+msgid "迁移"
+msgstr "Migration"
