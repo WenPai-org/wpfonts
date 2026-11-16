@@ -189,6 +189,7 @@ body.wenpai-ui-page .wenpai-app .wpfonts-catalog-list .choice input[type="checkb
 .wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-source-link::after,
 .wenpai-app .wpfonts-catalog-list .choice .d > .wpfonts-license-link::after {
 	content: " ↗";
+	font-size: 0.8em;
 }
 
 .wenpai-app #wpfonts-project-wrap {
