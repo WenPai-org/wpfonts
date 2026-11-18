@@ -81,6 +81,46 @@ class WPFonts_Link {
 	);
 
 	/**
+	 * Vendored family short => OSS normalized map, from catalog-allowlist.json.
+	 *
+	 * @var array<string, string>|null
+	 */
+	private static $cdn_norm_map = null;
+
+	/**
+	 * family short => normalized directory, read once from the vendored
+	 * storefront allowlist (data/catalog-allowlist.json, sourced from
+	 * fonts-front fonts-list.json). Empty array when the file is unusable.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function cdn_norm_map() {
+		if ( null !== self::$cdn_norm_map ) {
+			return self::$cdn_norm_map;
+		}
+		self::$cdn_norm_map = array();
+		$path                = dirname( __DIR__ ) . '/data/catalog-allowlist.json';
+		if ( is_readable( $path ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Vendored plugin data file.
+			$raw  = file_get_contents( $path );
+			$json = is_string( $raw ) ? json_decode( $raw, true ) : null;
+			if ( is_array( $json ) && isset( $json['fonts'] ) && is_array( $json['fonts'] ) ) {
+				foreach ( $json['fonts'] as $row ) {
+					if ( ! is_array( $row ) || ! isset( $row['fontFamily'], $row['normalized'] ) ) {
+						continue;
+					}
+					$family = self::token( $row['fontFamily'], 80 );
+					$norm   = self::token( $row['normalized'], 64 );
+					if ( '' !== $family && '' !== $norm && 0 === strpos( $family, 'wenfeng-' ) ) {
+						self::$cdn_norm_map[ substr( $family, 8 ) ] = $norm;
+					}
+				}
+			}
+		}
+		return self::$cdn_norm_map;
+	}
+
+	/**
 	 * Keep a region id, or fall back to mainland China.
 	 *
 	 * @param mixed $value Raw region.
@@ -168,6 +208,10 @@ class WPFonts_Link {
 		if ( '' === $norm ) {
 			return '';
 		}
+		$map = self::cdn_norm_map();
+		if ( isset( $map[ $norm ] ) ) {
+			return self::token( $map[ $norm ], 64 );
+		}
 		if ( isset( self::CDN_SPECIMEN_ALIASES[ $norm ] ) ) {
 			return self::token( self::CDN_SPECIMEN_ALIASES[ $norm ], 64 );
 		}
@@ -211,8 +255,9 @@ class WPFonts_Link {
 	/**
 	 * License page URL for one wenfeng-* family on wenfeng.org.
 	 *
-	 * The path uses package_cdn_norm(), the same lowercase folder the
-	 * license index lists as /license/{norm}/. Empty when the slug is not
+	 * The path uses package_norm() — the storefront short — because
+	 * wenfeng.org /license/{norm}/ is keyed by the shop short code, not the
+	 * OSS package directory (package_cdn_norm()). Empty when the slug is not
 	 * a wenfeng-* token.
 	 *
 	 * @param mixed $slug   Package id or catalog fontFamily.
@@ -221,7 +266,7 @@ class WPFonts_Link {
 	 */
 	public static function package_license_url( $slug, $region = 'cn' ) {
 		unset( $region );
-		$norm = self::package_cdn_norm( $slug );
+		$norm = self::package_norm( $slug );
 		if ( '' === $norm ) {
 			return '';
 		}
