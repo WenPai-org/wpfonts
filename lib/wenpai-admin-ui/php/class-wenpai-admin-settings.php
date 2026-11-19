@@ -356,6 +356,15 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				'schedule_next'          => '下次运行：%s',
 				'schedule_none'          => '未安排',
 				'generate'               => '生成',
+				/* translators: %s: item title (sortable move-up button aria-label). */
+				'sortable_move_up'       => '把 %s 上移',
+				/* translators: %s: item title (sortable move-down button aria-label). */
+				'sortable_move_down'     => '把 %s 下移',
+				/* translators: 1: item title, 2: new position, 3: item count (sortable live announcement). */
+				'sortable_moved'         => '%1$s 已移到第 %2$d 位，共 %3$d 项',
+				'chart_data'             => '查看数据',
+				'statbar_empty'          => '还没有数据',
+				'copy_hint'              => '（点击复制）',
 			);
 		}
 
@@ -435,6 +444,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				} elseif ( in_array( $f['type'], array( 'multicheck', 'multiselect' ), true ) ) {
 					// 0.7: scrollable checklist (checkgroup) and checklist + filter (catalog).
 					$f['presentation'] = in_array( $pres, array( 'checkgroup', 'catalog' ), true ) ? $pres : '';
+				} elseif ( 'radio' === $f['type'] ) {
+					// D-33: two to four exclusive options drawn as .seg, still native radios.
+					$f['presentation'] = 'seg' === $pres ? 'seg' : '';
 				} else {
 					$f['presentation'] = '';
 				}
@@ -1261,6 +1273,10 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			}
 			switch ( $f['type'] ) {
 				case 'toggle':
+					$pair = self::toggle_values( $f );
+					if ( null !== $pair ) {
+						return is_scalar( $v ) && (string) $v === $pair[0] ? $pair[0] : $pair[1];
+					}
 					return ! empty( $v );
 				case 'number':
 					$n = null === $v || '' === $v ? (int) $f['default'] : (int) $v;
@@ -2493,7 +2509,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			if ( $reason ) {
 				$described[] = $fid . '-reason';
 			}
-			if ( '' !== $f['desc'] ) {
+			$desc_html = isset( $f['desc_html'] ) && '' !== (string) $f['desc_html'] ? self::kses( (string) $f['desc_html'], 'post' ) : '';
+			if ( '' !== $f['desc'] || '' !== $desc_html ) {
 				$described[] = $fid . '-desc';
 			}
 			if ( $secret ) {
@@ -2511,7 +2528,9 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			);
 
 			$control = $this->control_html( $id, $f, $fid, $ctl );
-			$extra   = $this->actions_html( $id, $f ) . $this->generate_html( $f, $fid );
+			$acts    = $this->actions_html( $id, $f );
+			$multi   = ! empty( $f['actions_row'] ) && '' !== $acts;
+			$extra   = ( $multi ? '' : $acts ) . $this->generate_html( $f, $fid );
 			if ( '' !== $extra ) {
 				$control = '<div class="field-ctl-row wenpai-field__row">' . $control . $extra . '</div>';
 			}
@@ -2524,11 +2543,16 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				$why    = null !== $off ? $off['reason'] : '';
 				$after .= '<p class="wenpai-field__reason" id="' . esc_attr( $fid . '-reason' ) . '"' . ( '' === $why ? ' hidden' : '' ) . '>' . esc_html( $why ) . '</p>';
 			}
-			if ( '' !== $f['desc'] ) {
+			if ( '' !== $desc_html ) {
+				$after .= '<p class="wenpai-field__desc" id="' . esc_attr( $fid . '-desc' ) . '">' . $desc_html . '</p>';
+			} elseif ( '' !== $f['desc'] ) {
 				$after .= '<p class="wenpai-field__desc" id="' . esc_attr( $fid . '-desc' ) . '">' . esc_html( $f['desc'] ) . '</p>';
 			}
 			if ( $secret ) {
 				$after .= $this->secret_extra_html( $id, $fid );
+			}
+			if ( $multi ) {
+				$after .= $acts;
 			}
 
 			$state = '';
@@ -2609,7 +2633,12 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		private function secret_extra_html( $id, $fid ) {
 			$val   = $this->get( $id );
 			$saved = is_scalar( $val ) && '' !== (string) $val;
-			$html  = '<p class="wenpai-field__state ' . ( $saved ? 'is-saved' : 'is-empty' ) . '" id="' . esc_attr( $fid . '-state' ) . '">' . esc_html( $saved ? $this->strings['secret_saved'] : $this->strings['secret_empty'] ) . '</p>';
+			$text  = $saved ? $this->strings['secret_saved'] : $this->strings['secret_empty'];
+			$own   = isset( $this->fields[ $id ]['state_text'] ) ? (string) $this->fields[ $id ]['state_text'] : '';
+			if ( $saved && '' !== $own ) {
+				$text = $own;
+			}
+			$html = '<p class="wenpai-field__state ' . ( $saved ? 'is-saved' : 'is-empty' ) . '" id="' . esc_attr( $fid . '-state' ) . '">' . esc_html( $text ) . '</p>';
 			if ( $saved ) {
 				$html .= '<label class="wenpai-field__clear"><input type="checkbox" name="' . esc_attr( $this->option . '[' . self::CLEAR_KEY . '][]' ) . '" value="' . esc_attr( $id ) . '"> ' . esc_html( $this->strings['secret_clear'] ) . '</label>';
 			}
@@ -2617,7 +2646,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		}
 
 		/**
-		 * Normalized action button of a field (at most one, always .btn-secondary).
+		 * Normalized action buttons of a field: the first one, always .btn-secondary; with
+		 * field key actions_row => true all of them, and 'variant' => 'ghost' is honoured.
 		 *
 		 * Schema: 'actions' => array( array( 'id', 'label', 'ajax' (wp_ajax) or 'post' (admin-post Action),
 		 * 'nonce' (defaults to the ajax action), 'include' (field ids sent along,
@@ -2625,7 +2655,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * 「…」, e.g. 正在测试; kit JS appends 「…」; default action_busy 正在处理),
 		 * 'data' (extra static params), 'requires' (field ids that must have a
 		 * value), 'requires_note' (why the button is disabled, e.g. 先填写 API
-		 * 密钥。) ) ).
+		 * 密钥。), 'result' (the last known receipt, printed on page load: array(
+		 * 'ok' => bool, 'message' => plain text ); ajax actions only) ) ).
 		 *
 		 * Receipt copy comes from the handler (see ajax_action()): a failure
 		 * returns WP_Error whose message may name the service, e.g.
@@ -2637,6 +2668,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * @return array<int, array>
 		 */
 		private function actions( $id, array $f ) {
+			$out = array();
+			$row = ! empty( $f['actions_row'] );
 			foreach ( (array) $f['actions'] as $i => $a ) {
 				if ( ! is_array( $a ) || empty( $a['label'] ) ) {
 					continue;
@@ -2646,24 +2679,27 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				if ( '' === $post && '' === $ajax ) {
 					continue;
 				}
-				$aid = isset( $a['id'] ) ? sanitize_key( (string) $a['id'] ) : (string) $i;
-				return array(
-					array(
-						'id'            => $aid,
-						'label'         => (string) $a['label'],
-						'ajax'          => $ajax,
-						'post'          => $post,
-						'nonce'         => isset( $a['nonce'] ) ? (string) $a['nonce'] : ( '' !== $ajax ? $ajax : $post ),
-						'include'       => isset( $a['include'] ) ? (array) $a['include'] : array( $id ),
-						'busy'          => isset( $a['busy'] ) ? (string) $a['busy'] : $this->strings['action_busy'],
-						'data'          => isset( $a['data'] ) && is_array( $a['data'] ) ? $a['data'] : array(),
-						'requires'      => isset( $a['requires'] ) ? (array) $a['requires'] : array(),
-						'requires_note' => isset( $a['requires_note'] ) ? (string) $a['requires_note'] : '',
-						'result_id'     => $this->field_id( $id ) . '-act-' . $aid,
-					),
+				$aid   = isset( $a['id'] ) ? sanitize_key( (string) $a['id'] ) : (string) $i;
+				$out[] = array(
+					'id'            => $aid,
+					'variant'       => $row && isset( $a['variant'] ) && 'ghost' === $a['variant'] ? 'ghost' : 'secondary',
+					'label'         => (string) $a['label'],
+					'ajax'          => $ajax,
+					'post'          => $post,
+					'nonce'         => isset( $a['nonce'] ) ? (string) $a['nonce'] : ( '' !== $ajax ? $ajax : $post ),
+					'include'       => isset( $a['include'] ) ? (array) $a['include'] : array( $id ),
+					'busy'          => isset( $a['busy'] ) ? (string) $a['busy'] : $this->strings['action_busy'],
+					'data'          => isset( $a['data'] ) && is_array( $a['data'] ) ? $a['data'] : array(),
+					'requires'      => isset( $a['requires'] ) ? (array) $a['requires'] : array(),
+					'requires_note' => isset( $a['requires_note'] ) ? (string) $a['requires_note'] : '',
+					'result_id'     => $this->field_id( $id ) . '-act-' . $aid,
+					'result'        => self::initial_result( isset( $a['result'] ) ? $a['result'] : null ),
 				);
+				if ( ! $row ) {
+					break;
+				}
 			}
-			return array();
+			return $out;
 		}
 
 		/**
@@ -2671,52 +2707,100 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 * JS). The button carries `hidden` until kit JS runs: without JS there
 		 * is nothing to press.
 		 *
+		 * Default: the first action only, next to the control. Field key
+		 * actions_row => true: every action in a .wenpai-actions row under the
+		 * field (after the secret state line), receipts after the row.
+		 *
 		 * @param string $id Field id.
 		 * @param array  $f  Field schema.
 		 * @return string
 		 */
 		private function actions_html( $id, array $f ) {
+			$acts = $this->actions( $id, $f );
+			if ( ! empty( $f['actions_row'] ) && array() !== $acts ) {
+				$btns = '';
+				$recs = '';
+				foreach ( $acts as $a ) {
+					$one   = $this->action_html( $a );
+					$cut   = strpos( $one, '<p class="wenpai-field__result' );
+					$btns .= false === $cut ? $one : substr( $one, 0, $cut );
+					$recs .= false === $cut ? '' : substr( $one, $cut );
+				}
+				return '<div class="wenpai-actions wenpai-field__actions">' . $btns . '</div>' . $recs;
+			}
 			$out = '';
-			foreach ( $this->actions( $id, $f ) as $a ) {
-				if ( '' !== $a['post'] && class_exists( 'Wenpai_Admin_Action', false ) ) {
-					// Track C / E10: admin-post Action path (works without JS; single page notice).
-					$action_url = function_exists( 'admin_url' ) ? admin_url( 'admin-post.php' ) : 'admin-post.php';
-					$out       .= '<form method="post" action="' . esc_url( $action_url ) . '" class="wenpai-field__action-form">';
-					$out       .= Wenpai_Admin_Action::fields_html( $a['post'] );
-					foreach ( $a['data'] as $dk => $dv ) {
-						if ( is_scalar( $dv ) ) {
-							$out .= '<input type="hidden" name="' . esc_attr( (string) $dk ) . '" value="' . esc_attr( (string) $dv ) . '" />';
-						}
-					}
-					$out .= '<button type="submit" class="btn btn-secondary" data-wenpai-busy="' . esc_attr( $a['busy'] ) . '">'
-						. esc_html( $a['label'] ) . '</button>';
-					$out .= '</form>';
-					continue;
-				}
-				$names = array();
-				foreach ( $a['include'] as $inc ) {
-					$names[] = $this->field_name( (string) $inc );
-				}
-				$needs = array();
-				foreach ( $a['requires'] as $req ) {
-					$needs[] = $this->field_name( (string) $req );
-				}
-				$out .= '<button type="button" class="btn btn-secondary" hidden'
-					. ' data-wenpai-action="' . esc_attr( $a['ajax'] ) . '"'
-					. ' data-wenpai-nonce="' . esc_attr( function_exists( 'wp_create_nonce' ) ? wp_create_nonce( $a['nonce'] ) : '' ) . '"'
-					. ' data-wenpai-url="' . esc_attr( function_exists( 'admin_url' ) ? admin_url( 'admin-ajax.php' ) : 'admin-ajax.php' ) . '"'
-					. ' data-wenpai-include="' . esc_attr( wp_json_encode( $names ) ) . '"'
-					. ( empty( $a['data'] ) ? '' : ' data-wenpai-data="' . esc_attr( wp_json_encode( $a['data'] ) ) . '"' )
-					. ( empty( $needs ) ? '' : ' data-wenpai-requires="' . esc_attr( wp_json_encode( $needs ) ) . '" data-wenpai-requires-note="' . esc_attr( $a['requires_note'] ) . '"' )
-					. ' data-wenpai-result="' . esc_attr( $a['result_id'] ) . '"'
-					. ' data-wenpai-busy="' . esc_attr( $a['busy'] ) . '"'
-					. ' data-wenpai-ok="' . esc_attr( $this->strings['action_ok'] ) . '"'
-					. ' data-wenpai-fail="' . esc_attr( $this->strings['action_failed'] ) . '"'
-					. ' aria-describedby="' . esc_attr( $a['result_id'] ) . '">'
-					. esc_html( $a['label'] ) . '</button>';
-				$out .= '<p class="wenpai-field__result" id="' . esc_attr( $a['result_id'] ) . '" role="status" aria-live="polite"></p>';
+			foreach ( $acts as $a ) {
+				$out .= $this->action_html( $a );
 			}
 			return $out;
+		}
+
+		/**
+		 * One normalized action: admin-post form, or ajax button + receipt.
+		 *
+		 * @param array $a Entry from actions().
+		 * @return string
+		 */
+		private function action_html( array $a ) {
+			$btn = 'btn btn-' . $a['variant'];
+			if ( '' !== $a['post'] && class_exists( 'Wenpai_Admin_Action', false ) ) {
+				// Track C / E10: admin-post Action path (works without JS; single page notice).
+				$action_url = function_exists( 'admin_url' ) ? admin_url( 'admin-post.php' ) : 'admin-post.php';
+				$out        = '<form method="post" action="' . esc_url( $action_url ) . '" class="wenpai-field__action-form">';
+				$out       .= Wenpai_Admin_Action::fields_html( $a['post'] );
+				foreach ( $a['data'] as $dk => $dv ) {
+					if ( is_scalar( $dv ) ) {
+						$out .= '<input type="hidden" name="' . esc_attr( (string) $dk ) . '" value="' . esc_attr( (string) $dv ) . '" />';
+					}
+				}
+				$out .= '<button type="submit" class="' . esc_attr( $btn ) . '" data-wenpai-busy="' . esc_attr( $a['busy'] ) . '">'
+					. esc_html( $a['label'] ) . '</button>';
+				return $out . '</form>';
+			}
+			$names = array();
+			foreach ( $a['include'] as $inc ) {
+				$names[] = $this->field_name( (string) $inc );
+			}
+			$needs = array();
+			foreach ( $a['requires'] as $req ) {
+				$needs[] = $this->field_name( (string) $req );
+			}
+			$out = '<button type="button" class="' . esc_attr( $btn ) . '" hidden'
+				. ' data-wenpai-action="' . esc_attr( $a['ajax'] ) . '"'
+				. ' data-wenpai-nonce="' . esc_attr( function_exists( 'wp_create_nonce' ) ? wp_create_nonce( $a['nonce'] ) : '' ) . '"'
+				. ' data-wenpai-url="' . esc_attr( function_exists( 'admin_url' ) ? admin_url( 'admin-ajax.php' ) : 'admin-ajax.php' ) . '"'
+				. ' data-wenpai-include="' . esc_attr( wp_json_encode( $names ) ) . '"'
+				. ( empty( $a['data'] ) ? '' : ' data-wenpai-data="' . esc_attr( wp_json_encode( $a['data'] ) ) . '"' )
+				. ( empty( $needs ) ? '' : ' data-wenpai-requires="' . esc_attr( wp_json_encode( $needs ) ) . '" data-wenpai-requires-note="' . esc_attr( $a['requires_note'] ) . '"' )
+				. ' data-wenpai-result="' . esc_attr( $a['result_id'] ) . '"'
+				. ' data-wenpai-busy="' . esc_attr( $a['busy'] ) . '"'
+				. ' data-wenpai-ok="' . esc_attr( $this->strings['action_ok'] ) . '"'
+				. ' data-wenpai-fail="' . esc_attr( $this->strings['action_failed'] ) . '"'
+				. ' aria-describedby="' . esc_attr( $a['result_id'] ) . '">'
+				. esc_html( $a['label'] ) . '</button>';
+			if ( null === $a['result'] ) {
+				return $out . '<p class="wenpai-field__result" id="' . esc_attr( $a['result_id'] ) . '" role="status" aria-live="polite"></p>';
+			}
+			// Same markup kit JS leaves after a run (setResult()), so the next run or an edit to an included field replaces it.
+			$ok = $a['result']['ok'];
+			return $out . '<p class="wenpai-field__result ' . ( $ok ? 'is-ok' : 'is-bad' ) . '" id="' . esc_attr( $a['result_id'] ) . '" role="' . ( $ok ? 'status' : 'alert' ) . '" aria-live="polite" data-wenpai-filled="1">'
+				. esc_html( $a['result']['message'] ) . '</p>';
+		}
+
+		/**
+		 * Normalize an action's initial receipt.
+		 *
+		 * @param mixed $r array( 'ok' => bool, 'message' => string ), or anything else for none.
+		 * @return array{ok: bool, message: string}|null Null when there is no message to show.
+		 */
+		private static function initial_result( $r ) {
+			if ( ! is_array( $r ) || ! isset( $r['message'] ) || ! is_scalar( $r['message'] ) || '' === (string) $r['message'] ) {
+				return null;
+			}
+			return array(
+				'ok'      => ! empty( $r['ok'] ),
+				'message' => (string) $r['message'],
+			);
 		}
 
 		/**
@@ -2849,14 +2933,22 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			$out .= '<input type="hidden" name="' . esc_attr( $name . '[]' ) . '" value="">';
 			$out .= '<ul class="wenpai-checkgroup__list">';
 			foreach ( $choices as $k => $lab ) {
-				$meta = '';
-				if ( is_array( $lab ) && isset( $lab['meta'] ) ) {
-					$meta = (string) $lab['meta'];
+				$meta  = '';
+				$media = '';
+				$desc  = '';
+				if ( is_array( $lab ) ) {
+					$meta  = isset( $lab['meta'] ) ? (string) $lab['meta'] : '';
+					$media = isset( $lab['media_html'] ) && '' !== (string) $lab['media_html'] ? self::kses( (string) $lab['media_html'], 'logo' ) : '';
+					$desc  = isset( $lab['desc_html'] ) && '' !== (string) $lab['desc_html'] ? self::kses( (string) $lab['desc_html'], 'control' ) : '';
 				}
-				$out .= '<li><label class="chk"><input type="checkbox" name="' . esc_attr( $name . '[]' ) . '" value="' . esc_attr( $k ) . '"' . checked( in_array( (string) $k, $picked, true ), true, false ) . $inv . '> '
+				$out .= '' !== $desc ? '<li class="has-desc">' : '<li>';
+				$out .= '<label class="chk"><input type="checkbox" name="' . esc_attr( $name . '[]' ) . '" value="' . esc_attr( $k ) . '"' . checked( in_array( (string) $k, $picked, true ), true, false ) . $inv . '> '
+					. ( '' !== $media ? '<span class="wenpai-checkgroup__media">' . $media . '</span>' : '' )
 					. '<span class="wenpai-checkgroup__text">' . esc_html( self::choice_label( $lab ) ) . '</span>'
 					. ( '' !== $meta ? '<span class="wenpai-checkgroup__meta">' . esc_html( $meta ) . '</span>' : '' )
-					. '</label></li>';
+					. '</label>';
+				// Links and copy buttons stay outside the label: no interactive content inside it.
+				$out .= ( '' !== $desc ? '<div class="wenpai-checkgroup__desc">' . $desc . '</div>' : '' ) . '</li>';
 			}
 			$out .= '</ul></div>';
 			if ( 'catalog' === $pres ) {
@@ -2897,18 +2989,22 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				case 'status':
 					return $this->status_html( $f, $fid );
 				case 'toggle':
-					$switch = self::switch_html(
-						array(
-							'id'          => $fid,
-							'name'        => $name,
-							'checked'     => (bool) $v,
-							'on'          => $this->strings['on'],
-							'off'         => $this->strings['off'],
-							'labelledby'  => $ctl['labelledby'],
-							'describedby' => $ctl['describedby'],
-							'invalid'     => $ctl['invalid'],
-						)
+					$pair = self::toggle_values( $f );
+					$sw   = array(
+						'id'          => $fid,
+						'name'        => $name,
+						'checked'     => null !== $pair ? is_scalar( $v ) && (string) $v === $pair[0] : (bool) $v,
+						'on'          => isset( $f['on'] ) && '' !== (string) $f['on'] ? (string) $f['on'] : $this->strings['on'],
+						'off'         => isset( $f['off'] ) && '' !== (string) $f['off'] ? (string) $f['off'] : $this->strings['off'],
+						'labelledby'  => $ctl['labelledby'],
+						'describedby' => $ctl['describedby'],
+						'invalid'     => $ctl['invalid'],
 					);
+					if ( null !== $pair ) {
+						$sw['value']     = $pair[0];
+						$sw['off_value'] = $pair[1];
+					}
+					$switch = self::switch_html( $sw );
 					// Track C / E06: instant module toggle via Wenpai_Admin_Action (admin-post).
 					$instant = isset( $f['instant'] ) ? sanitize_key( (string) $f['instant'] ) : '';
 					if ( '' !== $instant && class_exists( 'Wenpai_Admin_Action', false ) ) {
@@ -2954,6 +3050,21 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					}
 					return $out . '</select>';
 				case 'radio':
+					if ( 'seg' === $f['presentation'] ) {
+						self::ensure_ui();
+						$items = array();
+						foreach ( self::resolve_choices( $f ) as $k => $lab ) {
+							$items[] = array( (string) $k, self::choice_label( $lab ) );
+						}
+						$seg = Wenpai_Admin_UI::seg_radio_html(
+							array(
+								'name'  => $name,
+								'value' => is_scalar( $v ) ? (string) $v : '',
+								'items' => $items,
+							)
+						);
+						return '' === $inv ? $seg : str_replace( '<input type="radio"', '<input type="radio"' . $inv, $seg );
+					}
 					$out .= '<div class="opts">';
 					foreach ( self::resolve_choices( $f ) as $k => $lab ) {
 						$on   = (string) $v === (string) $k;
@@ -2987,20 +3098,20 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return $this->matrix_html( $f, $fid, $name, is_array( $v ) ? $v : array(), $ctl );
 				case 'number':
 					return $this->addon_html(
-						'<input type="number" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v ) . '"' . ( isset( $f['min'] ) ? ' min="' . esc_attr( $f['min'] ) . '"' : '' ) . ( isset( $f['max'] ) ? ' max="' . esc_attr( $f['max'] ) . '"' : '' ) . $aria . $inv . '>',
+						'<input type="number" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v ) . '"' . self::placeholder_attr( $f ) . ( isset( $f['min'] ) ? ' min="' . esc_attr( $f['min'] ) . '"' : '' ) . ( isset( $f['max'] ) ? ' max="' . esc_attr( $f['max'] ) . '"' : '' ) . $aria . $inv . '>',
 						$f
 					);
 				case 'textarea':
-					return '<textarea id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" rows="4"' . $aria . $inv . '>' . esc_textarea( $v ) . '</textarea>';
+					return '<textarea id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" rows="4"' . self::placeholder_attr( $f ) . $aria . $inv . '>' . esc_textarea( $v ) . '</textarea>';
 				case 'secret':
 					$saved  = is_scalar( $v ) && '' !== (string) $v;
-					$input  = '<input type="password" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="" autocomplete="new-password" spellcheck="false" data-wenpai-secret="' . esc_attr( $id ) . '" data-wenpai-multiline="' . esc_attr( $this->strings['secret_multiline'] ) . '"' . ( $saved ? ' data-wenpai-saved' : '' ) . $aria . $inv . '>';
+					$input  = '<input type="password" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value=""' . self::placeholder_attr( $f ) . ' autocomplete="new-password" spellcheck="false" data-wenpai-secret="' . esc_attr( $id ) . '" data-wenpai-multiline="' . esc_attr( $this->strings['secret_multiline'] ) . '"' . ( $saved ? ' data-wenpai-saved' : '' ) . $aria . $inv . '>';
 					$reveal = '<button type="button" class="btn btn-ghost wenpai-field__reveal" data-wenpai-reveal aria-pressed="false" aria-controls="' . esc_attr( $fid ) . '" aria-label="' . esc_attr( $this->strings['secret_show'] ) . '" data-wenpai-reveal-show="' . esc_attr( $this->strings['secret_show'] ) . '" data-wenpai-reveal-hide="' . esc_attr( $this->strings['secret_hide'] ) . '">' . esc_html( $this->strings['secret_show'] ) . '</button>';
 					return '<span class="wenpai-field__secret">' . $input . $reveal . '</span>';
 				case 'email':
-					return '<input type="email" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="email"' . $aria . $inv . '>';
+					return '<input type="email" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '"' . self::placeholder_attr( $f ) . ' autocomplete="email"' . $aria . $inv . '>';
 				case 'url':
-					return '<input type="url" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="url"' . $aria . $inv . '>';
+					return '<input type="url" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '"' . self::placeholder_attr( $f ) . ' autocomplete="url"' . $aria . $inv . '>';
 				case 'date':
 					return '<input type="date" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '"' . $aria . $inv . '>';
 				case 'color':
@@ -3030,7 +3141,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return $this->range_html( $f, $fid, $name, $v, $aria, $inv );
 				default:
 					return $this->addon_html(
-						'<input type="text" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '" autocomplete="off"' . $aria . $inv . '>',
+						'<input type="text" id="' . esc_attr( $fid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $v ) ? $v : '' ) . '"' . self::placeholder_attr( $f ) . ' autocomplete="off"' . $aria . $inv . '>',
 						$f
 					);
 			}
@@ -3595,17 +3706,17 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return $html;
 				case 'number':
 					return $this->addon_html(
-						'<input type="number" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : 0 ) . '"'
+						'<input type="number" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : 0 ) . '"' . self::placeholder_attr( $sf )
 						. ( isset( $sf['min'] ) && null !== $sf['min'] ? ' min="' . esc_attr( $sf['min'] ) . '"' : '' )
 						. ( isset( $sf['max'] ) && null !== $sf['max'] ? ' max="' . esc_attr( $sf['max'] ) . '"' : '' ) . '>',
 						$sf
 					);
 				case 'textarea':
-					return '<textarea id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" rows="3">' . esc_textarea( is_scalar( $val ) ? (string) $val : '' ) . '</textarea>';
+					return '<textarea id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" rows="3"' . self::placeholder_attr( $sf ) . '>' . esc_textarea( is_scalar( $val ) ? (string) $val : '' ) . '</textarea>';
 				case 'email':
-					return '<input type="email" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '" autocomplete="email">';
+					return '<input type="email" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '"' . self::placeholder_attr( $sf ) . ' autocomplete="email">';
 				case 'url':
-					return '<input type="url" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '" autocomplete="url">';
+					return '<input type="url" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '"' . self::placeholder_attr( $sf ) . ' autocomplete="url">';
 				case 'select':
 					$html = '<select id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '">';
 					foreach ( self::resolve( $sf['choices'], $sf ) as $k => $lab ) {
@@ -3614,10 +3725,40 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					return $html . '</select>';
 				case 'secret':
 					$saved = is_scalar( $val ) && '' !== (string) $val;
-					return '<input type="password" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="" autocomplete="new-password" spellcheck="false"' . ( $saved ? ' data-wenpai-saved' : '' ) . '>';
+					return '<input type="password" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value=""' . self::placeholder_attr( $sf ) . ' autocomplete="new-password" spellcheck="false"' . ( $saved ? ' data-wenpai-saved' : '' ) . '>';
 				default:
-					return '<input type="text" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '" autocomplete="off">';
+					return '<input type="text" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( is_scalar( $val ) ? $val : '' ) . '"' . self::placeholder_attr( $sf ) . ' autocomplete="off">';
 			}
+		}
+
+		/**
+		 * ` placeholder="…"` for a text-like control, or '' when the field sets none.
+		 *
+		 * @param array $f Field or repeater subfield schema; 'placeholder' is plain text.
+		 * @return string
+		 */
+		private static function placeholder_attr( array $f ) {
+			if ( ! isset( $f['placeholder'] ) || ! is_scalar( $f['placeholder'] ) || '' === (string) $f['placeholder'] ) {
+				return '';
+			}
+			return ' placeholder="' . esc_attr( (string) $f['placeholder'] ) . '"';
+		}
+
+		/**
+		 * A toggle's stored values when the field maps on/off to strings.
+		 *
+		 * @param array $f Field schema; 'values' => array( on, off ).
+		 * @return array{0:string,1:string}|null Null keeps the boolean toggle.
+		 */
+		private static function toggle_values( array $f ) {
+			if ( ! isset( $f['values'] ) || ! is_array( $f['values'] ) || 2 !== count( $f['values'] ) ) {
+				return null;
+			}
+			$pair = array_values( $f['values'] );
+			if ( ! is_scalar( $pair[0] ) || ! is_scalar( $pair[1] ) || (string) $pair[0] === (string) $pair[1] ) {
+				return null;
+			}
+			return array( (string) $pair[0], (string) $pair[1] );
 		}
 
 		/**
@@ -3649,6 +3790,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 		 *     @type string $labelledby  Id of the visible label, when not using <label for>.
 		 *     @type string $describedby Space-separated ids.
 		 *     @type bool   $invalid     Adds aria-invalid.
+		 *     @type string $value       Submitted when on. Default "1".
+		 *     @type string $off_value   Submitted when off (hidden input). Default "0".
 		 * }
 		 * @return string
 		 */
@@ -3665,11 +3808,13 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					'labelledby'  => '',
 					'describedby' => '',
 					'invalid'     => false,
+					'value'       => '1',
+					'off_value'   => '0',
 				)
 			);
 			$attr = ' id="' . esc_attr( $a['id'] ) . '"';
 			if ( '' !== $a['name'] ) {
-				$attr .= ' name="' . esc_attr( $a['name'] ) . '" value="1"';
+				$attr .= ' name="' . esc_attr( $a['name'] ) . '" value="' . esc_attr( (string) $a['value'] ) . '"';
 			}
 			if ( '' !== $a['labelledby'] ) {
 				$attr .= ' aria-labelledby="' . esc_attr( $a['labelledby'] ) . '"';
@@ -3682,7 +3827,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 			}
 			$out = '<span class="wenpai-switch">';
 			if ( '' !== $a['name'] ) {
-				$out .= '<input type="hidden" name="' . esc_attr( $a['name'] ) . '" value="0">';
+				$out .= '<input type="hidden" name="' . esc_attr( $a['name'] ) . '" value="' . esc_attr( (string) $a['off_value'] ) . '">';
 			}
 			$out .= '<input type="checkbox" role="switch" class="wenpai-switch__input"' . $attr . checked( (bool) $a['checked'], true, false ) . disabled( (bool) $a['disabled'], true, false ) . '>';
 			$out .= '<span class="wenpai-switch__track" aria-hidden="true"></span>';

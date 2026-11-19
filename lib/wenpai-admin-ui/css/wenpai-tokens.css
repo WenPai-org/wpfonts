@@ -50,9 +50,13 @@
   --wenpai-focus-halo: var(--wenpai-accent-soft);
 
   /* space */
+  --wenpai-space-0-5: 2px;
   --wenpai-space-1: 4px;
+  --wenpai-space-1-5: 6px;
   --wenpai-space-2: 8px;
+  --wenpai-space-2-5: 10px;
   --wenpai-space-3: 12px;
+  --wenpai-space-3-5: 14px;
   --wenpai-space-4: 16px;
   --wenpai-space-5: 20px;
   --wenpai-space-6: 24px;
@@ -121,6 +125,13 @@
   --wenpai-size-tile: 36px;
   --wenpai-size-label-col: 280px;
   --wenpai-size-wizard: 680px;
+  --wenpai-size-logo: 36px;
+  --wenpai-size-logo-sm: 24px;
+  --wenpai-size-logo-xs: 20px;
+  --wenpai-size-side-col: 20rem;
+  --wenpai-size-grid-min: 16rem;
+  --wenpai-size-meter: 8px;
+  --wenpai-size-chart: 200px;
 }
 
 body.wenpai-ui-page {

@@ -75,5 +75,11 @@
     "tags_placeholder": "输入后回车添加",
     "schedule_next": "下次运行：%s",
     "schedule_none": "未安排",
-    "generate": "生成"
+    "generate": "生成",
+    "sortable_move_up": "把 %s 上移",
+    "sortable_move_down": "把 %s 下移",
+    "sortable_moved": "%1$s 已移到第 %2$d 位，共 %3$d 项",
+    "chart_data": "查看数据",
+    "statbar_empty": "还没有数据",
+    "copy_hint": "（点击复制）"
 }

@@ -66,7 +66,10 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 * wp_kses (outside WP) the string is escaped.
 		 *
 		 * @param string $html    Caller HTML.
-		 * @param string $context 'svg' or 'post'.
+		 * @param string $context 'svg', 'post', 'control' (post + form controls),
+		 *                        'chart' (post + canvas and svg text) or 'logo'
+		 *                        (kit SVG plus img with src/alt/width/height/class/
+		 *                        loading/decoding only: brand marks).
 		 * @return string
 		 */
 		public static function kses( $html, $context ) {
@@ -162,9 +165,19 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			foreach ( array( 'svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon', 'lineargradient', 'stop' ) as $tag ) {
 				$svg[ $tag ] = array_merge( $svg[ $tag ], $paint );
 			}
+			if ( 'logo' === $context ) {
+				$svg['img'] = array_fill_keys( array( 'src', 'alt', 'width', 'height', 'class', 'loading', 'decoding' ), true );
+				return wp_kses( $html, $svg );
+			}
 			$allowed = 'svg' === $context ? $svg : array_merge( wp_kses_allowed_html( 'post' ), $svg );
 			if ( 'control' === $context ) {
 				$allowed = array_merge( $allowed, self::control_tags() );
+			}
+			if ( 'chart' === $context ) {
+				$allowed = array_merge( $allowed, self::chart_tags( $paint ) );
+				foreach ( array( 'path', 'line', 'polyline', 'polygon', 'circle', 'ellipse', 'rect' ) as $tag ) {
+					$allowed[ $tag ]['vector-effect'] = true;
+				}
 			}
 			return wp_kses( $html, $allowed );
 		}
@@ -193,11 +206,31 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				'form'     => array_fill_keys( array( 'method', 'action', 'enctype', 'target' ), true ),
 				'fieldset' => array_fill_keys( array( 'disabled', 'name' ), true ),
 				'legend'   => array(),
+				'noscript' => array(),
 			);
 			foreach ( $tags as $tag => $attrs ) {
 				$tags[ $tag ] = array_merge( $common, $attrs );
 			}
 			return $tags;
+		}
+
+		/**
+		 * Extra tags for kses( …, 'chart' ): what a chart_frame() plot needs on top
+		 * of post tags and kit SVG. canvas for script-drawn charts, svg text labels.
+		 *
+		 * @param array<string, bool> $paint SVG paint attributes shared with kses().
+		 * @return array<string, array<string, bool>>
+		 */
+		private static function chart_tags( array $paint ) {
+			$text = array_merge(
+				$paint,
+				array_fill_keys( array( 'class', 'x', 'y', 'dx', 'dy', 'text-anchor', 'dominant-baseline', 'font-size' ), true )
+			);
+			return array(
+				'canvas' => array_fill_keys( array( 'class', 'id', 'width', 'height', 'role', 'aria-label', 'aria-hidden', 'data-*' ), true ),
+				'text'   => $text,
+				'tspan'  => $text,
+			);
 		}
 
 		/**
@@ -293,6 +326,9 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *     @type string $level     info|ok|warn|bad. Default info.
 		 *     @type bool   $fade      Adds data-wenpai-fade.
 		 *     @type bool   $wrap      Wrap in .wenpai-notice-wrap. Default true.
+		 *     @type bool   $native    For core screens outside .wenpai-app (media library):
+		 *                             adds .wenpai-native (token scope) to the wrap, or to
+		 *                             the .notice when wrap is false.
 		 *     @type string $class     Extra classes on .notice.
 		 *     @type array  $attrs     Extra attributes on .notice.
 		 * }
@@ -305,12 +341,14 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				self::doing_it_wrong( sprintf( 'Invalid notice level 「%s」.', $level ), 'Wenpai_Admin_UI::notice' );
 				$level = 'info';
 			}
-			$inner = array_key_exists( 'text_html', $args )
+			$inner  = array_key_exists( 'text_html', $args )
 				? self::kses( (string) $args['text_html'], 'post' )
 				: esc_html( isset( $args['text'] ) ? (string) $args['text'] : '' );
-			$icon  = self::icon_svg( 'info' );
-			$class = self::classes( array( 'notice', $level, self::extra_class( $args ) ) );
-			$role  = '';
+			$icon   = self::icon_svg( 'info' );
+			$wrap   = ! array_key_exists( 'wrap', $args ) || $args['wrap'];
+			$native = ! empty( $args['native'] );
+			$class  = self::classes( array( 'notice', $level, $native && ! $wrap ? 'wenpai-native' : '', self::extra_class( $args ) ) );
+			$role   = '';
 			if ( 'bad' === $level ) {
 				$role = 'alert';
 			} elseif ( 'ok' === $level || 'warn' === $level ) {
@@ -327,8 +365,10 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			}
 			$attr .= self::extra_attrs( $args, $skip );
 			$html  = '<div' . $attr . '>' . $icon . '<span>' . $inner . '</span></div>';
-			$wrap  = ! array_key_exists( 'wrap', $args ) || $args['wrap'];
-			return $wrap ? '<div class="wenpai-notice-wrap">' . $html . '</div>' : $html;
+			if ( ! $wrap ) {
+				return $html;
+			}
+			return '<div class="' . ( $native ? 'wenpai-native wenpai-notice-wrap' : 'wenpai-notice-wrap' ) . '">' . $html . '</div>';
 		}
 
 		/**
@@ -351,12 +391,17 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *     @type string $sub_html Subtitle HTML (kses post).
 		 *     @type string $icon     Tile icon.
 		 *     @type string $state    Tile state.
+		 *     @type bool   $tile     False: no tile in the head (title block only); icon,
+		 *                            icon_html and state are ignored. Default true.
 		 *     @type bool   $tight    .card.tight.
 		 *     @type int    $heading  Title level, default 2.
 		 *     @type string $class    Extra classes on section.card.
 		 *     @type array  $attrs    Extra attributes on section.card.
 		 *     @type string $head_actions_html Right slot HTML (kses post) after the title block,
 		 *                                wrapped in .head-actions (0.5.0).
+		 *     @type string $head_control_html Right slot with form controls (kses control, as
+		 *                                row control_html), e.g. list_bar_html(). Printed in
+		 *                                div.head-actions after head_actions_html.
 		 * }
 		 * @return string
 		 */
@@ -367,12 +412,13 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$html    = '<section class="' . esc_attr( $class ) . '"' . self::extra_attrs( $args ) . '>';
 			$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
 			$has_sub = array_key_exists( 'sub_html', $args ) || ( isset( $args['sub'] ) && '' !== (string) $args['sub'] );
-			$icon    = isset( $args['icon'] ) ? (string) $args['icon'] : '';
+			$no_tile = isset( $args['tile'] ) && false === $args['tile'];
+			$icon    = ! $no_tile && isset( $args['icon'] ) ? (string) $args['icon'] : '';
 			if ( '' === $title && ! $has_sub && '' === $icon ) {
 				return $html;
 			}
 			$heading = self::heading( isset( $args['heading'] ) ? $args['heading'] : 2, 'Wenpai_Admin_UI::card_open' );
-			$tile    = self::tile_html(
+			$tile    = $no_tile ? '' : self::tile_html(
 				array(
 					'icon'      => $icon,
 					'state'     => isset( $args['state'] ) ? $args['state'] : '',
@@ -391,9 +437,15 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			} elseif ( isset( $args['sub'] ) && '' !== (string) $args['sub'] ) {
 				$html .= '<p class="card-sub">' . esc_html( (string) $args['sub'] ) . '</p>';
 			}
-			$html .= '</div>';
-			if ( isset( $args['head_actions_html'] ) && '' !== (string) $args['head_actions_html'] ) {
-				$html .= '<span class="head-actions">' . self::kses( (string) $args['head_actions_html'], 'post' ) . '</span>';
+			$html   .= '</div>';
+			$has_act = isset( $args['head_actions_html'] ) && '' !== (string) $args['head_actions_html'];
+			$actions = $has_act ? self::kses( (string) $args['head_actions_html'], 'post' ) : '';
+			$control = isset( $args['head_control_html'] ) && '' !== (string) $args['head_control_html'] ? self::kses( (string) $args['head_control_html'], 'control' ) : '';
+			if ( '' !== $control ) {
+				// A form (list_bar_html) cannot sit in a span.
+				$html .= '<div class="head-actions">' . $actions . $control . '</div>';
+			} elseif ( $has_act ) {
+				$html .= '<span class="head-actions">' . $actions . '</span>';
 			}
 			return $html . '</div>';
 		}
@@ -467,8 +519,9 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *
 		 *     @type string $meta         Meta text, wrapped in span.meta.
 		 *     @type string $meta_html    Meta HTML (kses post), used instead of meta.
-		 *     @type array  $actions      Button argument arrays.
-		 *     @type string $actions_html Extra action HTML (kses post).
+		 *     @type array  $actions      Button argument arrays. With start and meta, two or
+		 *                                more buttons are wrapped in one span so they stay together.
+		 *     @type string $actions_html Extra action HTML (kses post), printed as is after actions.
 		 *     @type bool   $start        .card-foot.start.
 		 *     @type string $class        Extra classes.
 		 *     @type array  $attrs        Extra attributes.
@@ -485,12 +538,20 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			} elseif ( isset( $args['meta'] ) && '' !== (string) $args['meta'] ) {
 				$html .= '<span class="meta">' . esc_html( (string) $args['meta'] ) . '</span>';
 			}
+			$buttons = array();
 			if ( isset( $args['actions'] ) && is_array( $args['actions'] ) ) {
 				foreach ( $args['actions'] as $btn ) {
 					if ( is_array( $btn ) ) {
-						$html .= self::button_html( $btn );
+						$buttons[] = self::button_html( $btn );
 					}
 				}
+			}
+			// .start spreads children with space-between: meta left, one action group right.
+			$has_meta = array_key_exists( 'meta_html', $args ) || ( isset( $args['meta'] ) && '' !== (string) $args['meta'] );
+			if ( $start && $has_meta && count( $buttons ) > 1 ) {
+				$html .= '<span>' . implode( '', $buttons ) . '</span>';
+			} else {
+				$html .= implode( '', $buttons );
 			}
 			if ( isset( $args['actions_html'] ) ) {
 				$html .= self::kses( (string) $args['actions_html'], 'post' );
@@ -519,6 +580,9 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *     @type bool   $bad    Bar turns bad (failed batch).
 		 *     @type array  $counts Pill argument arrays (ok / pending / failed / state).
 		 *     @type string $meta   Live region sentence (aria-live polite).
+		 *     @type string $meta_html Same sentence as HTML (kses post), wins over meta:
+		 *                         e.g. numbers in <b>.
+		 *     @type bool   $bar    false drops the progress bar (counts and sentence only).
 		 *     @type string $class  Extra classes on .wenpai-task.
 		 *     @type array  $attrs  Extra attributes.
 		 * }
@@ -540,8 +604,11 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$total    = (int) ( isset( $args['total'] ) ? $args['total'] : 0 );
 			$pct      = $total > 0 ? min( 100, (int) round( $now * 100 / $total ) ) : 0;
 			$bar_html = '<div class="' . esc_attr( $bar ) . '" role="progressbar" aria-valuemin="0" aria-valuemax="' . esc_attr( (string) $total ) . '" aria-valuenow="' . esc_attr( (string) $now ) . '"><i style="width:' . $pct . '%"></i></div>';
-			$counts   = isset( $args['counts'] ) && is_array( $args['counts'] ) ? $args['counts'] : array();
-			$html     = '<div class="' . esc_attr( self::classes( array( 'wenpai-task', self::extra_class( $args ) ) ) ) . '"' . self::extra_attrs( $args ) . '>' . $bar_html;
+			if ( array_key_exists( 'bar', $args ) && false === $args['bar'] ) {
+				$bar_html = '';
+			}
+			$counts = isset( $args['counts'] ) && is_array( $args['counts'] ) ? $args['counts'] : array();
+			$html   = '<div class="' . esc_attr( self::classes( array( 'wenpai-task', self::extra_class( $args ) ) ) ) . '"' . self::extra_attrs( $args ) . '>' . $bar_html;
 			if ( array() !== $counts ) {
 				$html .= '<div class="wenpai-task-counts">';
 				foreach ( $counts as $pill ) {
@@ -551,7 +618,9 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				}
 				$html .= '</div>';
 			}
-			if ( isset( $args['meta'] ) && '' !== (string) $args['meta'] ) {
+			if ( isset( $args['meta_html'] ) && '' !== (string) $args['meta_html'] ) {
+				$html .= '<p class="wenpai-task-meta" aria-live="polite">' . self::kses( (string) $args['meta_html'], 'post' ) . '</p>';
+			} elseif ( isset( $args['meta'] ) && '' !== (string) $args['meta'] ) {
 				$html .= '<p class="wenpai-task-meta" aria-live="polite">' . esc_html( (string) $args['meta'] ) . '</p>';
 			}
 			return $html . '</div>';
@@ -573,6 +642,13 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *     Helper arguments.
 		 *
 		 *     @type array $items array of array{ tone, label, count?, when?, detail }.
+		 *                        Optional item keys:
+		 *                        'logo' / 'logo_html' brand mark before the label
+		 *                        (logo_html: svg or img, kses logo; wins over logo);
+		 *                        'pill' => false prints the label as plain text, no pill;
+		 *                        'meta' plain text after the label (e.g. #128);
+		 *                        'aside' list of plain strings in a right column
+		 *                        (tokens, latency).
 		 *     @type array $empty Optional empty_state arguments when items is empty.
 		 *     @type string $class Extra classes on ul.wenpai-log.
 		 *     @type array $attrs  Extra attributes.
@@ -590,17 +666,37 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				if ( ! is_array( $item ) ) {
 					continue;
 				}
-				$html .= '<li><div class="n">';
-				$html .= self::pill_html(
-					array(
-						'state' => isset( $item['tone'] ) ? (string) $item['tone'] : '',
-						'text'  => isset( $item['label'] ) ? (string) $item['label'] : '',
-					)
-				);
+				$aside = array();
+				if ( isset( $item['aside'] ) ) {
+					foreach ( (array) $item['aside'] as $bit ) {
+						if ( is_scalar( $bit ) && '' !== (string) $bit ) {
+							$aside[] = '<span>' . esc_html( (string) $bit ) . '</span>';
+						}
+					}
+				}
+				$html .= array() === $aside ? '<li><div class="n">' : '<li class="has-aside"><div class="n">';
+				$html .= self::logo_slot( $item, 'sm' );
+				$label = isset( $item['label'] ) ? (string) $item['label'] : '';
+				if ( array_key_exists( 'pill', $item ) && false === $item['pill'] ) {
+					$html .= '<span class="wenpai-log__label">' . esc_html( $label ) . '</span>';
+				} else {
+					$html .= self::pill_html(
+						array(
+							'state' => isset( $item['tone'] ) ? (string) $item['tone'] : '',
+							'text'  => $label,
+						)
+					);
+				}
 				if ( ! empty( $item['count'] ) && 1 < (int) $item['count'] ) {
 					$html .= '<span class="meta"> ×' . (int) $item['count'] . '</span>';
 				}
+				if ( isset( $item['meta'] ) && '' !== (string) $item['meta'] ) {
+					$html .= '<span class="meta">' . esc_html( (string) $item['meta'] ) . '</span>';
+				}
 				$html .= '</div>';
+				if ( array() !== $aside ) {
+					$html .= '<div class="wenpai-log__aside">' . implode( '', $aside ) . '</div>';
+				}
 				if ( isset( $item['when'] ) && '' !== (string) $item['when'] ) {
 					$html .= '<div class="when">' . esc_html( (string) $item['when'] ) . '</div>';
 				}
@@ -806,7 +902,9 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
 			$class   = self::classes( array( 'section-title', self::extra_class( $args ) ) );
 			$html    = '<h' . $heading . ' class="' . esc_attr( $class ) . '"' . self::extra_attrs( $args ) . '>' . esc_html( $title ) . '</h' . $heading . '>';
-			if ( isset( $args['desc'] ) && '' !== (string) $args['desc'] ) {
+			if ( isset( $args['desc_html'] ) && '' !== (string) $args['desc_html'] ) {
+				$html .= '<p class="section-desc">' . self::kses( (string) $args['desc_html'], 'post' ) . '</p>';
+			} elseif ( isset( $args['desc'] ) && '' !== (string) $args['desc'] ) {
 				$html .= '<p class="section-desc">' . esc_html( (string) $args['desc'] ) . '</p>';
 			}
 			return $html;
@@ -828,9 +926,17 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *     Helper arguments.
 		 *
 		 *     @type string $title      .t text.
+		 *     @type string $title_html .t HTML (kses post), wins over title: name plus
+		 *                              a pill and a version, e.g. 「GEO <pill>核心</pill> v1.2」.
 		 *     @type string $desc       .d text.
+		 *     @type string $desc_html  .d HTML (kses post), wins over desc.
+		 *     @type bool   $desc_is_url The description is a URL or path: .d.is-url, no
+		 *                              46ch cap, breaks anywhere. Default false.
 		 *     @type string $icon       Tile icon.
 		 *     @type string $state      Tile state.
+		 *     @type string $logo       Brand mark text (one or two characters) instead of the tile.
+		 *     @type string $logo_html  Brand mark svg / img (kses logo) instead of the tile;
+		 *                              wins over logo. A brand mark says who, the tile says state.
 		 *     @type array  $pill       array( text, state ) or keyed.
 		 *     @type string $title_id   id on .t, for the control's aria-labelledby.
 		 *     @type string $desc_id    id on .d, for the control's aria-describedby.
@@ -855,21 +961,27 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$mod   = '' !== $href ? 'is-action' : 'is-static';
 			$mod   = $control ? '' : $mod;
 			$class = self::classes( array( 'simple-row', $mod, self::extra_class( $args ) ) );
-			$tile  = self::tile_html(
-				array(
-					'icon'      => isset( $args['icon'] ) ? $args['icon'] : '',
-					'state'     => isset( $args['state'] ) ? $args['state'] : '',
-					'icon_html' => isset( $args['icon_html'] ) ? $args['icon_html'] : '',
-				)
-			);
+			$tile  = self::logo_slot( $args, '' );
+			if ( '' === $tile ) {
+				$tile = self::tile_html(
+					array(
+						'icon'      => isset( $args['icon'] ) ? $args['icon'] : '',
+						'state'     => isset( $args['state'] ) ? $args['state'] : '',
+						'icon_html' => isset( $args['icon_html'] ) ? $args['icon_html'] : '',
+					)
+				);
+			}
+			$d_cls = ! empty( $args['desc_is_url'] ) ? 'd is-url' : 'd';
 			$body  = '<div>';
-			if ( isset( $args['title'] ) && '' !== (string) $args['title'] ) {
+			if ( isset( $args['title_html'] ) && '' !== (string) $args['title_html'] ) {
+				$body .= '<div class="t"' . self::id_attr( $args, 'title_id' ) . '>' . self::kses( (string) $args['title_html'], 'post' ) . '</div>';
+			} elseif ( isset( $args['title'] ) && '' !== (string) $args['title'] ) {
 				$body .= '<div class="t"' . self::id_attr( $args, 'title_id' ) . '>' . esc_html( (string) $args['title'] ) . '</div>';
 			}
 			if ( array_key_exists( 'desc_html', $args ) && '' !== (string) $args['desc_html'] ) {
-				$body .= '<div class="d"' . self::id_attr( $args, 'desc_id' ) . '>' . self::kses( (string) $args['desc_html'], 'post' ) . '</div>';
+				$body .= '<div class="' . $d_cls . '"' . self::id_attr( $args, 'desc_id' ) . '>' . self::kses( (string) $args['desc_html'], 'post' ) . '</div>';
 			} elseif ( isset( $args['desc'] ) && '' !== (string) $args['desc'] ) {
-				$body .= '<div class="d"' . self::id_attr( $args, 'desc_id' ) . '>' . esc_html( (string) $args['desc'] ) . '</div>';
+				$body .= '<div class="' . $d_cls . '"' . self::id_attr( $args, 'desc_id' ) . '>' . esc_html( (string) $args['desc'] ) . '</div>';
 			}
 			$body .= '</div>';
 			$right = '';
@@ -1605,6 +1717,67 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		}
 
 		/**
+		 * Echo a segmented radio group.
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function seg_radio( $args = array() ) {
+			self::emit( self::seg_radio_html( $args ) );
+		}
+
+		/**
+		 * Return a segmented radio group: native radios drawn as .seg (D-33).
+		 *
+		 * For two to four mutually exclusive options that read best side by
+		 * side. Arrow keys, screen readers and form submit come from the native
+		 * radios; no JS. Navigation stays mode_switch() / subnav().
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $name     Input name. Required.
+		 *     @type string $value    Checked value. Unknown or '' checks nothing.
+		 *     @type array  $items    value => label, or a list of array( value, label, disabled? ).
+		 *     @type string $label    Group name (role=radiogroup + aria-label). '' prints
+		 *                            neither, for use inside a fieldset with a legend.
+		 *     @type bool   $disabled Disable every option.
+		 *     @type string $class    Extra classes on .seg.
+		 *     @type array  $attrs    Extra attributes on .seg.
+		 * }
+		 * @return string
+		 */
+		public static function seg_radio_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::seg_radio' );
+			$name  = isset( $args['name'] ) ? (string) $args['name'] : '';
+			$value = isset( $args['value'] ) ? (string) $args['value'] : '';
+			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			if ( '' === $name ) {
+				self::doing_it_wrong( 'seg_radio needs a name.', 'Wenpai_Admin_UI::seg_radio' );
+			}
+			$label = isset( $args['label'] ) ? (string) $args['label'] : '';
+			$aria  = '' !== $label ? ' role="radiogroup" aria-label="' . esc_attr( $label ) . '"' : '';
+			$off   = ! empty( $args['disabled'] );
+			$class = self::classes( array( 'seg', 'seg--radio', self::extra_class( $args ) ) );
+			$html  = '<div class="' . esc_attr( $class ) . '"' . $aria . self::extra_attrs( $args, '' !== $label ? array( 'role', 'aria-label' ) : array() ) . '>';
+			foreach ( $items as $key => $item ) {
+				if ( is_array( $item ) ) {
+					$kv   = self::item_kv( $item, array( 'value', 'label', 'disabled' ) );
+					$val  = (string) $kv['value'];
+					$text = (string) $kv['label'];
+					$dis  = $off || ! empty( $kv['disabled'] );
+				} else {
+					$val  = (string) $key;
+					$text = (string) $item;
+					$dis  = $off;
+				}
+				$html .= '<label><input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( $val ) . '"'
+					. ( '' !== $value && $val === $value ? ' checked' : '' )
+					. ( $dis ? ' disabled' : '' ) . '><span>' . esc_html( $text ) . '</span></label>';
+			}
+			return $html . '</div>';
+		}
+
+		/**
 		 * Echo wizard steps.
 		 *
 		 * @param array $args Arguments.
@@ -1619,8 +1792,10 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 * @param array $args {
 		 *     Helper arguments.
 		 *
-		 *     @type array  $items   Labels.
-		 *     @type int    $current 0-based current index.
+		 *     @type array  $items   Labels, or array( label, 'no' => step mark ) where 'no'
+		 *                           replaces the number on a step that is not done (e.g. ↩).
+		 *     @type int    $current 0-based current index. -1: nothing started yet (or the
+		 *                           run was cancelled), every step pending.
 		 *     @type string $label   nav aria-label. Default 「设置向导步骤」; '' prints none.
 		 *     @type string $done_label Screen-reader text after a done step's ✓ (aria-hidden).
 		 *                              Default 「已完成」; '' prints none.
@@ -1634,7 +1809,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? array_values( $args['items'] ) : array();
 			$n     = count( $items );
 			$cur   = isset( $args['current'] ) ? (int) $args['current'] : 0;
-			if ( $n > 0 && ( $cur < 0 || $cur >= $n ) ) {
+			if ( $n > 0 && ( $cur < -1 || $cur >= $n ) ) {
 				self::doing_it_wrong( 'steps current is out of range.', 'Wenpai_Admin_UI::steps' );
 				$cur = max( 0, min( $n - 1, $cur ) );
 			}
@@ -1651,7 +1826,10 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				$label = is_array( $item ) ? (string) ( isset( $item['label'] ) ? $item['label'] : ( isset( $item[0] ) ? $item[0] : '' ) ) : (string) $item;
 				$st    = 'st';
 				$num   = esc_html( (string) ( $i + 1 ) );
-				$now   = '';
+				if ( is_array( $item ) && isset( $item['no'] ) && '' !== (string) $item['no'] ) {
+					$num = esc_html( (string) $item['no'] );
+				}
+				$now = '';
 				if ( $i < $cur ) {
 					$st .= ' done';
 					$num = $tick;
@@ -2105,6 +2283,11 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *                        steps: array of array( title, body?, body_html?, no? ).
 		 *                        Steps auto-number inside a numbered group;
 		 *                        'no' overrides, numbered=false prints 「·」.
+		 *                        Optional group keys: 'icon' / 'icon_html' (tile before
+		 *                        the title, as tile()), 'desc' (plain subtitle),
+		 *                        'collapsible' (group becomes details, title row is the
+		 *                        summary and ends with the kit chevron, D-31), 'open'
+		 *                        (start expanded; collapsible only).
 		 *     @type array  $links  array of array( label, href ) or strings (label only).
 		 *     @type string $class  Extra classes.
 		 *     @type array  $attrs  Extra attributes.
@@ -2123,9 +2306,38 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				$title    = isset( $group['title'] ) ? (string) $group['title'] : '';
 				$numbered = ! isset( $group['numbered'] ) || $group['numbered'];
 				$steps    = isset( $group['steps'] ) && is_array( $group['steps'] ) ? $group['steps'] : array();
-				$html    .= '<div class="wenpai-help__group">';
+				$fold     = ! empty( $group['collapsible'] );
+				$icon     = ( isset( $group['icon'] ) && '' !== (string) $group['icon'] ) || ( isset( $group['icon_html'] ) && '' !== (string) $group['icon_html'] );
+				$desc     = isset( $group['desc'] ) ? (string) $group['desc'] : '';
+				if ( $fold ) {
+					$html .= '<details class="wenpai-help__group is-fold"' . ( empty( $group['open'] ) ? '' : ' open' ) . '><summary class="wenpai-help__head">';
+				} else {
+					$html .= '<div class="wenpai-help__group">';
+					if ( $icon || '' !== $desc ) {
+						$html .= '<div class="wenpai-help__head">';
+					}
+				}
+				if ( $icon ) {
+					$html .= self::tile_html(
+						array(
+							'icon'      => isset( $group['icon'] ) ? $group['icon'] : '',
+							'icon_html' => isset( $group['icon_html'] ) ? $group['icon_html'] : '',
+						)
+					);
+				}
 				if ( '' !== $title ) {
 					$html .= '<h3>' . esc_html( $title ) . '</h3>';
+				}
+				if ( '' !== $desc ) {
+					$html .= '<span class="wenpai-help__desc">' . esc_html( $desc ) . '</span>';
+				}
+				if ( $fold ) {
+					if ( class_exists( 'Wenpai_Admin_Icons', false ) && Wenpai_Admin_Icons::has( 'chevron-down' ) ) {
+						$html .= Wenpai_Admin_Icons::svg( 'chevron-down', 'wenpai-ico wenpai-fold__chevron' );
+					}
+					$html .= '</summary><div class="wenpai-help__steps">';
+				} elseif ( $icon || '' !== $desc ) {
+					$html .= '</div>';
 				}
 				$i = 0;
 				foreach ( $steps as $step ) {
@@ -2148,7 +2360,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 					}
 					$html .= '</div></div>';
 				}
-				$html .= '</div>';
+				$html .= $fold ? '</div></details>' : '</div>';
 			}
 			$links = isset( $args['links'] ) && is_array( $args['links'] ) ? $args['links'] : array();
 			if ( array() !== $links ) {
@@ -2192,7 +2404,10 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *                              text and target together → doing_it_wrong, text wins.
 		 *     @type string $label      Button text and data-label. Default 「复制」.
 		 *     @type string $done_label data-done-label while .is-done. Default 「已复制」.
-		 *     @type string $variant    primary|secondary|ghost|danger|'' (default secondary).
+		 *     @type string $variant    primary|secondary|ghost|danger|'' (default secondary), or
+		 *                              text: a token chip (no .btn) whose label defaults to
+		 *                              $text, plus a screen-reader hint (strings copy_hint).
+		 *     @type array  $strings    Optional copy_hint override.
 		 *     @type string $class      Extra classes.
 		 *     @type array  $attrs      Extra attributes.
 		 * }
@@ -2213,13 +2428,19 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			if ( '' === $variant ) {
 				$variant = 'secondary';
 			}
-			if ( ! in_array( $variant, self::$button_variants, true ) ) {
+			$token = 'text' === $variant;
+			if ( ! $token && ! in_array( $variant, self::$button_variants, true ) ) {
 				self::doing_it_wrong( sprintf( 'Invalid button variant 「%s」.', $variant ), 'Wenpai_Admin_UI::copy_button' );
 				$variant = 'secondary';
 			}
 			$label = isset( $args['label'] ) && '' !== (string) $args['label'] ? (string) $args['label'] : '复制';
+			if ( $token && ( ! isset( $args['label'] ) || '' === (string) $args['label'] ) && '' !== $text ) {
+				$label = $text;
+			}
 			$done  = isset( $args['done_label'] ) ? (string) $args['done_label'] : '已复制';
-			$class = self::classes( array( 'btn', 'btn-' . $variant, 'wenpai-copy', self::extra_class( $args ) ) );
+			$class = $token
+				? self::classes( array( 'wenpai-copy', 'wenpai-copy--text', self::extra_class( $args ) ) )
+				: self::classes( array( 'btn', 'btn-' . $variant, 'wenpai-copy', self::extra_class( $args ) ) );
 			$html  = '<button type="button" class="' . esc_attr( $class ) . '"';
 			if ( '' !== $text ) {
 				$html .= ' data-wenpai-copy-text="' . esc_attr( $text ) . '"';
@@ -2227,8 +2448,11 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				$html .= ' data-wenpai-copy-target="' . esc_attr( $target ) . '"';
 			}
 			$html .= ' data-label="' . esc_attr( $label ) . '" data-done-label="' . esc_attr( $done ) . '"';
-			$html .= self::extra_attrs( $args ) . '>' . esc_html( $label ) . '</button>';
-			return $html;
+			$html .= self::extra_attrs( $args ) . '>' . esc_html( $label );
+			if ( $token ) {
+				$html .= '<span class="screen-reader-text">' . esc_html( self::ui_string( $args, 'copy_hint', '（点击复制）' ) ) . '</span>';
+			}
+			return $html . '</button>';
 		}
 
 		/**
@@ -2544,7 +2768,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			} elseif ( isset( $args['desc'] ) && '' !== (string) $args['desc'] ) {
 				$desc = '<p class="wenpai-dash__desc">' . esc_html( (string) $args['desc'] ) . '</p>';
 			}
-			$html = '<div class="' . esc_attr( self::classes( array( 'wenpai-dash', self::extra_class( $args ) ) ) ) . '"' . self::extra_attrs( $args ) . '>';
+			$html = '<div class="' . esc_attr( self::classes( array( 'wenpai-native', 'wenpai-dash', self::extra_class( $args ) ) ) ) . '"' . self::extra_attrs( $args ) . '>';
 			if ( '' !== $title || '' !== $desc ) {
 				$html .= '<div class="wenpai-dash__head">';
 				if ( '' !== $title ) {
@@ -2602,7 +2826,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$args   = self::args( $args, 'Wenpai_Admin_UI::quick_edit_box' );
 			$legend = isset( $args['legend'] ) ? (string) $args['legend'] : '';
 			$fields = isset( $args['fields'] ) && is_array( $args['fields'] ) ? $args['fields'] : array();
-			$html   = '<fieldset class="inline-edit-col-inline wenpai-qe"><legend class="inline-edit-heading">' . esc_html( $legend ) . '</legend>';
+			$html   = '<fieldset class="wenpai-native inline-edit-col-inline wenpai-qe"><legend class="inline-edit-heading">' . esc_html( $legend ) . '</legend>';
 			foreach ( $fields as $field ) {
 				if ( ! is_array( $field ) ) {
 					continue;
@@ -2658,6 +2882,426 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				$links[] = $link;
 			}
 			return implode( ' | ', $links );
+		}
+
+		/**
+		 * Echo a fold list (page pattern).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function fold_list( $args = array() ) {
+			self::emit( self::fold_list_html( $args ) );
+		}
+
+		/**
+		 * Return fold list markup: .wenpai-folds > details.wenpai-fold rows.
+		 *
+		 * One row per object of the same kind (providers, channels). Collapsed
+		 * rows show title, desc and one status pill; the body holds the settings.
+		 * The chevron is the kit's own (decisions.md D-31).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items array of array(
+		 *                        'title'     => row title,
+		 *                        'desc'      => one-line summary under the title,
+		 *                        'logo'      => one or two characters for the brand mark,
+		 *                        'logo_html' => svg / img for the brand mark (kses post), wins over logo,
+		 *                        'pill'      => array( 'label', 'tone' ) status pill (tone: ''|ok|warn|bad|mute),
+		 *                        'body_html' => expanded content (kses control: post tags + form controls),
+		 *                        'open'      => bool, start expanded,
+		 *                        'id'        => id on the details element,
+		 *                      ).
+		 *     @type string $class Extra classes on .wenpai-folds.
+		 *     @type array  $attrs Extra attributes on .wenpai-folds.
+		 * }
+		 * @return string
+		 */
+		public static function fold_list_html( $args = array() ) {
+			$args    = self::args( $args, 'Wenpai_Admin_UI::fold_list' );
+			$items   = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			$chevron = '';
+			if ( class_exists( 'Wenpai_Admin_Icons', false ) && Wenpai_Admin_Icons::has( 'chevron-down' ) ) {
+				$chevron = Wenpai_Admin_Icons::svg( 'chevron-down', 'wenpai-ico wenpai-fold__chevron' );
+			}
+			$html = '<div class="' . esc_attr( self::classes( array( 'wenpai-folds', self::extra_class( $args ) ) ) ) . '"' . self::extra_attrs( $args ) . '>';
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$html .= '<details class="wenpai-fold"' . self::id_attr( $item, 'id' ) . ( empty( $item['open'] ) ? '' : ' open' ) . '><summary>';
+				if ( ( isset( $item['logo_html'] ) && '' !== (string) $item['logo_html'] ) || ( isset( $item['logo'] ) && '' !== (string) $item['logo'] ) ) {
+					$html .= self::logo_html(
+						array(
+							'text' => isset( $item['logo'] ) ? (string) $item['logo'] : '',
+							'html' => isset( $item['logo_html'] ) ? (string) $item['logo_html'] : '',
+						)
+					);
+				}
+				$html .= '<span class="wenpai-fold__text"><span class="wenpai-fold__title">' . esc_html( isset( $item['title'] ) ? (string) $item['title'] : '' ) . '</span>';
+				if ( isset( $item['desc'] ) && '' !== (string) $item['desc'] ) {
+					$html .= '<span class="wenpai-fold__desc">' . esc_html( (string) $item['desc'] ) . '</span>';
+				}
+				$html .= '</span>';
+				if ( isset( $item['pill'] ) && is_array( $item['pill'] ) ) {
+					$html .= '<span class="wenpai-fold__side">' . self::pill_html( self::pill_args( $item['pill'] ) ) . '</span>';
+				}
+				$html .= $chevron . '</summary><div class="wenpai-fold__body">';
+				if ( isset( $item['body_html'] ) ) {
+					$html .= self::kses( (string) $item['body_html'], 'control' );
+				}
+				$html .= '</div></details>';
+			}
+			return $html . '</div>';
+		}
+
+		/**
+		 * Echo a stat bar (page pattern).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function statbar( $args = array() ) {
+			self::emit( self::statbar_html( $args ) );
+		}
+
+		/**
+		 * Return stat bar markup: dl.wenpai-statbar with three to five peer numbers.
+		 *
+		 * No trend line here; a number with a sparkline belongs to stat_area().
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items      array of array(
+		 *                             'label'      => what the number is (dt),
+		 *                             'value'      => the number, already formatted,
+		 *                             'unit'       => optional unit beside the value,
+		 *                             'desc'       => optional note under the number,
+		 *                             'empty'      => bool, no data yet: empty_text replaces value and unit,
+		 *                             'empty_text' => per-item override of the empty text,
+		 *                           ).
+		 *     @type string $empty_text Text for empty items. Default 「还没有数据」.
+		 *     @type array  $strings    Override kit strings (statbar_empty).
+		 *     @type string $class      Extra classes on dl.
+		 *     @type array  $attrs      Extra attributes on dl.
+		 * }
+		 * @return string
+		 */
+		public static function statbar_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::statbar' );
+			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			$none  = isset( $args['empty_text'] ) && '' !== (string) $args['empty_text'] ? (string) $args['empty_text'] : self::ui_string( $args, 'statbar_empty', '还没有数据' );
+			$html  = '<dl class="' . esc_attr( self::classes( array( 'wenpai-statbar', self::extra_class( $args ) ) ) ) . '"' . self::extra_attrs( $args ) . '>';
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$html .= '<div class="wenpai-statbar__item"><dt>' . esc_html( isset( $item['label'] ) ? (string) $item['label'] : '' ) . '</dt>';
+				if ( ! empty( $item['empty'] ) ) {
+					$text  = isset( $item['empty_text'] ) && '' !== (string) $item['empty_text'] ? (string) $item['empty_text'] : $none;
+					$html .= '<dd class="is-none">' . esc_html( $text ) . '</dd>';
+				} else {
+					$html .= '<dd>' . esc_html( isset( $item['value'] ) ? (string) $item['value'] : '' );
+					if ( isset( $item['unit'] ) && '' !== (string) $item['unit'] ) {
+						$html .= ' <small>' . esc_html( (string) $item['unit'] ) . '</small>';
+					}
+					$html .= '</dd>';
+				}
+				if ( isset( $item['desc'] ) && '' !== (string) $item['desc'] ) {
+					$html .= '<p>' . esc_html( (string) $item['desc'] ) . '</p>';
+				}
+				$html .= '</div>';
+			}
+			return $html . '</dl>';
+		}
+
+		/**
+		 * Echo a meter list (page pattern).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function meter( $args = array() ) {
+			self::emit( self::meter_html( $args ) );
+		}
+
+		/**
+		 * Return meter list markup: rows of name + proportion bar + value.
+		 *
+		 * The value text is always printed; the bar is decoration (aria-hidden).
+		 * The bar width is data, so it is the one inline style the kit prints.
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items  array of array(
+		 *                         'name'    => row name,
+		 *                         'value'   => display text, e.g. 「92 分」,
+		 *                         'percent' => bar width 0–100; out-of-range values are clamped,
+		 *                         'top'     => bool, highlight the rank badge (ranked lists),
+		 *                       ).
+		 *     @type bool   $ranked True → ol with rank badges; false → ul without. Default false.
+		 *     @type string $class  Extra classes on the list.
+		 *     @type array  $attrs  Extra attributes on the list.
+		 * }
+		 * @return string
+		 */
+		public static function meter_html( $args = array() ) {
+			$args   = self::args( $args, 'Wenpai_Admin_UI::meter' );
+			$items  = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			$ranked = ! empty( $args['ranked'] );
+			$tag    = $ranked ? 'ol' : 'ul';
+			$rank   = 0;
+			$html   = '<' . $tag . ' class="' . esc_attr( self::classes( array( 'wenpai-meter', self::extra_class( $args ) ) ) ) . '" role="list"' . self::extra_attrs( $args, array( 'role' ) ) . '>';
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				++$rank;
+				$percent = isset( $item['percent'] ) && is_numeric( $item['percent'] ) ? (float) $item['percent'] : 0.0;
+				$percent = max( 0.0, min( 100.0, $percent ) );
+				$width   = rtrim( rtrim( sprintf( '%.2F', $percent ), '0' ), '.' );
+				$html   .= '<li class="wenpai-meter__row' . ( $ranked && ! empty( $item['top'] ) ? ' is-top' : '' ) . '">';
+				if ( $ranked ) {
+					$html .= '<span class="wenpai-meter__rank">' . $rank . '</span>';
+				}
+				$html .= '<span class="wenpai-meter__name">' . esc_html( isset( $item['name'] ) ? (string) $item['name'] : '' ) . '</span>';
+				$html .= '<span class="wenpai-meter__bar" aria-hidden="true"><i style="inline-size:' . esc_attr( $width ) . '%"></i></span>';
+				$html .= '<span class="wenpai-meter__value">' . esc_html( isset( $item['value'] ) ? (string) $item['value'] : '' ) . '</span></li>';
+			}
+			return $html . '</' . $tag . '>';
+		}
+
+		/**
+		 * Echo a sortable list (page pattern).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function sortable( $args = array() ) {
+			self::emit( self::sortable_html( $args ) );
+		}
+
+		/**
+		 * Return sortable list markup: a hidden input carrying the order plus
+		 * ol.wenpai-sortable with move-up / move-down buttons per item.
+		 *
+		 * The hidden input holds the item ids joined by commas, in list order.
+		 * Kit JS swaps neighbours on click and rewrites the input, the index
+		 * numbers and the first/last disabled states. Without JS the buttons do
+		 * nothing and the form still submits the rendered order. No drag handle
+		 * is printed: dragging is not implemented.
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $name    Name of the hidden order input (required).
+		 *     @type string $id      Id of the hidden input. Default derived from name.
+		 *     @type array  $items   array of array(
+		 *                          'id'    => stable item id (no commas),
+		 *                          'title' => item title,
+		 *                          'desc'  => optional note under the title,
+		 *                        ).
+		 *     @type array  $strings Override kit strings (sortable_move_up,
+		 *                          sortable_move_down, sortable_moved).
+		 *     @type string $class   Extra classes on ol.
+		 *     @type array  $attrs   Extra attributes on ol.
+		 * }
+		 * @return string
+		 */
+		public static function sortable_html( $args = array() ) {
+			$args = self::args( $args, 'Wenpai_Admin_UI::sortable' );
+			$name = isset( $args['name'] ) ? (string) $args['name'] : '';
+			if ( '' === $name ) {
+				self::doing_it_wrong( 'sortable needs name.', 'Wenpai_Admin_UI::sortable' );
+				return '';
+			}
+			$items = array();
+			foreach ( isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array() as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$id = isset( $item['id'] ) ? (string) $item['id'] : '';
+				if ( '' === $id || false !== strpos( $id, ',' ) ) {
+					self::doing_it_wrong( 'sortable item id must be non-empty and contain no comma.', 'Wenpai_Admin_UI::sortable' );
+					continue;
+				}
+				$items[ $id ] = $item;
+			}
+			$input_id = isset( $args['id'] ) && '' !== (string) $args['id'] ? (string) $args['id'] : 'wenpai-sortable-' . trim( (string) preg_replace( '/[^A-Za-z0-9_-]+/', '-', $name ), '-' );
+			$up_label = self::ui_string( $args, 'sortable_move_up', '把 %s 上移' );
+			$dn_label = self::ui_string( $args, 'sortable_move_down', '把 %s 下移' );
+			$up_icon  = self::icon_svg( 'arrow-up' );
+			$dn_icon  = self::icon_svg( 'arrow-down' );
+			$last     = count( $items ) - 1;
+			$index    = 0;
+			$html     = '<input type="hidden" id="' . esc_attr( $input_id ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( implode( ',', array_map( 'strval', array_keys( $items ) ) ) ) . '" />';
+			$html    .= '<ol class="' . esc_attr( self::classes( array( 'wenpai-sortable', self::extra_class( $args ) ) ) ) . '" role="list" data-wenpai-sortable="' . esc_attr( $input_id ) . '"';
+			$html    .= ' data-wenpai-sortable-moved="' . esc_attr( self::ui_string( $args, 'sortable_moved', '%1$s 已移到第 %2$d 位，共 %3$d 项' ) ) . '"';
+			$html    .= self::extra_attrs( $args, array( 'role', 'data-wenpai-sortable', 'data-wenpai-sortable-moved' ) ) . '>';
+			foreach ( $items as $id => $item ) {
+				$title = isset( $item['title'] ) ? (string) $item['title'] : '';
+				$html .= '<li class="wenpai-sortable__item" data-wenpai-sortable-item="' . esc_attr( (string) $id ) . '">';
+				$html .= '<span class="wenpai-sortable__index">' . ( $index + 1 ) . '</span>';
+				$html .= '<span class="wenpai-sortable__text"><span class="wenpai-sortable__title">' . esc_html( $title ) . '</span>';
+				if ( isset( $item['desc'] ) && '' !== (string) $item['desc'] ) {
+					$html .= '<span class="wenpai-sortable__desc">' . esc_html( (string) $item['desc'] ) . '</span>';
+				}
+				$html .= '</span><span class="wenpai-sortable__moves">';
+				$html .= '<button type="button" class="btn btn-ghost btn-sm" data-wenpai-sortable-up aria-label="' . esc_attr( str_replace( '%s', $title, $up_label ) ) . '"' . ( 0 === $index ? ' disabled' : '' ) . '>' . $up_icon . '</button>';
+				$html .= '<button type="button" class="btn btn-ghost btn-sm" data-wenpai-sortable-down aria-label="' . esc_attr( str_replace( '%s', $title, $dn_label ) ) . '"' . ( $last === $index ? ' disabled' : '' ) . '>' . $dn_icon . '</button>';
+				$html .= '</span></li>';
+				++$index;
+			}
+			return $html . '</ol>';
+		}
+
+		/**
+		 * Echo a brand mark (page pattern).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function logo( $args = array() ) {
+			self::emit( self::logo_html( $args ) );
+		}
+
+		/**
+		 * Return brand mark markup: span.wenpai-logo for a third-party vendor.
+		 *
+		 * It says who something is. Status belongs to tile().
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $text  One or two characters when there is no image.
+		 *     @type string $html  svg or img (kses post), wins over text.
+		 *     @type string $size  ''|sm|xs → 36 / 24 / 20 px.
+		 *     @type string $class Extra classes.
+		 *     @type array  $attrs Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function logo_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::logo' );
+			$size  = self::state( isset( $args['size'] ) ? $args['size'] : '', array( '', 'sm', 'xs' ), '', 'Wenpai_Admin_UI::logo' );
+			$class = self::classes( array( 'wenpai-logo', '' !== $size ? 'wenpai-logo--' . $size : '', self::extra_class( $args ) ) );
+			if ( isset( $args['html'] ) && '' !== (string) $args['html'] ) {
+				$inner = self::kses( (string) $args['html'], 'post' );
+			} else {
+				$inner = esc_html( isset( $args['text'] ) ? (string) $args['text'] : '' );
+			}
+			return '<span class="' . esc_attr( $class ) . '"' . self::extra_attrs( $args ) . '>' . $inner . '</span>';
+		}
+
+		/**
+		 * Echo a chart frame (page pattern).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function chart_frame( $args = array() ) {
+			self::emit( self::chart_frame_html( $args ) );
+		}
+
+		/**
+		 * Return chart frame markup: figure.wenpai-chart with a caption, a
+		 * fixed-height plot area, an empty state and an optional data table.
+		 *
+		 * The kit owns the frame only; the product draws the chart.
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $title      Caption (figcaption).
+		 *     @type string $plot_html  The chart: inline svg or a canvas (kses chart).
+		 *     @type string $empty_text When set, the empty state is printed and
+		 *                              plot_html / table_html are not.
+		 *     @type string $aria_label Text alternative; puts role="img" on the plot.
+		 *     @type string $table_html Same data as a table (kses post), inside
+		 *                              details.wenpai-chart__data.
+		 *     @type array  $strings    Override kit strings (chart_data).
+		 *     @type string $class      Extra classes on figure.
+		 *     @type array  $attrs      Extra attributes on figure.
+		 * }
+		 * @return string
+		 */
+		public static function chart_frame_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::chart_frame' );
+			$empty = isset( $args['empty_text'] ) ? (string) $args['empty_text'] : '';
+			$html  = '<figure class="' . esc_attr( self::classes( array( 'wenpai-chart', self::extra_class( $args ) ) ) ) . '"' . self::extra_attrs( $args ) . '>';
+			if ( isset( $args['title'] ) && '' !== (string) $args['title'] ) {
+				$html .= '<figcaption>' . esc_html( (string) $args['title'] ) . '</figcaption>';
+			}
+			if ( '' !== $empty ) {
+				return $html . '<div class="wenpai-chart__plot is-empty"><p>' . esc_html( $empty ) . '</p></div></figure>';
+			}
+			$html .= '<div class="wenpai-chart__plot"';
+			if ( isset( $args['aria_label'] ) && '' !== (string) $args['aria_label'] ) {
+				$html .= ' role="img" aria-label="' . esc_attr( (string) $args['aria_label'] ) . '"';
+			}
+			$html .= '>' . ( isset( $args['plot_html'] ) ? self::kses( (string) $args['plot_html'], 'chart' ) : '' ) . '</div>';
+			if ( isset( $args['table_html'] ) && '' !== (string) $args['table_html'] ) {
+				$html .= '<details class="wenpai-chart__data"><summary>' . esc_html( self::ui_string( $args, 'chart_data', '查看数据' ) ) . '</summary>';
+				$html .= self::kses( (string) $args['table_html'], 'post' ) . '</details>';
+			}
+			return $html . '</figure>';
+		}
+
+		/**
+		 * Brand mark slot shared by row() and log_list(): 'logo' (one or two
+		 * characters) or 'logo_html' (svg / img, kses logo; wins), printed as
+		 * span.wenpai-logo. '' when neither key is set.
+		 *
+		 * @param array  $args Helper args or item.
+		 * @param string $size ''|sm|xs.
+		 * @return string
+		 */
+		private static function logo_slot( array $args, $size ) {
+			$inner = isset( $args['logo_html'] ) ? self::kses( (string) $args['logo_html'], 'logo' ) : '';
+			if ( '' === $inner && isset( $args['logo'] ) ) {
+				$inner = esc_html( (string) $args['logo'] );
+			}
+			if ( '' === $inner ) {
+				return '';
+			}
+			return '<span class="' . esc_attr( self::classes( array( 'wenpai-logo', '' !== $size ? 'wenpai-logo--' . $size : '' ) ) ) . '">' . $inner . '</span>';
+		}
+
+		/**
+		 * Pill arguments from a pattern item: label/tone, or pill()'s own text/state.
+		 *
+		 * @param array $pill Caller pill.
+		 * @return array
+		 */
+		private static function pill_args( array $pill ) {
+			$text  = isset( $pill['label'] ) ? $pill['label'] : ( isset( $pill['text'] ) ? $pill['text'] : ( isset( $pill[0] ) ? $pill[0] : '' ) );
+			$state = isset( $pill['tone'] ) ? $pill['tone'] : ( isset( $pill['state'] ) ? $pill['state'] : ( isset( $pill[1] ) ? $pill[1] : '' ) );
+			return array(
+				'text'  => (string) $text,
+				'state' => (string) $state,
+			);
+		}
+
+		/**
+		 * One kit string: $args['strings'][ $key ], then the Settings default, then $fallback.
+		 *
+		 * The UI helpers have no instance to carry strings, so a caller passes its
+		 * translated copy per call; the Settings defaults keep the wording in one place.
+		 *
+		 * @param array  $args     Helper args with optional strings.
+		 * @param string $key      String key (strings.json).
+		 * @param string $fallback Used when Settings is not loaded.
+		 * @return string
+		 */
+		private static function ui_string( array $args, $key, $fallback ) {
+			if ( isset( $args['strings'] ) && is_array( $args['strings'] ) && isset( $args['strings'][ $key ] ) && '' !== (string) $args['strings'][ $key ] ) {
+				return (string) $args['strings'][ $key ];
+			}
+			if ( class_exists( 'Wenpai_Admin_Settings', false ) ) {
+				$defaults = Wenpai_Admin_Settings::default_strings();
+				if ( isset( $defaults[ $key ] ) ) {
+					return (string) $defaults[ $key ];
+				}
+			}
+			return $fallback;
 		}
 
 		/**

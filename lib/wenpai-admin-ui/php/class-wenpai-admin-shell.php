@@ -33,6 +33,7 @@ if ( ! class_exists( 'Wenpai_Admin_Shell', false ) ) {
 		 *     @type string $current         Current tab id.
 		 *     @type array  $tabs            array of array{ id, label, url, icon_html? }.
 		 *     @type string $head_extra      Optional HTML after tabs (wizard exit). Caller escapes.
+		 *     @type string $head_right_html Optional HTML at the start of .wenpai-head-right, before help. Caller escapes.
 		 *     @type string $help_url        Optional.
 		 *     @type string $help_label      Optional, already translated.
 		 *     @type string $help_icon_html  Optional SVG, caller escapes.
@@ -42,7 +43,8 @@ if ( ! class_exists( 'Wenpai_Admin_Shell', false ) ) {
 		 *     @type string $version         Plugin version string.
 		 *     @type string $doc_url         Footer doc link.
 		 *     @type string $doc_label       Footer doc label.
-		 *     @type array  $links           Footer links: array of array{ url, label } (0.2.5+).
+		 *     @type array  $links           Footer links: array of array{ url, label } (0.2.5+). An
+		 *                                   entry with 'text' and no url is plain text (escaped).
 		 *     @type string $main_class      Extra classes on main.wenpai-main (0.2.5+), e.g. is-narrow.
 		 *     @type string $new_tab_label   Screen-reader hint after the feedback and footer links,
 		 *                                   which open in a new tab (0.3.0+). Default 「（在新标签页打开）」;
@@ -89,6 +91,9 @@ if ( ! class_exists( 'Wenpai_Admin_Shell', false ) ) {
 				echo $args['head_extra']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- caller HTML.
 			}
 			echo '<div class="wenpai-head-right">';
+			if ( ! empty( $args['head_right_html'] ) ) {
+				echo $args['head_right_html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- caller HTML.
+			}
 			if ( ! empty( $args['help_url'] ) ) {
 				$hl  = isset( $args['help_label'] ) ? $args['help_label'] : '帮助';
 				$hcl = 'btn btn-ghost wenpai-head-action';
@@ -144,6 +149,9 @@ if ( ! class_exists( 'Wenpai_Admin_Shell', false ) ) {
 				echo '<span class="r">';
 				foreach ( $links as $link ) {
 					if ( empty( $link['url'] ) ) {
+						if ( isset( $link['text'] ) && is_scalar( $link['text'] ) && '' !== (string) $link['text'] ) {
+							echo '<span>' . esc_html( (string) $link['text'] ) . '</span>';
+						}
 						continue;
 					}
 					echo '<a href="' . esc_url( $link['url'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( isset( $link['label'] ) ? $link['label'] : '' ) . self::new_tab_hint( $args ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in new_tab_hint().

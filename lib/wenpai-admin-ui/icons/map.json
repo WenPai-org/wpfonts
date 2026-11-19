@@ -19,5 +19,7 @@
   "map": "map-pin-line",
   "flash": "flashlight-line",
   "feather": "lucide-feather",
-  "upload": "upload-line"
+  "upload": "upload-line",
+  "arrow-up": "arrow-up-line",
+  "arrow-down": "arrow-down-line"
 }

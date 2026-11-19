@@ -113,6 +113,10 @@ body.wenpai-ui-page .wenpai-app .wenpai-stack > form {
   gap: var(--wenpai-space-5);
 }
 
+/* 卡内竖排的紧凑档。上面那条把 gap 定在 20，同级优先级才放得开。 */
+body.wenpai-ui-page .wenpai-app .wenpai-stack--sm { gap: var(--wenpai-space-3); }
+body.wenpai-ui-page .wenpai-app .wenpai-stack--xs { gap: var(--wenpai-space-2); }
+
 body.wenpai-ui-page .wenpai-app h1,
 body.wenpai-ui-page .wenpai-app h2,
 body.wenpai-ui-page .wenpai-app h3 {
@@ -161,7 +165,7 @@ body.wenpai-ui-page .wenpai-app select {
   height: var(--wenpai-size-control);
   min-height: var(--wenpai-size-control);
   max-height: var(--wenpai-size-control);
-  padding: 0 10px;
+  padding: 0 var(--wenpai-space-2-5);
   line-height: var(--wenpai-leading-meta);
   border: 1px solid var(--wenpai-control-line);
   border-radius: var(--wenpai-radius-sm);
@@ -270,14 +274,14 @@ body.wenpai-ui-page .wenpai-app .choice-cards.is-vendors.is-compact .choice {
 }
 
 body.wenpai-ui-page .wenpai-app .choice-cards.is-compact:not(.is-vendors) .choice {
-  padding: 14px var(--wenpai-space-4);
+  padding: var(--wenpai-space-3-5) var(--wenpai-space-4);
 }
 
 .choice .vendor-tile {
   width: 32px;
   height: 32px;
   border-radius: var(--wenpai-radius-md);
-  margin-top: -2px;
+  margin-top: calc(var(--wenpai-space-0-5) * -1);
 }
 
 .choice .vendor-tile .vendor-mark,
@@ -369,7 +373,7 @@ body.wenpai-ui-page .wenpai-app .notice {
 }
 
 body.wenpai-ui-page .wenpai-app .field {
-  padding: 14px 0;
+  padding: var(--wenpai-space-3-5) 0;
   gap: var(--wenpai-space-5);
 }
 
@@ -378,8 +382,8 @@ body.wenpai-ui-page .wenpai-app .field:first-of-type {
 }
 
 body.wenpai-ui-page .wenpai-app .choice {
-  padding: var(--wenpai-space-3) 14px;
-  gap: 10px;
+  padding: var(--wenpai-space-3) var(--wenpai-space-3-5);
+  gap: var(--wenpai-space-2-5);
 }
 
 body.wenpai-ui-page .wenpai-app .choice-cards { --wenpai-choice-gap: var(--wenpai-space-4); }
@@ -432,7 +436,8 @@ body.wenpai-ui-page .wenpai-app input[type="number"]::-webkit-inner-spin-button 
 
 #wpsss_attachment .inside {
   margin: 0;
-  padding: var(--wenpai-space-3) 14px 14px;
+  /* wenpai-lint-disable-next-line spacing-token -- core metabox .inside wraps .wenpai-native, so it is outside the token scope */
+  padding: 12px 14px 14px;
 }
 
 @media (max-width: 960px) {
@@ -521,7 +526,7 @@ body.wenpai-ui-page .wenpai-app a.btn[aria-disabled="true"]:hover {
 
 /* 焦点画在轨道上：accent 实线环。0.2.5 只有 accent-soft 外晕（白底 1.13:1，看不见）。 */
 body.wenpai-ui-page .wenpai-app .simple-row {
-  margin: 0 -8px;
+  margin: 0 calc(var(--wenpai-space-2) * -1);
   padding-left: var(--wenpai-space-2);
   padding-right: var(--wenpai-space-2);
   /* Bottom corners only: a full radius bends the border-top separator's ends
@@ -582,6 +587,16 @@ body.wenpai-ui-page .wenpai-app .wenpai-code code {
   background: var(--wenpai-line-soft);
   border: 0;
   box-shadow: none;
+}
+
+/* WP core pads <code>/<kbd> (padding/margin/13px); inline code.wenpai-code
+ * chips render flat like the prototype, so clear the admin chrome. */
+body.wenpai-ui-page .wenpai-app code.wenpai-code {
+  padding: 0;
+  margin: 0;
+  font-family: var(--wenpai-font-mono);
+  font-size: inherit;
+  line-height: inherit;
 }
 
 @media (max-width: 600px) {
@@ -673,7 +688,7 @@ body.wenpai-ui-page .wenpai-app .wenpai-code code {
     appearance: menulist;
     -webkit-appearance: menulist;
     background-image: none;
-    padding-right: 10px;
+    padding-right: var(--wenpai-space-2-5);
   }
 }
 
