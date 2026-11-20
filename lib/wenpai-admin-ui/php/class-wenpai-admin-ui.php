@@ -1414,6 +1414,15 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			if ( isset( $args['name'] ) && '' !== (string) $args['name'] ) {
 				$html .= ' name="' . esc_attr( (string) $args['name'] ) . '"';
 			}
+			$form_id = '';
+			if ( isset( $args['form'] ) && '' !== (string) $args['form'] ) {
+				$form_id = (string) $args['form'];
+			} elseif ( isset( $args['attrs']['form'] ) && is_scalar( $args['attrs']['form'] ) && '' !== (string) $args['attrs']['form'] ) {
+				$form_id = (string) $args['attrs']['form'];
+			}
+			if ( '' !== $form_id ) {
+				$html .= ' form="' . esc_attr( $form_id ) . '"';
+			}
 			if ( array_key_exists( 'value', $args ) ) {
 				$html .= ' value="' . esc_attr( (string) $args['value'] ) . '"';
 			}
@@ -2936,6 +2945,14 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 						array(
 							'text' => isset( $item['logo'] ) ? (string) $item['logo'] : '',
 							'html' => isset( $item['logo_html'] ) ? (string) $item['logo_html'] : '',
+						)
+					);
+				} elseif ( ( isset( $item['icon_html'] ) && '' !== (string) $item['icon_html'] ) || ( isset( $item['icon'] ) && '' !== (string) $item['icon'] ) ) {
+					$html .= self::tile_html(
+						array(
+							'icon'  => isset( $item['icon'] ) ? (string) $item['icon'] : '',
+							'html'  => isset( $item['icon_html'] ) ? (string) $item['icon_html'] : '',
+							'state' => isset( $item['state'] ) ? (string) $item['state'] : '',
 						)
 					);
 				}

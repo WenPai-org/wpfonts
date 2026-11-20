@@ -756,16 +756,64 @@ def lint_tier(plugin_root: Path, tier: str) -> list[dict]:
     return findings
 
 
+def lint_prototype_dir(proto_dir: Path) -> tuple[list[dict], str | None, int]:
+    """Lint a standalone prototype HTML directory (without requiring vendored kit)."""
+    if not proto_dir.is_dir():
+        return [], f"missing directory {proto_dir}", 0
+    htmls = sorted(p for p in proto_dir.rglob("*.html") if p.is_file())
+    if not htmls:
+        return [], "0 prototype html", 0
+    findings: list[dict] = []
+    for p in htmls:
+        t = p.read_text(errors="replace")
+        rel = p.relative_to(proto_dir).as_posix()
+        if "wenpai-admin.css" in t:
+            if TOKENS_CSS not in t:
+                findings.append({"file": rel, "kind": "HTML", "why": f"prototype missing {TOKENS_CSS}"})
+            elif t.index(TOKENS_CSS) > t.index("wenpai-admin.css"):
+                findings.append({"file": rel, "kind": "HTML", "why": f"{TOKENS_CSS} must load before wenpai-admin.css"})
+            if "wenpai-admin-wp.css" not in t:
+                findings.append({"file": rel, "kind": "HTML", "why": "prototype missing wenpai-admin-wp.css"})
+            elif t.index("wenpai-admin-wp.css") < t.index("wenpai-admin.css"):
+                findings.append({"file": rel, "kind": "HTML", "why": "overlay before surface css"})
+            if "wenpai-ui-page" not in t:
+                findings.append({"file": rel, "kind": "HTML", "why": "prototype body missing wenpai-ui-page"})
+        for ln in inline_styles(t):
+            findings.append({"file": f"{rel}:{ln}", "kind": "HTML", "rule": INLINE_RULE, "why": "inline style attribute in prototype; use a kit class"})
+    return findings, None, len(htmls)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="", help="kit repo root")
     ap.add_argument("--plugin-root", default="", help="plugin root; lints lib/wenpai-admin-ui plus templates")
+    ap.add_argument("--prototype-dir", default="", help="standalone prototype HTML directory (no vendored kit required)")
     ap.add_argument("--tier", default="", help="A B C or D; default is tiers.yml by directory name")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--strict-colors", action="store_true", help="with --plugin-root: raw colors in product CSS FAIL instead of WARN")
     ap.add_argument("--strict-spacing", action="store_true", help="with --plugin-root: hand-written on-scale spacing in product CSS FAIL instead of WARN")
     ap.add_argument("--strict", action="store_true", help="with --plugin-root: both --strict-colors and --strict-spacing")
     args = ap.parse_args()
+
+    if args.prototype_dir:
+        pdir = Path(args.prototype_dir).resolve()
+        p_findings, p_skip, n_html = lint_prototype_dir(pdir)
+        if p_skip:
+            return skip(p_skip)
+        result = {
+            "prototype_dir": str(pdir),
+            "html": n_html,
+            "findings": p_findings,
+            "status": "FAIL" if p_findings else "PASS",
+        }
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            print(f"{result['status']} html={n_html} findings={len(p_findings)}")
+            for item in p_findings:
+                rule = f" [{item['rule']}]" if item.get("rule") else ""
+                print(f"  {item['kind']}{rule} {item['file']}: {item['why']}")
+        return 1 if p_findings else 0
 
     plugin_root: Path | None = None
     tier = ""
