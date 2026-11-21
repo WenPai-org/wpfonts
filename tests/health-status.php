@@ -32,7 +32,7 @@ $assert( 'unreachable' === WPFonts_Health::interpret( 404, '<Error>NoSuchKey</Er
 $assert( 'unreachable' === WPFonts_Health::interpret( 500, '' ), '500 should be unreachable' );
 $assert( 'unreachable' === WPFonts_Health::interpret( 0, '' ), 'no response should be unreachable' );
 $assert( 'unreachable' === WPFonts_Health::interpret( 429, '{"message":"slow down"}' ), '429 should be unreachable' );
-$assert( WPFonts_Link::KEY_STATUS_URL === 'https://app.windfonts.com/api/key/status', 'health URL drifted' );
+$assert( WPFonts_Link::KEY_STATUS_URL === 'https://api.windfonts.com/api/key/status', 'health URL drifted' );
 
 if ( array() !== $failures ) {
 	fwrite( STDERR, implode( "\n", $failures ) . "\n" );

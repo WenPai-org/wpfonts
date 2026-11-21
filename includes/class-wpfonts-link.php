@@ -2,7 +2,7 @@
 /**
  * Allowlisted Windfonts stylesheet URLs.
  *
- * Public CSS is https://{cn|hk|en}.windfonts.com/api/css . The live API
+ * Public CSS is https://{cn|hk|en|jp}.windfonts.com/api/css . The live API
  * returns JSON, not CSS, unless family is set, so a font short name or a
  * project slug is required before the front prints a link. The API key is
  * never read here.
@@ -28,6 +28,7 @@ class WPFonts_Link {
 		'cn' => 'cn.windfonts.com',
 		'hk' => 'hk.windfonts.com',
 		'en' => 'en.windfonts.com',
+		'jp' => 'jp.windfonts.com',
 	);
 
 	/**
@@ -42,7 +43,7 @@ class WPFonts_Link {
 	 *
 	 * @var string
 	 */
-	const KEY_STATUS_URL = 'https://app.windfonts.com/api/key/status';
+	const KEY_STATUS_URL = 'https://api.windfonts.com/api/key/status';
 
 	/**
 	 * License comment required before every generated CDN link.
@@ -250,6 +251,88 @@ class WPFonts_Link {
 			return '';
 		}
 		return 'https://' . self::host( $region ) . '/fonts-packages/' . $norm . '/preview/' . $asset . '.' . $format;
+	}
+
+	/**
+	 * Static OG card or single-glyph vector URL under /fonts-packages/{cdn norm}/og/.
+	 *
+	 * Keeps /fonts-packages/{cdn norm}/preview/*.webp untouched for existing
+	 * catalog and Font Library callers, while exposing the new static OG cards
+	 * (og-a-light.webp, og-a-dark.webp) and glyph vector (yong.svg).
+	 *
+	 * @param mixed  $slug    Package id or catalog fontFamily.
+	 * @param string $variant og-a-light, og-a-dark, or yong (with or without extension).
+	 * @param mixed  $region  Region id. Unknown values use cn.
+	 * @return string
+	 */
+	public static function package_og_url( $slug, $variant = 'og-a-light', $region = 'cn' ) {
+		$norm = self::package_cdn_norm( $slug );
+		if ( '' === $norm ) {
+			return '';
+		}
+		$map = array(
+			'og-a-light'      => 'og-a-light.webp',
+			'og-a-light.webp' => 'og-a-light.webp',
+			'og-a-dark'       => 'og-a-dark.webp',
+			'og-a-dark.webp'  => 'og-a-dark.webp',
+			'yong'            => 'yong.svg',
+			'yong.svg'        => 'yong.svg',
+		);
+		$key = strtolower( trim( (string) $variant ) );
+		if ( ! isset( $map[ $key ] ) ) {
+			return '';
+		}
+		return 'https://' . self::host( $region ) . '/fonts-packages/' . $norm . '/og/' . $map[ $key ];
+	}
+
+	/**
+	 * Static 永 glyph SVG URL under /fonts-packages/{cdn norm}/og/yong.svg.
+	 *
+	 * @param mixed $slug   Package id or catalog fontFamily.
+	 * @param mixed $region Region id. Unknown values use cn.
+	 * @return string
+	 */
+	public static function package_yong_svg_url( $slug, $region = 'cn' ) {
+		return self::package_og_url( $slug, 'yong', $region );
+	}
+
+	/**
+	 * Whether a URL is an allowlisted static OG or yong.svg asset for this norm.
+	 *
+	 * @param string $url  Candidate URL.
+	 * @param string $norm Package CDN norm.
+	 * @return bool
+	 */
+	public static function is_package_og_url( $url, $norm ) {
+		$norm = self::token( $norm, 64 );
+		if ( '' === $norm ) {
+			return false;
+		}
+		$parts = parse_url( (string) $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Same shape as is_allowlisted(). The CLI test has no WordPress.
+		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return false;
+		}
+		if ( 'https' !== strtolower( (string) $parts['scheme'] ) ) {
+			return false;
+		}
+		if ( ! empty( $parts['user'] ) || ! empty( $parts['pass'] ) || ! empty( $parts['port'] ) || ! empty( $parts['query'] ) || ! empty( $parts['fragment'] ) ) {
+			return false;
+		}
+		$host = strtolower( (string) $parts['host'] );
+		if ( ! in_array( $host, self::HOSTS, true ) ) {
+			return false;
+		}
+		$path   = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+		$prefix = '/fonts-packages/' . $norm . '/og/';
+		return in_array(
+			$path,
+			array(
+				$prefix . 'og-a-light.webp',
+				$prefix . 'og-a-dark.webp',
+				$prefix . 'yong.svg',
+			),
+			true
+		);
 	}
 
 	/**

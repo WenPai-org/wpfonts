@@ -152,16 +152,16 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 
 ## 选用字体
 
-设置页只读本站这份目录：`wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。文件形如 `{ "updated_at": unix, "fonts": [ { "name", "fontFamily" } ] }`。WP-Cron 使用自定义 `monthly` 间隔（约 30 天）拉取 `https://app.windfonts.com/api/fonts` 的全部分页并写成这一份快照。新装站点如果还没有这份文件，会再排一次马上执行的任务去拉取；激活本身不发请求，失败也不会写一份空目录。站长也可以点「更新字体目录」立刻更新，两次之间至少隔 60 秒。选中后写入 `fontFamily`（`wenfeng-*`）。更新失败不会盖掉已有快照。没有快照时仍可手填字体名。页面上的说明是：目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。字符范围四档写在选项上。项目名收在「项目与白名单」里，域名白名单到文风控制台配置。旧的按页 transient 不再读取。
+设置页只读本站这份目录：`wp-content/uploads/wpfonts/catalog.json`。打开设置不会请求文风。文件形如 `{ "updated_at": unix, "fonts": [ { "name", "fontFamily" } ] }`。WP-Cron 使用自定义 `monthly` 间隔（约 30 天）拉取 `https://api.windfonts.com/api/fonts` 的全部分页并写成这一份快照。新装站点如果还没有这份文件，会再排一次马上执行的任务去拉取；激活本身不发请求，失败也不会写一份空目录。站长也可以点「更新字体目录」立刻更新，两次之间至少隔 60 秒。选中后写入 `fontFamily`（`wenfeng-*`）。更新失败不会盖掉已有快照。没有快照时仍可手填字体名。页面上的说明是：目录保存在本站，大约每月自动更新一次；也可点按钮立刻更新。字符范围四档写在选项上。项目名收在「项目与白名单」里，域名白名单到文风控制台配置。旧的按页 transient 不再读取。
 
 目录里的 `fontFamily` 是样式地址用的字体名，不一定等于 CSS 里的 `font-family`。保存或再检查时会看一眼这条地址。打不开就不会放到前台，也不会标成会加载。字体库里的「文风云」只登记已经确认能打开、并且读到了真实字体名的那一个。确认通过后，这个字体名会写进全站样式；不再确认时，只从全站样式里去掉它。
 
 ## 开启文风云之后
 
-- 服务器只有 `cn.windfonts.com`、`hk.windfonts.com`、`en.windfonts.com`。
+- 设置页提供 `cn.windfonts.com`、`hk.windfonts.com`、`en.windfonts.com` 三区域选项（底层白名单另兼容 `jp.windfonts.com`）。
 - 填写了项目名，就用 `https://服务器/p/项目名/index.css`。
 - 没有项目名时，使用 `https://服务器/api/css?family=字体名&subset=字符范围`。公开字体地址没有字体名时会返回 JSON 而不是 CSS，所以没填字体名、也没填项目名时，前台不加载这条链接。
-- 文风 API Key 只在服务器上用于请求 `https://app.windfonts.com/api/key/status`。不进入网页，也不进入样式地址。
+- 文风 API Key 只在服务器上用于请求 `https://api.windfonts.com/api/key/status`。不进入网页，也不进入样式地址。
 - 插件不切字。已切好的包在「字体包」页安装到本站。
 - 已启用的文风字体包，以及确认能打开的文风云，会出现在全站样式里。插件不改主题文件，卸载时也不删除全站样式。
 

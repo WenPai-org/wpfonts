@@ -48,6 +48,12 @@ $en = $base;
 $en['region'] = 'en';
 $assert( 0 === strpos( WPFonts_Link::embed_url( $en ), 'https://en.windfonts.com/api/css?' ), 'en host mismatch' );
 
+$jp = $base;
+$jp['region'] = 'jp';
+$assert( 0 === strpos( WPFonts_Link::embed_url( $jp ), 'https://jp.windfonts.com/api/css?' ), 'jp host mismatch' );
+$assert( WPFonts_Link::is_allowlisted( 'https://jp.windfonts.com/api/css?family=wenfeng-xwwkb&subset=zh-common' ), 'jp host was not allowlisted' );
+$assert( 'https://jp.windfonts.com' === WPFonts_Link::preconnect_origin( 'https://jp.windfonts.com/api/css?family=wenfeng-xwwkb' ), 'jp preconnect mismatch' );
+
 $evil = $base;
 $evil['region'] = 'https://evil.example/api/css';
 $evil_url = WPFonts_Link::embed_url( $evil );
@@ -270,6 +276,18 @@ $assert( 'https://wenfeng.org/license/hcwjt/' === $lic, 'license URL mismatch: '
 $assert( '' === WPFonts_Link::package_license_url( 'not-a-family' ), 'non-wenfeng slug produced a license URL' );
 $alias = WPFonts_Link::package_license_url( 'wenfeng-xxzt' );
 $assert( '' === $alias || 0 === strpos( $alias, 'https://wenfeng.org/license/' ), 'alias license URL escaped wenfeng.org: ' . $alias );
+
+$assert( 'https://cn.windfonts.com/fonts-packages/xwwkb/og/og-a-light.webp' === WPFonts_Link::package_og_url( 'wenfeng-xwwkb', 'og-a-light', 'cn' ), 'og-a-light URL drifted' );
+$assert( 'https://jp.windfonts.com/fonts-packages/xzt/og/og-a-dark.webp' === WPFonts_Link::package_og_url( 'wenfeng-xxzt', 'og-a-dark.webp', 'jp' ), 'aliased jp og-a-dark URL drifted' );
+$assert( 'https://cn.windfonts.com/fonts-packages/xwwkb/og/yong.svg' === WPFonts_Link::package_yong_svg_url( 'wenfeng-xwwkb', 'cn' ), 'yong.svg URL drifted' );
+$assert( 'https://hk.windfonts.com/fonts-packages/syhtsc/og/yong.svg' === WPFonts_Link::package_yong_svg_url( 'wenfeng-syhtcjk', 'hk' ), 'aliased yong.svg URL drifted' );
+$assert( '' === WPFonts_Link::package_og_url( 'not-wenfeng', 'og-a-light', 'cn' ), 'non-wenfeng slug built an og URL' );
+$assert( '' === WPFonts_Link::package_og_url( 'wenfeng-xwwkb', 'unknown-asset', 'cn' ), 'unknown og variant built a URL' );
+$assert( true === WPFonts_Link::is_package_og_url( 'https://jp.windfonts.com/fonts-packages/xwwkb/og/og-a-light.webp', 'xwwkb' ), 'jp og-a-light was rejected' );
+$assert( true === WPFonts_Link::is_package_og_url( 'https://cn.windfonts.com/fonts-packages/xwwkb/og/yong.svg', 'xwwkb' ), 'yong.svg was rejected' );
+$assert( false === WPFonts_Link::is_package_og_url( 'http://cn.windfonts.com/fonts-packages/xwwkb/og/og-a-light.webp', 'xwwkb' ), 'http og URL was accepted' );
+$assert( false === WPFonts_Link::is_package_og_url( 'https://evil.example/fonts-packages/xwwkb/og/og-a-light.webp', 'xwwkb' ), 'foreign og host was accepted' );
+$assert( false === WPFonts_Link::is_package_og_url( 'https://cn.windfonts.com/fonts-packages/xwwkb/og/og-a-light.webp?key=secret', 'xwwkb' ), 'og URL with query was accepted' );
 
 if ( array() !== $failures ) {
 	fwrite( STDERR, implode( "\n", $failures ) . "\n" );

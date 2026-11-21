@@ -33,10 +33,16 @@ class WPFonts_Admin {
 		add_action( 'admin_notices', array( __CLASS__, 'cdn_notice' ) );
 		add_filter( 'plugin_action_links_' . WPFONTS_BASENAME, array( __CLASS__, 'action_links' ) );
 		add_filter( 'gettext', array( __CLASS__, 'saved_label' ), 10, 3 );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Shared WenPai suite contract.
+		add_filter( 'wpcy_service_status', array( __CLASS__, 'filter_wpcy_service_status' ), 10, 2 );
 	}
 
 	/**
 	 * Settings submenu. The left menu uses the feature name; the browser title is the brand.
+	 *
+	 * Note: vendored wenpai-admin-ui stays at 0.11.3 to preserve human-reviewed UI
+	 * layout without drift; when WP-China-Yes 4.0+ is active, its newer kit copy
+	 * wins wenpai_admin_ui_boot() and applies wenpai_admin_ui_suite_parent_slug.
 	 *
 	 * @return void
 	 */
@@ -45,14 +51,135 @@ class WPFonts_Admin {
 		if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 			return;
 		}
-		Wenpai_Admin_Menu::register(
-			array(
-				'slug'   => 'wpfonts',
-				'label'  => __( '字库', 'wpfonts' ),
-				'title'  => __( '文派字库', 'wpfonts' ),
-				'render' => array( __CLASS__, 'render' ),
-			)
+		$menu_args = array(
+			'slug'   => 'wpfonts',
+			'label'  => __( '字库', 'wpfonts' ),
+			'title'  => __( '文派字库', 'wpfonts' ),
+			'render' => array( __CLASS__, 'render' ),
 		);
+		$display   = self::suite_display();
+		if ( '' !== $display['brand'] ) {
+			$menu_args['title'] = $display['brand'] . __( '字库', 'wpfonts' );
+		}
+		Wenpai_Admin_Menu::register( $menu_args );
+	}
+
+	/**
+	 * Report live WPFonts status to WP-China-Yes 4.0 Services screen (`windfonts`).
+	 *
+	 * Non-intrusive suite hook: returns whether 文风云 is enabled, the selected
+	 * CDN node, and the count of enabled cloud/package fonts without altering
+	 * WPFonts' own admin UI.
+	 *
+	 * @param mixed $status        Existing service status map.
+	 * @param array $wpcy_settings WPCY settings snapshot (unused).
+	 * @return array<string, mixed>
+	 */
+	public static function filter_wpcy_service_status( $status, $wpcy_settings = array() ) {
+		unset( $wpcy_settings );
+		if ( ! is_array( $status ) ) {
+			$status = array();
+		}
+
+		$settings   = WPFonts_Settings::get();
+		$cdn_on     = ! empty( $settings['cdn_enabled'] );
+		$region     = WPFonts_Link::region( isset( $settings['region'] ) ? $settings['region'] : 'cn' );
+		$host       = WPFonts_Link::host( $region );
+		$node_names = array(
+			'cn' => __( '中国大陆', 'wpfonts' ),
+			'hk' => __( '中国香港', 'wpfonts' ),
+			'en' => __( '国际', 'wpfonts' ),
+			'jp' => __( '日本', 'wpfonts' ),
+		);
+		$node_label = isset( $node_names[ $region ] ) ? $node_names[ $region ] . '（' . $host . '）' : $host;
+
+		$cloud_count = count( WPFonts_Link::front_stylesheets( $settings ) );
+		$pkg_count   = 0;
+		foreach ( WPFonts_Packages::all() as $pkg ) {
+			if ( ! empty( $pkg['enabled'] ) ) {
+				++$pkg_count;
+			}
+		}
+		$font_count = $cloud_count + $pkg_count;
+
+		if ( $cdn_on && $cloud_count > 0 ) {
+			$pill    = __( '文风云已开启', 'wpfonts' );
+			$state   = 'ok';
+			$summary = sprintf(
+				/* translators: 1: selected CDN node label, 2: total enabled webfont count. */
+				__( '文风云已开启 · 节点 %1$s · 已启用字体 %2$d 款', 'wpfonts' ),
+				$node_label,
+				$font_count
+			);
+		} elseif ( $cdn_on ) {
+			$pill    = __( '待选字体', 'wpfonts' );
+			$state   = 'warn';
+			$summary = sprintf(
+				/* translators: 1: selected CDN node label, 2: total enabled webfont count. */
+				__( '文风云已开启 · 节点 %1$s · 已启用字体 %2$d 款（待选择云端字体）', 'wpfonts' ),
+				$node_label,
+				$font_count
+			);
+		} elseif ( $pkg_count > 0 ) {
+			$pill    = __( '文风字体包', 'wpfonts' );
+			$state   = 'ok';
+			$summary = sprintf(
+				/* translators: 1: selected CDN node label, 2: enabled local font package count. */
+				__( '文风云未开启（所选节点 %1$s） · 已启用字体 %2$d 款', 'wpfonts' ),
+				$node_label,
+				$font_count
+			);
+		} else {
+			$pill    = __( '系统字体', 'wpfonts' );
+			$state   = 'ok';
+			$summary = sprintf(
+				/* translators: %s: selected CDN node label. */
+				__( '文风云未开启（所选节点 %s） · 已启用字体 0 款（系统字体）', 'wpfonts' ),
+				$node_label
+			);
+		}
+
+		$status['windfonts'] = array(
+			'summary'      => $summary,
+			'pill'         => $pill,
+			'state'        => $state,
+			'action_label' => __( '设置', 'wpfonts' ),
+			'action_url'   => self::page_url(),
+		);
+
+		return $status;
+	}
+
+	/**
+	 * Read optional suite-wide white-label brand/URL overrides from WPCY 4.0.
+	 *
+	 * Returns empty strings when no white-label filter overrides defaults,
+	 * preserving WPFonts' human-approved brand and links verbatim.
+	 *
+	 * @return array{brand:string,feedback_url:string,docs_url:string}
+	 */
+	private static function suite_display() {
+		$defaults = array(
+			'brand'        => '',
+			'feedback_url' => '',
+			'docs_url'     => '',
+		);
+		if ( ! function_exists( 'apply_filters' ) ) {
+			return $defaults;
+		}
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Shared WenPai suite contract.
+		$filtered = apply_filters( 'wenpai_plugin_display', $defaults, 'wpfonts' );
+		if ( ! is_array( $filtered ) ) {
+			return $defaults;
+		}
+		foreach ( array( 'brand', 'feedback_url', 'docs_url' ) as $key ) {
+			if ( isset( $filtered[ $key ] ) && is_string( $filtered[ $key ] ) && '' !== trim( $filtered[ $key ] ) ) {
+				$defaults[ $key ] = 'brand' === $key
+					? sanitize_text_field( $filtered[ $key ] )
+					: esc_url_raw( $filtered[ $key ] );
+			}
+		}
+		return $defaults;
 	}
 
 	/**
@@ -337,7 +464,7 @@ class WPFonts_Admin {
 		$icon = static function ( $name ) {
 			return class_exists( 'Wenpai_Admin_Icons', false ) ? Wenpai_Admin_Icons::svg( $name ) : '';
 		};
-		return array(
+		$args = array(
 			'slug'               => 'wpfonts',
 			'name'               => __( '文派字库', 'wpfonts' ),
 			'mark_html'          => self::mark_html(),
@@ -373,6 +500,20 @@ class WPFonts_Admin {
 			'doc_url'            => 'https://wpcy.com/fonts',
 			'doc_label'          => __( '文档', 'wpfonts' ),
 		);
+
+		$display = self::suite_display();
+		if ( '' !== $display['brand'] ) {
+			$args['name']    = $display['brand'] . __( '字库', 'wpfonts' );
+			$args['version'] = $display['brand'] . __( '字库（WPFonts）', 'wpfonts' ) . ' · ' . WPFONTS_VERSION;
+		}
+		if ( '' !== $display['feedback_url'] ) {
+			$args['feedback_url'] = $display['feedback_url'];
+		}
+		if ( '' !== $display['docs_url'] ) {
+			$args['doc_url'] = $display['docs_url'];
+		}
+
+		return $args;
 	}
 
 	/**

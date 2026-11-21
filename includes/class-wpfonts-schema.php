@@ -172,6 +172,9 @@ class WPFonts_Schema {
 				),
 			),
 			// --- CDN-gated fields ---
+			// Note: WPFonts_Link::HOSTS also allowlists 'jp' => 'jp.windfonts.com'
+			// for programmatic/migrated configs; the UI choice cards keep the
+			// human-approved three-region layout and copy untouched.
 			array(
 				'region' => array(
 					'type'       => 'choice',
