@@ -164,11 +164,10 @@ function wp_fonts_register_collections() {
 add_action( 'init', 'wp_fonts_register_collections', 25 );
 
 /**
- * Load Plugin Update Checker only for wp-admin, WP-Cron, and WP-CLI.
+ * Load WenPai Bridge updater only for wp-admin, WP-Cron, and WP-CLI.
  *
- * Front-end page views skip the library. Metadata stays on
- * updates.weixiaoduo.com; the plugin header Update URI stays on
- * updates.wenpai.net. If the library file is absent, return quietly.
+ * Front-end page views skip the updater. Update checks and plugin info use
+ * WordPress 5.8+ Update URI hooks targeting updates.wenpai.net.
  *
  * @return void
  */
@@ -179,17 +178,13 @@ function wp_fonts_initialize_update_checker() {
 		return;
 	}
 
-	$checker = WPFONTS_DIR_PATH . 'lib/plugin-update-checker/plugin-update-checker.php';
-	if ( ! is_readable( $checker ) ) {
+	$updater = WPFONTS_DIR_PATH . 'includes/class-wpfonts-updater.php';
+	if ( ! is_readable( $updater ) ) {
 		return;
 	}
 
-	require_once $checker;
+	require_once $updater;
 
-	\YahnisElsts\PluginUpdateChecker\v5p3\PucFactory::buildUpdateChecker(
-		'https://updates.weixiaoduo.com/wpfonts.json',
-		__FILE__,
-		'wpfonts'
-	);
+	new WPFonts_Updater( WPFONTS_BASENAME, WPFONTS_VERSION );
 }
 add_action( 'plugins_loaded', 'wp_fonts_initialize_update_checker', 20 );

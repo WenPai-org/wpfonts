@@ -124,7 +124,9 @@ $assert( false !== strpos( $main, 'Version: 2.0.0-rc.22' ), 'Version header must
 $assert( false !== strpos( $main, "define( 'WPFONTS_VERSION', '2.0.0-rc.22' )" ), 'Version constant must be 2.0.0-rc.22.' );
 $assert( false === strpos( $main, 'Network:' ), 'Unjustified Network header must stay absent.' );
 $assert( false !== strpos( $main, 'https://updates.wenpai.net' ), 'Update URI host must stay updates.wenpai.net.' );
-$assert( false !== strpos( $main, 'https://updates.weixiaoduo.com/wpfonts.json' ), 'PUC metadata host must stay updates.weixiaoduo.com.' );
+$assert( false === strpos( $main, 'updates.weixiaoduo.com' ), 'Legacy updates.weixiaoduo.com reference must be removed.' );
+$assert( false === strpos( $main, 'plugin-update-checker' ), 'Legacy plugin-update-checker reference must be removed.' );
+$assert( false !== strpos( $main, 'includes/class-wpfonts-updater.php' ), 'Main file must load WPFonts_Updater.' );
 $assert( false !== strpos( $main, 'https://wpcy.com/wpfonts' ), 'Plugin URI must stay on wpcy.com.' );
 $assert( false !== strpos( $main, 'function wp_fonts_initialize_update_checker' ), 'Updater gate missing.' );
 $assert( false !== strpos( $main, '! is_admin()' ), 'Updater must skip non-admin requests.' );
@@ -134,6 +136,7 @@ $assert( false === stripos( $main, 'updatepulse' ), 'UpdatePulse reference remai
 $assert( false !== strpos( $main, 'lib/wenpai-admin-ui/php/load.php' ), 'Main file must load the vendored kit.' );
 $assert( false === strpos( $main, 'register_uninstall_hook' ), 'Uninstall must not register a data-deletion hook.' );
 $assert( ! is_dir( $root . '/lib/updatepulse-updater' ), 'UpdatePulse directory must be removed.' );
+$assert( ! is_dir( $root . '/lib/plugin-update-checker' ), 'Legacy plugin-update-checker directory must be removed.' );
 $assert( is_dir( $root . '/lib/wenpai-admin-ui' ), 'wenpai-admin-ui must be vendored.' );
 $vendored_kit = trim( (string) file_get_contents( $root . '/lib/wenpai-admin-ui/VERSION' ) );
 $assert(

@@ -17,6 +17,10 @@ delete_option( 'wpfonts_settings' );
 delete_option( 'wpfonts_api_key' );
 delete_option( 'wpfonts_packages' );
 delete_option( 'wpfonts_gs_slugs' );
+delete_site_transient( 'wpfonts_updater_check_cache' );
+delete_site_transient( 'wpfonts_updater_info_cache' );
+delete_transient( 'wpfonts_updater_check_cache' );
+delete_transient( 'wpfonts_updater_info_cache' );
 
 /**
  * Drop the catalog snapshot and its cron event. Installed font packages stay.

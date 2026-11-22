@@ -1,10 +1,11 @@
 <?php
 /**
- * Front-end gate for Plugin Update Checker.
+ * Front-end gate for WPFonts_Updater.
  *
  * Stubs the few WordPress functions the main file calls, then invokes the
- * updater callback as a normal front-end request would. The library must
- * stay unloaded. Admin, cron, and CLI still load it inside WordPress.
+ * updater callback as a normal front-end request would. The updater class must
+ * stay unloaded and no update hooks may be registered on front-end views.
+ * Admin, cron, and CLI still load it inside WordPress.
  */
 
 if ( defined( 'ABSPATH' ) ) {
@@ -140,14 +141,21 @@ wp_fonts_initialize_update_checker();
 
 $loaded = false;
 foreach ( get_included_files() as $included ) {
-	if ( false !== strpos( $included, 'plugin-update-checker.php' ) ) {
+	if ( false !== strpos( $included, 'class-wpfonts-updater.php' ) || false !== strpos( $included, 'plugin-update-checker.php' ) ) {
 		$loaded = true;
 	}
 }
 
-if ( $loaded || class_exists( '\YahnisElsts\PluginUpdateChecker\v5p3\PucFactory', false ) ) {
-	fwrite( STDERR, "Front-end request loaded Plugin Update Checker.\n" );
+if ( $loaded || class_exists( 'WPFonts_Updater', false ) ) {
+	fwrite( STDERR, "Front-end request loaded WPFonts_Updater.\n" );
 	exit( 1 );
+}
+
+foreach ( $hooks as $registered ) {
+	if ( 'update_plugins_updates.wenpai.net' === $registered[0] || 'plugins_api' === $registered[0] ) {
+		fwrite( STDERR, "Front-end request registered updater hook: {$registered[0]}\n" );
+		exit( 1 );
+	}
 }
 
 if ( '2.0.0-rc.22' !== WPFONTS_VERSION ) {
@@ -160,9 +168,13 @@ if ( ! preg_match( '/^ \* Update URI: https:\/\/updates\.wenpai\.net$/m', $src )
 	fwrite( STDERR, "Update URI changed.\n" );
 	exit( 1 );
 }
-if ( false === strpos( $src, 'https://updates.weixiaoduo.com/wpfonts.json' ) ) {
-	fwrite( STDERR, "Updater metadata URL changed.\n" );
+if ( false !== strpos( $src, 'updates.weixiaoduo.com' ) || false !== strpos( $src, 'plugin-update-checker' ) ) {
+	fwrite( STDERR, "Legacy updater reference remains in wpfonts.php.\n" );
+	exit( 1 );
+}
+if ( false === strpos( $src, 'includes/class-wpfonts-updater.php' ) ) {
+	fwrite( STDERR, "WPFonts_Updater bootstrap missing in wpfonts.php.\n" );
 	exit( 1 );
 }
 
-echo "PASS: front-end request did not load Plugin Update Checker.\n";
+echo "PASS: front-end request did not load WPFonts_Updater or register update hooks.\n";

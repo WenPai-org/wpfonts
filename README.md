@@ -184,7 +184,7 @@ Draft notes for stable 2.0.0. Nothing is tagged. `Version`, `WPFONTS_VERSION`, a
 
 ## 更新
 
-插件头里的 Update URI 没有改动。更新检查仍读取 `https://updates.weixiaoduo.com/wpfonts.json`，而且只在后台、定时任务或 WP-CLI 中加载。后台不解释更新来源。
+插件头使用 `Update URI: https://updates.wenpai.net`，通过 WordPress 5.8+ 原生 `update_plugins_updates.wenpai.net` 与 `plugins_api` 钩子对接文派云桥（`https://updates.wenpai.net/api/v1`），且只在后台、定时任务或 WP-CLI 中加载。后台不解释更新来源。
 
 ## 检查
 
@@ -197,6 +197,7 @@ php tests/font-library.php
 php tests/global-styles.php
 php tests/phase4.php
 php tests/updater-gate.php
+php tests/updater.php
 php tests/package-hooks.php
 php tests/packages-local.php
 php tests/cjk-fallback.php

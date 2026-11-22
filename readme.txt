@@ -20,7 +20,7 @@ The public CSS URL needs a font name (`family`) or a project name. Without eithe
 
 Family slugs stay language-prefixed (`cn-`, `en-`, `jp-`, `kr-`). Enabled on-site packages appear in the Font Library as 文风字体 (Windfonts in English), ahead of the system collections. Installing a package records `wenfeng-*` when the zip names `WF-*`, `windfonts-*`, or `wenfeng-*`, and rewrites that name into `local.css`. A zip that does not name a catalog family keeps its file name. The Font Library, the package list, and the block inspector show 文风· plus the font's own name, for example 文风·玄宗体. The package id and the CSS font-family stay `wenfeng-*`. Package directories already installed stay put. A stored name that is only a `wenfeng-*`, `WF-*`, or `windfonts-*` token is replaced with that visible name. The id is not renamed, and `local.css` is not rewritten again. 文风云 is unchanged. A confirmed catalog face appears there too, and both are copied into user Global Styles. Settings still call the installable packages 文风字体包. The block inspector has a thin 文派字库 panel for the current block. It does not add an admin-bar item.
 
-The custom update checker contacts `https://updates.weixiaoduo.com/` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views.
+The native WordPress 5.8+ `Update URI` updater contacts `https://updates.wenpai.net/api/v1` from WordPress admin, WP-Cron, or WP-CLI. It is not loaded during ordinary front-end page views.
 
 == Installation ==
 
