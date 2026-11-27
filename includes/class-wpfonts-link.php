@@ -43,7 +43,7 @@ class WPFonts_Link {
 	 *
 	 * @var string
 	 */
-	const KEY_STATUS_URL = 'https://api.windfonts.com/api/key/status';
+	const KEY_STATUS_URL = 'https://api.windfonts.com/v1/key/status';
 
 	/**
 	 * License comment required before every generated CDN link.

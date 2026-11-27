@@ -283,11 +283,11 @@ $assert( '7f48fdc1-8032-4d2d-8f94-5f64cce36943' !== $parsed['fonts'][0]['fontFam
 $assert( 'zhi-mang-xing' !== $parsed['fonts'][0]['fontFamily'], 'normalizedName was stored as the family' );
 $assert( empty( WPFonts_Catalog::parse_body( 'not-json' )['ok'] ), 'bad JSON should fail' );
 $assert( empty( WPFonts_Catalog::parse_body( '{"code":500,"data":{}}' )['ok'] ), 'non-200 catalog code should fail' );
-$assert( WPFonts_Catalog::FONTS_URL === 'https://api.windfonts.com/api/fonts', 'catalog host drifted' );
+$assert( WPFonts_Catalog::FONTS_URL === 'https://api.windfonts.com/v1/fonts', 'catalog host drifted' );
 $assert( 'wpfonts/catalog.json' === WPFonts_Catalog::SNAPSHOT_RELATIVE, 'snapshot path drifted' );
 $assert( 'data/catalog-allowlist.json' === WPFonts_Catalog::ALLOWLIST_RELATIVE, 'allowlist path drifted' );
 $allowlist = json_decode( (string) file_get_contents( WPFonts_Catalog::allowlist_path() ), true );
-$assert( is_array( $allowlist ) && isset( $allowlist['fonts'] ) && 783 === count( $allowlist['fonts'] ), 'vendored allowlist is not the 783-family pack' );
+$assert( is_array( $allowlist ) && isset( $allowlist['fonts'] ) && 839 === count( $allowlist['fonts'] ), 'vendored allowlist is not the 839-family pack' );
 $assert( isset( $allowlist['aliases']['wenfeng-zhi-mang-xing'] ) && 'wenfeng-zmxs' === $allowlist['aliases']['wenfeng-zhi-mang-xing'], 'zhi-mang-xing alias missing from the vendored pack' );
 $new_published_check = WPFonts_Catalog::parse_body(
 	$catalog_body(
