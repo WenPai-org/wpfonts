@@ -38,7 +38,7 @@ class WPFonts_Catalog {
 	 *
 	 * @var string
 	 */
-	const FONTS_URL = 'https://api.windfonts.com/api/fonts';
+	const FONTS_URL = 'https://api.windfonts.com/v1/fonts';
 
 	/**
 	 * Directory status to request and to keep. The default list also returns archived and offline fonts.
